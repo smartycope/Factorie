@@ -1,0 +1,24 @@
+{
+    "Factors": [
+        {
+            "Name": "You like them",
+            "Unit": "0 - 10",
+            "Optimal": 10,
+            "Min": 0,
+            "Max": 10
+        },
+        {
+            "Name": "You enjoy spending time with them",
+            "Unit": "0 - 10",
+            "Optimal": 10,
+            "Min": 0,
+            "Max": 10
+        },
+        {
+            "Name": "They're tall",
+            "Unit": "feet",
+            "Min": 4,
+            "Max": 6.8
+        }
+    ]
+}

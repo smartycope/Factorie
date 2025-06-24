@@ -1,0 +1,213 @@
+import streamlit as st
+from streamlit import session_state as ss
+import numpy as np
+import pandas as pd
+import re
+from typing import Literal
+
+if "factors" not in ss:
+    st.warning("No factors!")
+    st.stop()
+if "options" not in ss:
+    st.warning("No options!")
+    st.stop()
+if "answers" not in ss:
+    st.warning("No answers!")
+    st.stop()
+
+def optimal_normalized(factors, answers):
+    _mins = mins(factors, answers)
+    _maxs = maxs(factors, answers)
+    return (factors.T['Optimal'] - _mins) / (_maxs - _mins)
+
+def mins(factors:pd.DataFrame, min_answers:pd.DataFrame):
+    return np.array([(i if i is not None else min(min_answers.iloc[:, c].min(), factors.T['Optimal'][c])) for c, i in enumerate(factors.T['Min'])])
+
+def maxs(factors:pd.DataFrame, max_answers:pd.DataFrame):
+    return np.array([i if i is not None else max(max_answers.iloc[:, c].max(), factors.T['Optimal'][c]) for c, i in enumerate(factors.T['Max'])])
+
+def contributions(normalized:np.ndarray, optimal:np.ndarray, tiled_weights:np.ndarray):
+    return np.abs(tiled_weights * (normalized - np.tile(optimal, (normalized.shape[0], 1))))
+
+def sums(contributions:np.ndarray):
+    # return np.sum(np.abs(tiled_weights)*(normalized - np.tile(optimal, (normalized.shape[0], 1))), axis=1)
+    return np.sum(contributions, axis=1)
+
+def normalized_answers(answers:pd.DataFrame, mins, maxs):
+    return (answers.to_numpy() - mins) / (maxs - mins)
+
+def weighted_distances(normalized:np.ndarray, optimal:np.ndarray, tiled_weights:np.ndarray):
+    return np.sqrt(np.sum(tiled_weights.astype(float)*(normalized - np.tile(optimal.astype(float), (normalized.shape[0], 1)))**2, axis=1))
+
+def best_worst_options(weighted_dists:np.ndarray, normalized_contributions:np.ndarray, factors:pd.DataFrame, options:list, method:Literal['extremes', 'threshold'] = 'extremes', min_thresh=None, max_thresh=None):
+    """ Get the best and worst options, along with explanations of why they're the best and worst
+
+        if method == 'extremes', just give min and max 'because' and 'despite' values.
+        if method == 'threshold', give the factors that are within min_thresh and max_thresh, or the best/worst factor if none are within the threshold.
+            if the thresholds are None, automatically calculate good thresholds based on the statistical distrobution of the normalized contributions.
+    """
+    best_idx = np.argmin(weighted_dists)
+    worst_idx = np.argmax(weighted_dists)
+    # Just in case there's multiple best or worst options
+    options = np.array(options)
+
+    if min_thresh is None:
+        min_thresh = np.percentile(normalized_contributions, 20)
+    if max_thresh is None:
+        max_thresh = np.percentile(normalized_contributions, 80)
+    print(min_thresh, max_thresh)
+
+    best_because = factors.columns[normalized_contributions[best_idx].argmin()]
+    best_despite = factors.columns[normalized_contributions[best_idx].argmax()]
+    worst_because = factors.columns[normalized_contributions[worst_idx].argmin()]
+    worst_despite = factors.columns[normalized_contributions[worst_idx].argmax()]
+    best_because_thresh = list(factors.columns[normalized_contributions[best_idx] < min_thresh])
+    best_despite_thresh = list(factors.columns[normalized_contributions[best_idx] > max_thresh])
+    worst_because_thresh = list(factors.columns[normalized_contributions[worst_idx] > max_thresh])
+    worst_despite_thresh = list(factors.columns[normalized_contributions[worst_idx] < min_thresh])
+
+    if method == 'extremes':
+        return {
+            'best': {
+                'is': options[best_idx],
+                'because': best_because,
+                'despite': best_despite,
+            },
+            'worst': {
+                'is': options[worst_idx],
+                'because': worst_because,
+                'despite': worst_despite,
+            }
+        }
+    elif method == 'threshold':
+        # Ensure there's at least one that gets returned
+        return {
+            'best': {
+                'is': options[best_idx],
+                'because': best_because_thresh if len(best_because_thresh) > 0 else [best_because],
+                'despite': best_despite_thresh if len(best_despite_thresh) > 0 else [best_despite],
+            },
+            'worst': {
+                'is': options[worst_idx],
+                'because': worst_because_thresh if len(worst_because_thresh) > 0 else [worst_because],
+                'despite': worst_despite_thresh if len(worst_despite_thresh) > 0 else [worst_despite],
+            }
+        }
+
+def normalized_contributions(sums, contributions):
+    """ The percentage of how much each answer deviates from the optimal """
+    return contributions/np.tile(sums, (contributions.shape[0], 1)).T
+
+def mean_factor_relevances(normalized_contributions):
+    """ The average percentage of how much each factor deviates from the optimal """
+    return np.mean(normalized_contributions, axis=0)
+
+def parse_answers(answers:pd.DataFrame) -> (pd.DataFrame, pd.DataFrame):
+    def parse_answer(answer):
+        m = re.match(r'((?:(?:\-|\+))?\d+(?:\.\d+)?)(?:(?:\s+)?\-(?:\s+)?((?:(?:\-|\+))?\d+(?:\.\d+)?))?', answer)
+        if m:
+            return float(m.group(1)), float(m.group(2)) if m.group(2) else float(m.group(1))
+        else:
+            raise ValueError(f"Invalid answer: {answer}")
+
+    def parse_mean(answer):
+        min, max = parse_answer(answer)
+        return min + (max - min)/2
+
+    def parse_std(answer):
+        min, max = parse_answer(answer)
+        return (max - min)/2
+
+    def parse_min(answer):
+        min, max = parse_answer(answer)
+        return min
+
+    def parse_max(answer):
+        min, max = parse_answer(answer)
+        return max
+
+    return answers.applymap(parse_mean), answers.applymap(parse_std), answers.applymap(parse_min), answers.applymap(parse_max)
+
+def best_worst_possible(optimal, factors):
+    # =IF(A36="", "", SQRT(SUM(ARRAYFORMULA(IF($B$1:$1="", "", ((($B$4:$4 + 1E-15) / 10) * ($B124:124 - $B$121:$121)^2))))))
+    def weighted_dist(row):
+        return np.sqrt(np.sum(factors.T['Weight'].astype(float)*(row - optimal.astype(float))**2))
+    return weighted_dist(optimal), weighted_dist(~optimal.round().astype(bool))
+    # return np.sqrt(np.sum(np.abs(tiled_weights)*(normalized - np.tile(optimal, (normalized.shape[0], 1)))**2, axis=1))
+
+def normalized_weighted_dists(weighted_dists, best_possible, worst_possible):
+    # TODO: I think this makes more sense? Think through this at some point
+    return 1 - weighted_dists / worst_possible
+    # return (weighted_dists - best_possible) / (worst_possible - best_possible)
+
+
+
+with st.sidebar:
+    ss.answers
+    ss.factors
+
+    num_options = len(ss.options)
+    num_factors = len(ss.factors)
+    tiled_weights = np.tile(ss.factors.T['Weight']/10, (num_options, 1))
+
+    parsed_answers, parsed_stds, parsed_mins, parsed_maxs = parse_answers(ss.answers)
+    with st.expander("parsed_answers"):
+        parsed_answers
+
+    with st.expander("parsed_stds"):
+        parsed_stds
+
+    _mins = mins(ss.factors, parsed_mins)
+    with st.expander("mins"):
+        _mins
+
+    _maxs = maxs(ss.factors, parsed_maxs)
+    with st.expander("maxs"):
+        _maxs
+
+    optimal = optimal_normalized(ss.factors, parsed_answers)
+    with st.expander("optimal"):
+        optimal
+
+    normalized = normalized_answers(parsed_answers, _mins, _maxs)
+    with st.expander("normalized"):
+        normalized
+
+    contributions = contributions(normalized, optimal, tiled_weights)
+    with st.expander("contributions"):
+        contributions
+
+    sums = sums(contributions)
+    with st.expander("sums"):
+        sums
+
+    weighted_dists = weighted_distances(normalized, optimal, tiled_weights)
+    # weighted_dists = weighted_distances(contributions)
+    with st.expander("weighted_dists"):
+        weighted_dists
+
+    norm_contributions = normalized_contributions(sums, contributions)
+    with st.expander("norm_contributions"):
+        norm_contributions
+
+    mean_factor_relevance = mean_factor_relevances(norm_contributions)
+    with st.expander("mean_factor_relevance"):
+        mean_factor_relevance
+
+    best_worst_options_extremes = best_worst_options(weighted_dists, norm_contributions, ss.factors, ss.options)
+    best_worst_options_threshold = best_worst_options(weighted_dists, norm_contributions, ss.factors, ss.options, method='threshold')
+    with st.expander("best_worst_options_extremes"):
+        best_worst_options_extremes
+
+    with st.expander("best_worst_options_threshold"):
+        best_worst_options_threshold
+
+    best, worst = best_worst_possible(optimal, ss.factors)
+    with st.expander("best_worst_possible"):
+        best, worst
+
+    norm_weighted_dists = normalized_weighted_dists(weighted_dists, best, worst)
+    with st.expander('normalized_weighted_dists'):
+        norm_weighted_dists
+
+st.write(pd.DataFrame({'Score': weighted_dists, 'Option': ss.options, 'Relative Percentage': normalized_weighted_dists(weighted_dists, best, worst)*100}).sort_values(by='Score', ascending=True).reset_index(drop=True))

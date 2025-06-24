@@ -1,0 +1,38 @@
+{
+    "Factors": [
+        {
+            "Name": "Taste",
+            "Unit": "0 - 10",
+            "Optimal": 10,
+            "Min": 0,
+            "Max": 10
+        },
+        {
+            "Name": "Cost",
+            "Unit": "$",
+            "Optimal": 0,
+            "Min": 0,
+            "Max": null
+        },
+        {
+            "Name": "Healthiness",
+            "Unit": "0 - 10",
+            "Optimal": 10,
+            "Min": 0,
+            "Max": 10
+        },
+        {
+            "Name": "Time to Make",
+            "Unit": "minutes",
+            "Optimal": 0,
+            "Min": 0,
+            "Max": null
+        },
+        {
+            "Name": "Leftovers",
+            "Unit": "portions",
+            "Min": 0,
+            "Max": null
+        }
+    ]
+}

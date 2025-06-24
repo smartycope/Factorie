@@ -1,0 +1,23 @@
+{
+    "Factors": [
+        {
+            "Name": "It's close to home",
+            "Unit": "miles",
+            "Min": 1,
+            "Max": null
+        },
+        {
+            "Name": "Cost per semester",
+            "Unit": "$",
+            "Optimal": 0,
+            "Min": 0,
+            "Max": null
+        },
+        {
+            "Name": "It's prestigious",
+            "Unit": "0 - 10",
+            "Min": 0,
+            "Max": 10
+        }
+    ]
+}
