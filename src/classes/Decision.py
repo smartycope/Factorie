@@ -153,7 +153,7 @@ class Decision:
         return (self.max_answers - self.min_answers)/2
 
     @property
-    @require_validlll
+    @require_valid
     def min_answers(self):
         return self.answers[:, :, 0]
 

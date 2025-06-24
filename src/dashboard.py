@@ -3,7 +3,6 @@ from streamlit import session_state as ss
 import pandas as pd
 import plotly.express as px
 import matplotlib.pyplot as plt
-from src.classes.Decision import Decision
 
 ss.decision = st.selectbox("Current Decision", ss.decisions, format_func=lambda d: d.name)
 

@@ -1,6 +1,12 @@
 import streamlit as st
 from streamlit import session_state as ss
-from src.classes.Decision import Decision
+try:
+    from src.classes.Decision import Decision
+except ImportError:
+    try:
+        from classes.Decision import Decision
+    except ImportError:
+        from .classes.Decision import Decision
 
 # Load testing config
 if "decisions" not in ss:
