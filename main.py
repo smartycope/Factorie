@@ -2,11 +2,17 @@ import streamlit as st
 from streamlit import session_state as ss
 try:
     from src.classes.Decision import Decision
+    st.warning('a')
+    print('a')
 except ImportError:
     try:
         from classes.Decision import Decision
+        st.warning('b')
+        print('b')
     except ImportError:
         from .classes.Decision import Decision
+        st.warning('c')
+        print('c')
 
 # Load testing config
 if "decisions" not in ss:
