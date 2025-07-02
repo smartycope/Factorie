@@ -4,6 +4,6 @@ pandas
 plotly
 matplotlib
 scikit-learn
-umap
+umap-learn
 scipy
 # ./multi_handled_slider -e
