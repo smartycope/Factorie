@@ -1,0 +1,35 @@
+{
+    "factors": {
+        "optimal":"What do you want this factor to be? For instance, if taste is on a scale of 0-10, then we probably want it to taste good (10), but if it\"s cost, we probably don\"t want it to be expensive (0).",
+        "weight":"How much do you care about this factor? For instance, we probably don\"t care much about how many leftovers it has, but we probably care a more about what it tastes like. If you\"re unsure, we can tweak this later as well.",
+        "scale":"What are the bounds of this factor? For instance, if it\"s on a scale of 0-10, then we probably want it to be between 0 and 10. If it\"s not clear, however, you can select \"Unbounded\" to automatically calculate it from the answers you give. There may also be one but not the other, for example, for the \"cost\" factor, we know it\"s not negative (no one is going to pay a *us* for a meal), but it could cost as much as we want. However, if you know you\"re not going to spend more than $100, you can set the max to 100. Adding a scale explicitly is going to be more accurate than not.",
+        "unit": "This is to help you keep track of what the scale is. You can have the scale be anything you want, 0-10, dollars, miles, etc. For vauge factors, for example Taste, it\"s probably easiest to use a 0-10 scale.",
+        "factor": "The name of the factor. You can put anything here: from \"taste\", to \"happiness\" to \"how much I want to\". Literally anything you can think of that relates to the decision you\"re making. The more the better! Even things that are only slightly relevant will make the final answer more accurate.",
+        "quick-add": "If you just want to brain dump anything you can think of real quick, just select this and fill out the details later.",
+        "explanation": "This page allows you to add, edit, and remove factors to your decision. Factors are\n\nanything that relates to the decision. Anything that would go on a pro-con list\n\nwould be a factor. You can add as many as you want, and you can edit them later.\nThe more factors, the better. Feel free to be as specific as you want. If you're\njust brainstorming, and want to add a bunch at once, you can use the `Quick Add`\noption, then go back through afterwards to add the details.\n\nHover over the ? for more information on each field.\n\nAfter you've added some factors, head over to the `Fine Tune Weights` page\nto adjust the weights of each factor."
+    },
+    "dashboard": {
+        "explanation": "This is (or will be) an app to help you make decisions!\n\nExplanations for each page will be here.\n\nStart by going to the `Decisions` page and add a new decision.\nThen, if you have multiple decisions, you can come back here and switch between them."
+    },
+    "fine_tune_weights": {
+        "explanation": "This is where you can fine tune how much each factor matters. Because getting\nthe weights right can have a large impact on the final answer, I've created a\nseperate way to break it down as well. Remember, this is targeted towards making\nbig decisions that might have lots of factors.\n\nIf you think the weights you added when adding factors are already pretty accurate,\nyou can skip this step.\n\nThere's steps to fine tuning the factors. You can do either one, both, or neither\nof them as you'd like. First, you can go through the section that helps you sort\nthe factors in order of importance. It breaks it down into pairs of factors\nand asks which is more important. It uses a custom algorithm to make the sorting\nas efficient as possible. It won't change any of the weights until you're done\nsorting them, and then it will ask you if you want to set them as the new weights.\n\nFrom there, you can go to the slider, which shows the weights next to each other.\nYou can adjust the weights by dragging the sliders, so they're not simply evenly\nspaced. I've also included several graphs to help you visualize the weights.\n\nOnce you're done here, head over to the `Answers` page to start making the\ndecision."
+    },
+    "decisions": {
+        "explanation": "This page allows you to add, edit, and remove decisions to your dashboard. Decisions are\npretty self explanatory.\n\nOnce you're done here, go to the `Options` page to add options to your decision."
+    },
+    "options": {
+        "explanation": "This page allows you to add and remove options to your decision. Pretty self explanatory.\n\nOnce you're done here, go to the `Factors` page to add factors to your decision."
+    },
+    "answers": {
+        "explanation": "Now that you've specified what the decision you're trying to make actually is,\nyou can start inputting what you know. This page breaks down the decision into\nparts so you can evaluate each part of the decision induvidually. This part usually\ntakes the longest. If you're not sure about an answer, you can skip it and come\nback to it later, or you can select \"I'm not sure\" and provide a range of values\nthat you think is appropriate. The behind the scenes algorithm will take your\nuncertainty into account.\n\nOnce you're finished filling in all the answers, you can move on to the `View\nResults` page to finally see the results of your decision!\n"
+    },
+    "view_results": {
+        "explanation": "This page shows the results of your decision. It shows the best option,\nthe worst option, and a graph of the results.",
+        "line1d": "This shows the results in terms of how \"bad\" each option is, or in other words, how far way each option is from the optimal",
+        "PCA": "This shows each option as a point in 2D space. Each point is actually in a much higher dimension, but this is projected down to 2D to make it easier to visualize. (For those who are interested, it uses the PCA algorithm to do this.)",
+        "radar": "Here you can see each option compared to each other, or the optimal. The more area that overlaps with the optimal, the better. Same with the worst.",
+        "heatmap1d": "This shows your options in order of how good they are. The greener, the better. If all of the options are green, that means all of them are generally good options. If they're all red, that means you don't have many good options. The percentage is on a scale of worst possible to best possible.",
+        "entropy": "This shows how much each factor contributed to the decision. Say you have a factor that we care a lot about, but all of the options are close each other. That factor didn't really contribute much to the decision, because they're all the same. But if all of the options are different for a given factor, then that's going to be a more useful factor. However, if we don't care about that factor, it still won't matter much. This is a measure of the \"variability\" of each factor, according to each factor's weight.",
+        "goodness_bar": "This shows how good each option is on a scale of worst possible to best possible. The bar at the top shows the likely ranges of each option, if there are unknown values (ranges) in any of your answers."
+    }
+}

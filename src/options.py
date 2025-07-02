@@ -3,18 +3,25 @@ from streamlit import session_state as ss
 import numpy as np
 import pandas as pd
 
-st.title("Add Options")
+st.title("Options")
+st.dataframe(pd.DataFrame(ss.decision.options, columns=["Current Options"]), hide_index=True)
+
 
 with st.form("add_option"):
-    option = st.text_input("Add an option")
-    if st.form_submit_button("Add"):
+    l, r = st.columns(2)
+    option = l.text_input("Add an option")
+    if r.form_submit_button("Add"):
         ss.decision.add_option(option)
         st.rerun()
 
 with st.form("remove_option"):
-    option = st.selectbox("Delete an option", ss.decision.options)
-    if st.form_submit_button("Delete"):
+    l, r = st.columns(2)
+    option = l.selectbox("Delete an option", ss.decision.options)
+    if r.form_submit_button("Delete"):
         ss.decision.remove_option(option)
         st.rerun()
 
-st.dataframe(ss.decision.options)
+# st.divider()
+# "## Current Options"
+
+st.sidebar.write(ss.texts['options']['explanation'])

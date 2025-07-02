@@ -7,19 +7,27 @@ from src.classes.Decision import Decision
 if "decisions" not in ss:
     ss.decisions = []
 
-st.title("Make or delete Decisions")
+"# What else would you like help deciding?"
 
 with st.form("new_decision"):
     name = st.text_input("Add a new decision")
     if st.form_submit_button("Add"):
-        ss.decisions.append(Decision(name=name))
-        st.rerun()
+        if name in [d.name for d in ss.decisions]:
+            st.warning("Decision already exists")
+        else:
+            ss.decisions.append(Decision(name=name))
+            ss.decision = ss.decisions[-1]
+            st.rerun()
 
 with st.form("delete_decision"):
     decision = st.selectbox("Delete a decision", ss.decisions, format_func=lambda d: d.name)
+    # st.write(decision.name)
     if st.form_submit_button("Delete"):
         ss.decisions.remove(decision)
-        st.write('A confirmation dialog will go here')
+        st.warning('A confirmation dialog will go here')
+        st.rerun()
 
-""" # Current decisions """
-st.dataframe([d.name for d in ss.decisions])
+# """ # Current decisions """
+# st.dataframe([d.name for d in ss.decisions])
+
+st.sidebar.write(ss.texts['decisions']['explanation'])
