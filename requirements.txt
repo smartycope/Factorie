@@ -3,4 +3,7 @@ numpy
 pandas
 plotly
 matplotlib
+scikit-learn
+umap
+scipy
 # ./multi_handled_slider -e

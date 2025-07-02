@@ -337,7 +337,8 @@ class Decision:
         # A percentage of how much each factor contributed to the total distance between the optimal and each option
         # This is really num_options seperate vectors, but they're together for convenience
         # The sign indicates whether it was towrds or away from the optimal. Take the absolute value for the plain contribution
-        per_option_contributions = weighted_delta_vectors_normalized / weighted_delta_magnitudes[:, None]
+        # per_option_contributions = weighted_delta_vectors_normalized / weighted_delta_magnitudes[:, None]
+        per_option_contributions = normalized_answers * tiled_weights
 
         # A percentage of how much each factor contributed to the distance from the optimal, divided by each option's distance
         # I'm not sure how useful this is: probably just use per_option_contributions or weighted_delta_vectors instead
@@ -379,14 +380,15 @@ class Decision:
         if max_thresh is None:
             max_thresh = np.percentile(calc['per_option_contributions'], 80)
 
-        best_because = self.factors['names'][calc['per_option_contributions'][best_idx].argmin()]
-        best_despite = self.factors['names'][calc['per_option_contributions'][best_idx].argmax()]
-        worst_because = self.factors['names'][calc['per_option_contributions'][worst_idx].argmin()]
-        worst_despite = self.factors['names'][calc['per_option_contributions'][worst_idx].argmax()]
-        best_because_thresh = list(np.array(self.factors['names'])[calc['per_option_contributions'][best_idx] < min_thresh])
-        best_despite_thresh = list(np.array(self.factors['names'])[calc['per_option_contributions'][best_idx] > max_thresh])
-        worst_because_thresh = list(np.array(self.factors['names'])[calc['per_option_contributions'][worst_idx] > max_thresh])
-        worst_despite_thresh = list(np.array(self.factors['names'])[calc['per_option_contributions'][worst_idx] < min_thresh])
+        contrib = np.abs(calc['per_option_contributions'])
+        best_because = self.factors['names'][contrib[best_idx].argmin()]
+        best_despite = self.factors['names'][contrib[best_idx].argmax()]
+        worst_because = self.factors['names'][contrib[worst_idx].argmin()]
+        worst_despite = self.factors['names'][contrib[worst_idx].argmax()]
+        best_because_thresh = list(np.array(self.factors['names'])[contrib[best_idx] < min_thresh])
+        best_despite_thresh = list(np.array(self.factors['names'])[contrib[best_idx] > max_thresh])
+        worst_because_thresh = list(np.array(self.factors['names'])[contrib[worst_idx] > max_thresh])
+        worst_despite_thresh = list(np.array(self.factors['names'])[contrib[worst_idx] < min_thresh])
 
         if method == 'extremes':
             best = {

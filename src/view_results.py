@@ -4,6 +4,8 @@ from typing import Literal
 from string import ascii_uppercase
 import matplotlib
 import matplotlib.colors
+from plotly.colors import sample_colorscale
+
 import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
@@ -258,7 +260,6 @@ def single_line_plot_plotly():
 
     st.plotly_chart(fig, use_container_width=True)
 
-
 def contributions_multiplot():
     ######### Contributions Multiplot #########
     fig, ax = plt.subplots()
@@ -396,16 +397,65 @@ def contributions_singleplot():
     st.write(np.sqrt(np.sum(ss.decision.tiled_weights*(delta**2), axis=1)))
     st.write(length)
 
+
+def answer_heatmap_plotly():
+    tiled_weights = np.tile(ss.decision.factors['weights'], (len(ss.decision.options), 1))
+    data = (1-np.abs(delta_vectors_normalized))*100#*tiled_weights
+
+    tiled_weights = np.tile(ss.decision.factors['weights'], (len(ss.decision.options), 1))
+    st.write(tiled_weights)
+    fig = go.Figure(data=go.Heatmap(
+        z=data/100,
+        x=ss.decision.factors['names'],
+        y=ss.decision.options,
+        colorscale='RdYlGn',
+        zmin=-1,
+        zmax=1,
+        showlegend=False,
+        # title='How good each answer is'
+    ))
+
+    main_texts = np.char.add(
+        np.char.mod('%.0f%%', data),
+            np.char.add('<br>(',
+                np.char.add(
+                    np.char.add(
+                        np.char.add(
+                            np.char.mod('%.0f', answers),
+                            '/'
+                        ),
+                        np.char.mod('%.0f', np.tile(ss.decision.maxs, (len(ss.decision.options), 1)))
+                    ),
+                ')'
+            )
+        )
+    )
+
+    # Add text annotations
+    for i in range(len(ss.decision.options)):
+        for j in range(len(ss.decision.factors['names'])):
+            fig.add_annotation(
+                x=ss.decision.factors['names'][j],
+                y=ss.decision.options[i],
+                text=main_texts[i, j],
+                showarrow=False,
+                font=dict(color="black"),
+                # textangle=0,
+            )
+
+    fig.update_layout(showlegend=False)
+
+    st.plotly_chart(fig)
+
 def contributions_heatmap():
     # Colorscale and range
     colorscale = 'RdYlGn'  # or 'Reds'
     cmin, cmax = -1, 1
 
-    answers = answers
-
+    data = (1-np.abs(delta_vectors_normalized))*100
     # Main heatmap data
     # data = (weighted_delta_vectors_normalized * -1) * weighted_delta_magnitudes[:, None]
-    data = per_option_contributions * -1
+    # data = per_option_contributions * -1
     # data = np.std(answers, axis=0, keepdims=True)
     # data = objective_contributions
     # data = weighted_delta_vectors_normalized * -1
@@ -416,10 +466,14 @@ def contributions_heatmap():
 
     # top_heatmap_data = mean_factor_relevances[:, None].T * -1
     # top_heatmap_data = np.std(answers, axis=0, keepdims=True)
-    top_heatmap_data = np.mean(data, axis=0, keepdims=True)
+    # top_heatmap_data = np.mean(data, axis=0, keepdims=True)
+    top_heatmap_data = np.array(ss.decision.factors['weights'])[:, None].T
     # right_heatmap_data = ss.decision.normalized_weighted_dists.reshape(-1, 1)
-    right_heatmap_data = (weighted_delta_magnitudes / worst_possible_distance)[:, None]
+    # right_heatmap_data = (weighted_delta_magnitudes / worst_possible_distance)[:, None]
+    right_heatmap_data = np.array(goodness)[:, None]
 
+    top = True
+    right = True
 
     # Create subplots with 2 rows and 2 columns
     fig = make_subplots(
@@ -453,7 +507,7 @@ def contributions_heatmap():
 
     # Main heatmap
     heatmap1 = go.Heatmap(
-        z=data,
+        z=data/100,
         x=col_labels,
         y=row_labels,
         colorscale=colorscale,
@@ -477,7 +531,7 @@ def contributions_heatmap():
         z=top_heatmap_data,
         x=col_labels,
         y=['Mean'],
-        colorscale=colorscale,
+        colorscale="Blues",
         zmin=cmin,
         zmax=cmax,
         showscale=False,
@@ -490,7 +544,7 @@ def contributions_heatmap():
         z=right_heatmap_data,
         x=['Badness'],
         y=row_labels,
-        colorscale='Reds',
+        colorscale='Blues',
         zmin=0,
         zmax=1,
         text=right_heatmap_data,
@@ -500,8 +554,11 @@ def contributions_heatmap():
 
     # Add all heatmaps to the figure
     fig.add_trace(heatmap1, row=2, col=1)
-    fig.add_trace(heatmap2, row=1, col=1)
-    fig.add_trace(heatmap3, row=2, col=2)
+    if top:
+        fig.add_trace(heatmap2, row=1, col=1)
+    if right:
+        fig.add_trace(heatmap3, row=2, col=2)
+
 
     # Update layout
     fig.update_layout(
@@ -529,6 +586,112 @@ def contributions_heatmap():
     # Show the figure
     st.plotly_chart(fig, use_container_width=True)
     # ss.decision.weighted_delta_magnitudes()
+
+def contributions_heatmap_variable_sizes():
+    tiled_weights = np.tile(ss.decision.factors['weights'], (len(ss.decision.options), 1))
+    # Colorscale and range
+    colorscale = 'RdYlGn'  # or 'Reds'
+    cmin, cmax = 0, 1
+
+    data = (1-np.abs(delta_vectors_normalized))*100
+    # Main heatmap data
+    row_labels = ss.decision.options
+    col_labels = list(ss.decision.factors['names'])
+
+    main_texts = np.char.add(
+        np.char.mod('%.0f', data),
+            np.char.add('%<br>(',
+                np.char.add(
+                    np.char.add(
+                        np.char.add(
+                            np.char.mod('%.0f', answers),
+                            '/'
+                        ),
+                        np.char.mod('%.0f', np.tile(ss.decision.maxs, (len(ss.decision.options), 1)))
+                    ),
+                ')'
+            )
+        )
+    )
+
+    heatmap1 = go.Figure()
+
+    # Parameters
+    n_rows, n_cols = data.shape
+    cell_width = 1
+    cell_height = 1
+
+    # Loop through data and draw rectangles
+    for i in range(n_rows):
+        for j in range(n_cols):
+            # norm_val = (data[i][j]/100 - cmin) / (cmax - cmin + 1e-9)
+            # norm_val = max(0.0001, min(.9999, norm_val))
+            # st.write(norm_val)
+            fillcolor = sample_colorscale(colorscale, data[i][j]/100, low=cmin, high=cmax)[0]
+
+            weight = tiled_weights[i][j]
+            cx = j
+            cy = n_rows - i - 1  # Flip y-axis for visual top-down order
+
+            # Calculate size
+            half_w = (cell_width * weight) / 2
+            half_h = (cell_height * weight) / 2
+
+            # Draw the heatmap cell as a shape
+            heatmap1.add_shape(
+                type="rect",
+                x0=cx - half_w,
+                y0=cy - half_h,
+                x1=cx + half_w,
+                y1=cy + half_h,
+                line=dict(width=0),
+                # fillcolor='rgba' + str(tuple(go.colors.label_rgb(colorscale, (data[i][j] - cmin) / (cmax - cmin))))
+                # fillcolor=sample_colorscale(colorscale, (data[i][j] - cmin) / (cmax - cmin), low=cmin, high=cmax)[0]
+                fillcolor=fillcolor,
+                layer='below'
+            )
+            # Add text label
+            heatmap1.add_trace(go.Scatter(
+                x=[cx],
+                y=[cy],
+                text=[main_texts[i][j]],
+                mode="text",
+                textfont=dict(color="black", size=12),
+                hoverinfo="skip",
+                showlegend=False,
+                # z=norm_val
+            ))
+
+
+    # Update layout
+    m=20
+    heatmap1.update_layout(
+        xaxis=dict(
+            tickvals=list(range(n_cols)),
+            ticktext=col_labels,
+            showgrid=False,
+            zeroline=False,
+            scaleanchor="y",
+        ),
+        yaxis=dict(
+            tickvals=list(range(n_rows)),
+            ticktext=row_labels[::-1],
+            showgrid=False,
+            zeroline=False,
+            autorange='reversed'
+        ),
+        # plot_bgcolor='#262730',
+        plot_bgcolor='#FFFFBF',
+        # plot_radius=10,
+        margin=dict(t=m*2, b=m, l=m, r=m),
+        title="How good each option is",
+        title_x=0.2,
+        title_font_size=20,
+    )
+
+    st.plotly_chart(heatmap1)
+    return
+
 
 def entropy_bar():
     # print(ss.decision.simulation_data.shape)
@@ -754,7 +917,7 @@ def plot_radar_polar(X, labels, dim_labels):
 
 
 
-
+# answer_heatmap_plotly()
 
 """ # Results """
 results_explanation()
@@ -768,9 +931,15 @@ with explain(ss.texts['view_results']['goodness_bar']):
 with explain(ss.texts['view_results']['entropy']):
     entropy_bar()
 
+""" ## How much each answer contributed to each option """
+with explain(ss.texts['view_results']['contributions_var_size']):
+    contributions_heatmap_variable_sizes()
+
 """ ## Additional visualizations """
 with explain(ss.texts['view_results']['heatmap1d']):
     heatmap_1d()
+
+
 
 # Shows stuff in the sidebar
 # internals()

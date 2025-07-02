@@ -57,13 +57,13 @@ def example_decision(which, empty=False):
             d.set_answer("Chicken noodle soup", "Cost", "4")
             d.set_answer("Chicken noodle soup", "Healthiness", "10")
             d.set_answer("Chicken noodle soup", "Time to Make", "10")
-            d.set_answer("Chicken noodle soup", "Leftovers", "2")
+            d.set_answer("Chicken noodle soup", "Leftovers", "5")
 
-            d.set_answer("Taco Bell", "Test", "1")
-            d.set_answer("Spaghetti", "Test", "1")
-            d.set_answer("Tacos", "Test", "1")
-            d.set_answer("Leftovers", "Test", "1")
-            d.set_answer("Chicken noodle soup", "Test", "1")
+            d.set_answer("Taco Bell", "Test", "1-5")
+            d.set_answer("Spaghetti", "Test", "1-3")
+            d.set_answer("Tacos", "Test", "2-8")
+            d.set_answer("Leftovers", "Test", "3-4")
+            d.set_answer("Chicken noodle soup", "Test", "2-4")
         return d
     elif which == 2:
         d = Decision(name='What to do')
