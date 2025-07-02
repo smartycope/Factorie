@@ -26,6 +26,7 @@ with st.expander("🤫 (Only for testing)"):
         except ValueError:
             pass
         ss.decisions.append(d)
+        ss.decision = d
         st.rerun()
     if st.button('load unanswered example 1'):
         d = ss.example_decision(1, empty=True)
@@ -34,6 +35,7 @@ with st.expander("🤫 (Only for testing)"):
         except ValueError:
             pass
         ss.decisions.append(d)
+        ss.decision = d
         st.rerun()
     if st.button('load example 2'):
         d = ss.example_decision(2)
@@ -42,6 +44,7 @@ with st.expander("🤫 (Only for testing)"):
         except ValueError:
             pass
         ss.decisions.append(d)
+        ss.decision = d
         st.rerun()
     if st.button('load unanswered example 2'):
         d = ss.example_decision(2, empty=True)
@@ -50,6 +53,7 @@ with st.expander("🤫 (Only for testing)"):
         except ValueError:
             pass
         ss.decisions.append(d)
+        ss.decision = d
         st.rerun()
     if st.button('clear all decisions'):
         ss.decisions = []

@@ -160,54 +160,6 @@ class Decision:
     def weighted_answers(self, optimism:float):
         return self.min_answers + (self.max_answers - self.min_answers)*optimism
 
-    # @property
-    # @require_valid
-    # def simulation_means(self):
-    #     if self._simulated_answers is None:
-    #         self.rerun_simulation()
-    #     return self._simulated_answers.mean(axis=0)
-
-    # @property
-    # @require_valid
-    # def simulation_stds(self):
-    #     if self._simulated_answers is None:
-    #         self.rerun_simulation()
-    #     return self._simulated_answers.std(axis=0)
-
-    # @property
-    # @require_valid
-    # def simulation_data(self):
-    #     if self._simulated_answers is None:
-    #         self.rerun_simulation()
-    #     return self._simulated_answers
-
-    # @require_valid
-    # def rerun_simulation(self):
-    #     self._simulated_answers = self._monte_carlo()
-
-    # @require_valid
-    # def _monte_carlo(self, num_samples=num_samples) -> np.ndarray:
-    #     """ Run a monte carlo simulation to get the distribution of possible scores """
-    #     return np.array([self.calculate(np.random.normal(self.weighted_answers(.5), self.std_answers))['badness'] for _ in range(num_samples)])
-
-    # @property
-    # @require_valid
-    # def simulation_summary(self) -> pd.DataFrame:
-    #     """ Get the summary of the simulation """
-    #     quantiles = np.quantile(self.simulation_means, [0, .25, .5, .75, 1], axis=0)
-    #     return pd.DataFrame({
-    #         'Option': self.options,
-    #         'Mean': quantiles[2],
-    #         # AI says this is correct
-    #         'Std': quantiles[2] - quantiles[0],
-    #         'Min': quantiles[0],
-    #         '25th': quantiles[1],
-    #         '50th': quantiles[2],
-    #         '75th': quantiles[3],
-    #         'Max': quantiles[4],
-    #     })
-
-
     @property
     @require_valid
     def std_answers(self):
@@ -361,7 +313,7 @@ class Decision:
             "goodness": inverted_normalized_weighted_dists,
         }
 
-    # TODO: this likely needs to not use per_option_contributions anymore
+    # TODO: this need to be re-thought through, it's not accurate anymore
     def best_worst(self, calc:dict, method:Literal['extremes', 'threshold'] = 'extremes', min_thresh=None, max_thresh=None):
         """
             This interprets the results of the _calculate method and returns the best and worst options, along with explanations of why they're the best and worst.
@@ -375,12 +327,13 @@ class Decision:
         # Just in case there's multiple best or worst options
         options = np.array(self.options)
 
-        if min_thresh is None:
-            min_thresh = np.percentile(calc['per_option_contributions'], 20)
-        if max_thresh is None:
-            max_thresh = np.percentile(calc['per_option_contributions'], 80)
+        contrib = calc['weighted_delta_vectors_normalized']
 
-        contrib = np.abs(calc['per_option_contributions'])
+        if min_thresh is None:
+            min_thresh = np.percentile(contrib, 20)
+        if max_thresh is None:
+            max_thresh = np.percentile(contrib, 80)
+
         best_because = self.factors['names'][contrib[best_idx].argmin()]
         best_despite = self.factors['names'][contrib[best_idx].argmax()]
         worst_because = self.factors['names'][contrib[worst_idx].argmin()]

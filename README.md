@@ -1,2 +1,2 @@
 # Factorie
-The ultimate helper for making decisions
+Helping you live the examined life

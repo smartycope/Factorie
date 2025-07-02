@@ -139,7 +139,7 @@ def results_explanation():
 
     The worst option is `{worst['is']}`
     because of `{join_and(worst['because'])}`,
-    even though `{join_and(worst['despite'])}` isn't what you want
+    even though `{join_and(worst['despite'])}` is what you want
     """)
 
 def single_line_plot():
@@ -724,7 +724,6 @@ def heatmap_1d():
                 # "Goodness Percentage": np.array([0] + goodness.tolist() + [1])*100,
             },
             index=['Worst Possible'] + ss.decision.options + ['Theoretical Best'],
-            columns=["Badness", "Badness Percentage"]
         )
         .round(2)
         .sort_values(by='Badness Percentage', ascending=True)
@@ -735,19 +734,23 @@ def heatmap_1d():
             # "Goodness Percentage": st.column_config.NumberColumn("Goodness Percentage", format="%.0f%%"),
         }
     )
-    r.dataframe(
-        pd.DataFrame(
+    df = (pd.DataFrame(
             {
                 "Goodness Percentage": np.array([0] + goodness.tolist() + [1])*100,
+                "Goodness Confidence": np.array([0] + goodness_conf.tolist() + [0]),
             },
             index=['Worst Possible'] + ss.decision.options + ['Theoretical Best'],
-            columns=["Goodness Percentage"]
         )
-        .round(2)
+        # .round(2)
         .sort_values(by='Goodness Percentage', ascending=False)
-        .style.background_gradient(cmap='RdYlGn'),
+    )
+    df['Goodness Confidence'] = ' ± ' + (df['Goodness Confidence']*100).round(1).astype(str) + '%'
+
+    r.dataframe(
+        df.style.background_gradient(cmap='RdYlGn'),
         column_config = {
             "Goodness Percentage": st.column_config.NumberColumn("Goodness Percentage", format="%.0f%%"),
+            "Goodness Confidence": st.column_config.NumberColumn("Goodness Confidence", format="%.0f%%"),
         },
         hide_index=True
     )
