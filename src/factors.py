@@ -45,7 +45,7 @@ elif mode == 'Edit':
         if not quick:
             unit = st.text_input("Unit", placeholder='0-10 scale', value=ss.decision.factors['units'][ss.decision.factors['names'].index(factor)], key='12', help=ht['unit'])
             optimal = st.number_input("Optimal", value=ss.decision.factors['optimals'][ss.decision.factors['names'].index(factor)], key='13', help=ht['optimal'])
-            weight = st.slider("How much do you care?", 0, 100, value=int(ss.decision.factors['weights'][ss.decision.factors['names'].index(factor)]*100), format='%f%%', key='14', help=ht['weight']) / 100
+            weight = st.slider("How much do you care?", 0, 100, value=int(ss.decision.factors['weights'][ss.decision.factors['names'].index(factor)]*100) if ss.decision.factors['weights'][ss.decision.factors['names'].index(factor)] else 100, format='%f%%', key='14', help=ht['weight']) / 100
             with st.container(border=True):
                 st.subheader("Scale", help=ht['scale'])
                 l, r = st.columns(2)

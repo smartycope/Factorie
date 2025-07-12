@@ -6,7 +6,7 @@ import pandas as pd
 if "idx" not in ss:
     ss.idx = 0
 
-st.title("Data")
+st.title("Answers")
 
 l, m, r = st.columns(3)
 if l.button("Go to the beginning"):
@@ -17,6 +17,7 @@ if m.button('Delete all'):
 
 columnar = not r.checkbox('Left to Right', value=True)
 
+st.divider()
 
 
 def index():

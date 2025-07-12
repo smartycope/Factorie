@@ -1,0 +1,104 @@
+{
+  "name": "What to do",
+  "factors": {
+    "names": [
+      "Fun",
+      "Time",
+      "Cost",
+      "Test"
+    ],
+    "units": [
+      "0-10",
+      "minutes",
+      "$",
+      "na"
+    ],
+    "optimals": [
+      10,
+      0,
+      0,
+      10
+    ],
+    "weights": [
+      1,
+      0.6,
+      1,
+      0.5
+    ],
+    "mins": [
+      0,
+      null,
+      0,
+      0
+    ],
+    "maxs": [
+      10,
+      null,
+      null,
+      10
+    ]
+  },
+  "options": [
+    "Watch Netflix",
+    "Play video games",
+    "Watch a movie"
+  ],
+  "answers": [
+    [
+      [
+        8,
+        8
+      ],
+      [
+        2,
+        2
+      ],
+      [
+        1,
+        1
+      ],
+      [
+        10,
+        10
+      ]
+    ],
+    [
+      [
+        10,
+        10
+      ],
+      [
+        2,
+        2
+      ],
+      [
+        1,
+        1
+      ],
+      [
+        10,
+        10
+      ]
+    ],
+    [
+      [
+        8,
+        8
+      ],
+      [
+        2,
+        2
+      ],
+      [
+        1,
+        1
+      ],
+      [
+        10,
+        10
+      ]
+    ]
+  ],
+  "threshold": 0,
+  "factor_packs": []
+}

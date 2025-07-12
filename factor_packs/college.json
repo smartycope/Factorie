@@ -1,23 +1,23 @@
 {
     "Factors": [
         {
-            "Name": "It's close to home",
-            "Unit": "miles",
-            "Min": 1,
-            "Max": null
+            "name": "It's close to home",
+            "unit": "miles",
+            "min": 1,
+            "max": null
         },
         {
-            "Name": "Cost per semester",
-            "Unit": "$",
-            "Optimal": 0,
-            "Min": 0,
-            "Max": null
+            "name": "Cost per semester",
+            "unit": "$",
+            "optimal": 0,
+            "min": 0,
+            "max": null
         },
         {
-            "Name": "It's prestigious",
-            "Unit": "0 - 10",
-            "Min": 0,
-            "Max": 10
+            "name": "It's prestigious",
+            "unit": "0 - 10",
+            "min": 0,
+            "max": 10
         }
     ]
 }

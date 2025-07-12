@@ -6,4 +6,5 @@ matplotlib
 scikit-learn
 umap-learn
 scipy
-#./multi_handled_slider -e
+# ./multi_handled_slider -e
+Pillow

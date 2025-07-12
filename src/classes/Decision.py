@@ -2,7 +2,7 @@ import re
 from typing import Any, Dict, List, Literal, Tuple, Union
 
 import numpy as np
-import pandas as pd
+import json
 
 from src.classes.FactorPack import FactorPack
 
@@ -34,7 +34,7 @@ class Decision:
         # an array of shape (num_options, num_factors, 2), where the second dimension is [min, max]
         self.answers = np.full((0, 0, 2), np.nan)
         self.threshold = 0
-        self.factor_packs = []
+        self.factor_packs = set()
         self._simulated_answers = None
 
     def is_invalid(self):
@@ -69,14 +69,21 @@ class Decision:
         return None
 
     def add_factor_pack(self, factor_pack:FactorPack):
-        self.factor_packs.append(factor_pack)
+        self.factor_packs.add(factor_pack)
 
     def remove_factor_pack(self, factor_pack:FactorPack):
+        for factor in factor_pack.factors:
+            self.remove_factor(factor['name'])
         self.factor_packs.remove(factor_pack)
 
     def apply_factor_pack(self, factor_pack:FactorPack):
         for factor in factor_pack.factors:
-            self.add_factor(factor['name'])
+            try:
+                self.add_factor(**factor)
+            # If the factor already exists, just skip it
+            except ValueError:
+                pass
+        self.factor_packs.add(factor_pack)
 
     def add_factor(self, name:str, unit:str=None, optimal:float=None, weight:float=None, min:float=None, max:float=None):
         """ weight should be between 0 and 1. Optimal, min, and max can be on the user's scale """
@@ -313,7 +320,6 @@ class Decision:
             "goodness": inverted_normalized_weighted_dists,
         }
 
-    # TODO: this need to be re-thought through, it's not accurate anymore
     def best_worst(self, calc:dict, method:Literal['extremes', 'threshold'] = 'extremes', min_thresh=None, max_thresh=None):
         """
             This interprets the results of the _calculate method and returns the best and worst options, along with explanations of why they're the best and worst.
@@ -322,26 +328,36 @@ class Decision:
                 if the thresholds are None, automatically calculate good thresholds based on the statistical distrobution of the normalized contributions.
         """
         # Get the best and worst options, along with explanations of why they're the best and worst
+
+
         best_idx = np.argmin(calc['weighted_delta_magnitudes'])
         worst_idx = np.argmax(calc['weighted_delta_magnitudes'])
         # Just in case there's multiple best or worst options
         options = np.array(self.options)
 
-        contrib = calc['weighted_delta_vectors_normalized']
+        # The abs is because 0 is the best, and if it's non-zero in either direction, + or -, it's still
+        # further away from the optimal.
+        contrib = np.abs(calc['delta_vectors_normalized'])
 
         if min_thresh is None:
             min_thresh = np.percentile(contrib, 20)
         if max_thresh is None:
             max_thresh = np.percentile(contrib, 80)
 
-        best_because = self.factors['names'][contrib[best_idx].argmin()]
-        best_despite = self.factors['names'][contrib[best_idx].argmax()]
-        worst_because = self.factors['names'][contrib[worst_idx].argmin()]
-        worst_despite = self.factors['names'][contrib[worst_idx].argmax()]
-        best_because_thresh = list(np.array(self.factors['names'])[contrib[best_idx] < min_thresh])
-        best_despite_thresh = list(np.array(self.factors['names'])[contrib[best_idx] > max_thresh])
-        worst_because_thresh = list(np.array(self.factors['names'])[contrib[worst_idx] > max_thresh])
-        worst_despite_thresh = list(np.array(self.factors['names'])[contrib[worst_idx] < min_thresh])
+        # These need to be seperate, so that the weights actually apply to each
+        # (.9 * 0 is still 0)
+        tiled_weights = np.tile(self.factors['weights'], (len(self.options), 1))
+        badness_vectors = contrib*tiled_weights
+        goodness_vectors = (1 - contrib)*tiled_weights
+
+        best_because = [self.factors['names'][goodness_vectors[best_idx].argmax()]]
+        best_despite = [self.factors['names'][badness_vectors[best_idx].argmax()]]
+        worst_because = [self.factors['names'][badness_vectors[worst_idx].argmax()]]
+        worst_despite = [self.factors['names'][goodness_vectors[worst_idx].argmax()]]
+        best_because_thresh = list(np.array(self.factors['names'])[goodness_vectors[best_idx] > max_thresh])
+        best_despite_thresh = list(np.array(self.factors['names'])[badness_vectors[best_idx] > max_thresh])
+        worst_because_thresh = list(np.array(self.factors['names'])[badness_vectors[worst_idx] > max_thresh])
+        worst_despite_thresh = list(np.array(self.factors['names'])[goodness_vectors[worst_idx] > max_thresh])
 
         if method == 'extremes':
             best = {
@@ -358,37 +374,47 @@ class Decision:
             # Ensure there's at least one that gets returned
             best = {
                 'is': options[best_idx],
-                'because': best_because_thresh if len(best_because_thresh) > 0 else [best_because],
-                'despite': best_despite_thresh if len(best_despite_thresh) > 0 else [best_despite],
+                'because': best_because_thresh if len(best_because_thresh) > 0 else best_because,
+                'despite': best_despite_thresh if len(best_despite_thresh) > 0 else best_despite,
             }
             worst = {
                 'is': options[worst_idx],
-                'because': worst_because_thresh if len(worst_because_thresh) > 0 else [worst_because],
-                'despite': worst_despite_thresh if len(worst_despite_thresh) > 0 else [worst_despite],
+                'because': worst_because_thresh if len(worst_because_thresh) > 0 else worst_because,
+                'despite': worst_despite_thresh if len(worst_despite_thresh) > 0 else worst_despite,
             }
         else:
             raise ValueError(f"Invalid method: {method}")
 
         return best, worst
 
-    def serialize(self):
-        return {
+    def serialize(self) -> str:
+        return json.dumps({
             'name': self.name,
             'factors': self.factors,
             'options': self.options,
             'answers': self.answers.tolist(),
             'threshold': self.threshold,
-        }
+            'factor_packs': list(self.factor_packs),
+        })
 
     @staticmethod
-    def deserialize(data):
+    def deserialize(data: str):
+        data = json.loads(data)
         d = Decision(data['name'])
         d.factors = data['factors']
         d.options = data['options']
         d.answers = np.array(data['answers'])
         d.threshold = data['threshold']
+        d.factor_packs = set(data['factor_packs'])
         return d
 
     def __eq__(self, other):
         # this is intentionally vauge
         return self.name.lower() == other.name.lower()
+
+    def __hash__(self):
+        return hash(self.name)
+
+    def __reduce__(self):
+        print("Reducing")
+        return (self.deserialize, (self.serialize(),))

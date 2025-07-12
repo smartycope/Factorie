@@ -29,19 +29,28 @@ import plotly.express as px
 import matplotlib.pyplot as plt
 import numpy as np
 
-# ss.factors
-# ss.answers
-# colorscale = 'YlOrRd'
+st.sidebar.write(ss.texts['view_results']['explanation'])
+
 colorscale = 'Reds'
-# norm=plt.Normalize(-2,2)
-# colorscale = matplotlib.colors.LinearSegmentedColormap.from_list("", ["white","red"])
+
 @st.cache_data
-def calculate():
-    calc = ss.decision.calculate_all(method='threshold')
-    return calc
-# st.write(calculate())
-# st.stop()
-calc = calculate()
+def calculate(d):
+    return ss.decisions[d].calculate_all(method='threshold')
+
+if not ss.decisions:
+    st.warning('No decisions added')
+    calculate.clear()
+    st.stop()
+
+if (missing := ss.decision.is_invalid()):
+    st.warning(f'The decision isn\'t done yet: {missing}')
+    calculate.clear()
+    st.stop()
+
+
+with st.spinner('Calculating...'):
+    calc = calculate(ss.decisions.index(ss.decision))
+
 optimal_normalized = ss.decision.optimal_normalized
 worst_possible_option_normalized = ss.decision.worst_possible_option_normalized
 worst_possible_distance = ss.decision.worst_possible_distance
@@ -73,8 +82,6 @@ results = pd.DataFrame({
         'Percentage': normalized_weighted_dists*100})\
     .sort_values(by='Score', ascending=True).reset_index(drop=True)
 
-
-st.sidebar.write(ss.texts['view_results']['explanation'])
 
 def join_and(items, oxford=False, ampersand=False):
     and_ = ' & ' if ampersand else ' and '
@@ -397,7 +404,6 @@ def contributions_singleplot():
     st.write(np.sqrt(np.sum(ss.decision.tiled_weights*(delta**2), axis=1)))
     st.write(length)
 
-
 def answer_heatmap_plotly():
     tiled_weights = np.tile(ss.decision.factors['weights'], (len(ss.decision.options), 1))
     data = (1-np.abs(delta_vectors_normalized))*100#*tiled_weights
@@ -587,13 +593,104 @@ def contributions_heatmap():
     st.plotly_chart(fig, use_container_width=True)
     # ss.decision.weighted_delta_magnitudes()
 
-def contributions_heatmap_variable_sizes():
+_="""
+def best_worst_deleteme(calc:dict, method:Literal['extremes', 'threshold'] = 'extremes', min_thresh=None, max_thresh=None):
+    best_idx = np.argmin(calc['weighted_delta_magnitudes'])
+    worst_idx = np.argmax(calc['weighted_delta_magnitudes'])
+    # Just in case there's multiple best or worst options
+    options = np.array(ss.decision.options)
+
+    # The abs is because 0 is the best, and if it's non-zero in either direction, + or -, it's still
+    # further away from the optimal.
+    contrib = np.abs(calc['delta_vectors_normalized'])
+
+    if min_thresh is None:
+        min_thresh = np.percentile(contrib, 20)
+    if max_thresh is None:
+        max_thresh = np.percentile(contrib, 80)
+
+    # These need to be seperate, so that the weights actually apply to each
+    # (.9 * 0 is still 0)
+    tiled_weights = np.tile(ss.decision.factors['weights'], (len(ss.decision.options), 1))
+    badness_vectors = contrib*tiled_weights
+    goodness_vectors = (1 - contrib)*tiled_weights
+
+    best_because = [ss.decision.factors['names'][goodness_vectors[best_idx].argmax()]]
+    best_despite = [ss.decision.factors['names'][badness_vectors[best_idx].argmax()]]
+    worst_because = [ss.decision.factors['names'][badness_vectors[worst_idx].argmax()]]
+    worst_despite = [ss.decision.factors['names'][goodness_vectors[worst_idx].argmax()]]
+    best_because_thresh = list(np.array(ss.decision.factors['names'])[goodness_vectors[best_idx] > max_thresh])
+    best_despite_thresh = list(np.array(ss.decision.factors['names'])[badness_vectors[best_idx] > max_thresh])
+    worst_because_thresh = list(np.array(ss.decision.factors['names'])[badness_vectors[worst_idx] > max_thresh])
+    worst_despite_thresh = list(np.array(ss.decision.factors['names'])[goodness_vectors[worst_idx] > max_thresh])
+
+    if method == 'extremes':
+        best = {
+            'is': options[best_idx],
+            'because': best_because,
+            'despite': best_despite,
+        }
+        worst = {
+            'is': options[worst_idx],
+            'because': worst_because,
+            'despite': worst_despite,
+        }
+    elif method == 'threshold':
+        # Ensure there's at least one that gets returned
+        best = {
+            'is': options[best_idx],
+            'because': best_because_thresh if len(best_because_thresh) > 0 else [best_because],
+            'despite': best_despite_thresh if len(best_despite_thresh) > 0 else [best_despite],
+        }
+        worst = {
+            'is': options[worst_idx],
+            'because': worst_because_thresh if len(worst_because_thresh) > 0 else [worst_because],
+            'despite': worst_despite_thresh if len(worst_despite_thresh) > 0 else [worst_despite],
+        }
+    else:
+        raise ValueError(f"Invalid method: {method}")
+
+    return best, worst
+"""
+
+def contributions_heatmap_variable_sizes(data1=True):
+    # st.json(best_worst_deleteme(calc['mean'], method='threshold'))
     tiled_weights = np.tile(ss.decision.factors['weights'], (len(ss.decision.options), 1))
     # Colorscale and range
-    colorscale = 'RdYlGn'  # or 'Reds'
+    # yellow is better here, because the middle value (50% in this case) isn't actually significant
+    # colorscale = 'RdYlBu'
+    # colorscale = ['#9B1127', '#FFFFFF', '#195695']
+    colorscale = ['#9B1127', '#FFFFBF', '#195695']
+    # colorscale = ['#9B1127', '#FFFFFF', '#006837']
     cmin, cmax = 0, 1
+    # We don't want the middle value to "drown out" the background, again, because it's not significant
+    # background = sample_colorscale(colorscale, (cmax-cmin)/2, low=cmin, high=cmax)[0]
+    # It does need to be a little light, so we can read text that goes outside of a really small cell
+    # background = 'white'
+    # background = None
+    background = '#3F3F3F'
+    # cmin, cmax = -1, 1
 
-    data = (1-np.abs(delta_vectors_normalized))*100
+    # The abs is because 0 is the best, and if it's non-zero in either direction, + or -, it's still
+    # further away from the optimal.
+    # The 1- is because it's in terms of "badness" (distance from optimal), whereas
+    # "goodness" (distance from worst) is easier to conceptualize
+    if data1:
+        data = (1-np.abs(delta_vectors_normalized))
+    else:
+        tiled_weights = np.tile(ss.decision.factors['weights'], (len(ss.decision.options), 1))
+        data = (1-np.abs(delta_vectors_normalized)) * tiled_weights
+        # colorscale = list(reversed(colorscale))
+    data *= 100
+    # The data gets flipped vertically in drawing
+    # data = np.flip(data, axis=0)
+    # "# data"
+    # st.write(data)
+    # st.write(ss.decision.options)
+    # st.write(ss.decision.factors['names'])
+    # st.write(ss.decision.weighted_answers(.5))
+    # data = (1-np.abs(delta_vectors_normalized))*100
+    # data = np.array(delta_vectors_normalized)*100
     # Main heatmap data
     row_labels = ss.decision.options
     col_labels = list(ss.decision.factors['names'])
@@ -609,10 +706,12 @@ def contributions_heatmap_variable_sizes():
                         ),
                         np.char.mod('%.0f', np.tile(ss.decision.maxs, (len(ss.decision.options), 1)))
                     ),
-                ')'
+               ')'
             )
         )
     )
+
+    # main_texts = np.flip(main_texts, axis=0)
 
     heatmap1 = go.Figure()
 
@@ -624,14 +723,12 @@ def contributions_heatmap_variable_sizes():
     # Loop through data and draw rectangles
     for i in range(n_rows):
         for j in range(n_cols):
-            # norm_val = (data[i][j]/100 - cmin) / (cmax - cmin + 1e-9)
-            # norm_val = max(0.0001, min(.9999, norm_val))
-            # st.write(norm_val)
-            fillcolor = sample_colorscale(colorscale, data[i][j]/100, low=cmin, high=cmax)[0]
+            fillcolor = sample_colorscale(colorscale, abs(data[i][j])/100, low=cmin, high=cmax)[0]
+            # fillcolor = '#FFFFFF'
 
             weight = tiled_weights[i][j]
             cx = j
-            cy = n_rows - i - 1  # Flip y-axis for visual top-down order
+            cy = i
 
             # Calculate size
             half_w = (cell_width * weight) / 2
@@ -675,13 +772,13 @@ def contributions_heatmap_variable_sizes():
         ),
         yaxis=dict(
             tickvals=list(range(n_rows)),
-            ticktext=row_labels[::-1],
+            ticktext=row_labels,#[::-1],
             showgrid=False,
             zeroline=False,
             autorange='reversed'
         ),
-        # plot_bgcolor='#262730',
-        plot_bgcolor='#FFFFBF',
+        # The center color
+        plot_bgcolor=background,
         # plot_radius=10,
         margin=dict(t=m*2, b=m, l=m, r=m),
         title="How good each option is",
@@ -895,7 +992,8 @@ def plot_radar_polar(X, labels, dim_labels):
     dim_labels = np.array(dim_labels)[sorted_indices]
     X = X[:, sorted_indices]
     # By default, include the optimal answer, and the best option
-    include = st.pills('Options', labels, default=[labels[-2]], selection_mode='multi')
+    best_idx = labels.index(best['is'])
+    include = st.pills('Options', labels, default=[labels[-2], labels[best_idx]], selection_mode='multi')
     fig = go.Figure()
     for i in range(len(X)):
         if labels[i] not in include:
@@ -917,14 +1015,16 @@ def plot_radar_polar(X, labels, dim_labels):
 
     st.plotly_chart(fig)
 
+# ss.decision.options
 
 
-
-# answer_heatmap_plotly()
+# # answer_heatmap_plotly()
+# tiled_weights = np.tile(ss.decision.factors['weights'], (len(ss.decision.options), 1))
+# data = (1-np.abs(delta_vectors_normalized)) * tiled_weights
+# data
 
 """ # Results """
 results_explanation()
-
 
 
 with explain(ss.texts['view_results']['goodness_bar']):
@@ -937,6 +1037,7 @@ with explain(ss.texts['view_results']['entropy']):
 """ ## How much each answer contributed to each option """
 with explain(ss.texts['view_results']['contributions_var_size']):
     contributions_heatmap_variable_sizes()
+    # contributions_heatmap_variable_sizes(False)
 
 """ ## Additional visualizations """
 with explain(ss.texts['view_results']['heatmap1d']):
@@ -946,7 +1047,6 @@ with explain(ss.texts['view_results']['heatmap1d']):
 
 # Shows stuff in the sidebar
 # internals()
-
 
 
 with explain(ss.texts['view_results']['line1d']):

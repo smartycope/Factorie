@@ -32,5 +32,15 @@
         "entropy": "This shows how much each factor contributed to the decision. Say you have a factor that we care a lot about, but all of the options are close each other. That factor didn't really contribute much to the decision, because they're all the same. But if all of the options are different for a given factor, then that's going to be a more useful factor. However, if we don't care about that factor, it still won't matter much. This is a measure of the \"variability\" of each factor, according to each factor's weight.",
         "goodness_bar": "This shows how good each option is on a scale of worst possible to best possible. The bar at the top shows the likely ranges of each option, if there are unknown values (ranges) in any of your answers.",
         "contributions_var_size": "This shows how much each answer contributed to each option. The green squares are good, while the red squares are bad. The size of the square is proportional to the weight of the factor. The percentages are essientially how \"good\" of an answer it is (compared to what we want it to be), and the numbers in the parenthesis are the given value/maximum value"
+    },
+    "save": {
+        "explanation": "This page allows you to export and import decisions. You can export a decision as a .dec file, and import a .dec file."
+    },
+    "explanation": {
+        "explanation": "This page explains the details of how the algorithm works. Let me know if I've explained it clearly enough, and if the graphs are helpful."
+    },
+    "factor_packs": {
+        "explanation": "This page allows you to add and remove factor packs to your decisions. These will be in-app purchases, but for now, just click 'buy' to mess with them. They're currently full of placeholder factors, and there's only 2. In the future, there will be more of them, they'll scroll to the side, and they'll have better pictures (probably).",
+        "page_explanation": "Factor packs are pre-made groups of factors that apply to certain decisions."
     }
 }

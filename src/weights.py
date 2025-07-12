@@ -9,6 +9,10 @@ from src.multi_handled_slider import multi_handled_slider
 
 st.title("Fine Tune Weights")
 
+"""
+How much each factor matters (the "weight" of each factor) can have a large
+impact on the final result.
+"""
 
 labels = ss.decision.factors['names']# + [ss.decision.factors['names'][0]]
 values = ss.decision.factors['weights']# + [ss.decision.factors['weights'][0]]
@@ -23,27 +27,7 @@ values = np.array(values)[sorted_indices]
     # ss.vals = np.linspace(0,1,11).tolist()
 # These have to be sorted for overlap=False to work
 # And apparently even then it doesn't really work that well
-vals = multi_handled_slider(
-    starting_values=values.tolist(),
-    names=labels.tolist(),
-    gradient=['#C1CBD6', '#002463'],
-    overlap='push',
-    start_text="Least Important",
-    end_text="Most Important",
-    show_values=True,
-    digits=0,
-    multiplier=100,
-    prefix='',
-    sep=' - ',
-    suffix='%',
-    step=.01,
-    label_pos='switch',
-    label_rotation=-35,
-    # label_rotation=-90,
-    # label_rotation=0,
-    height=170,
-    key='vals'
-)
+
 # st.write(dict(zip(labels, vals)))
 # fig = px.bar(y=vals, x=names)
 # st.plotly_chart(fig)
@@ -109,7 +93,10 @@ def radar_bar():
 
 def bar():
     fig = px.bar(x=labels, y=values)
-    fig.update_yaxes(tickformat='.0%')
+    fig.update_yaxes(tickformat='.0%', title='Weight')
+    # fig.update_traces(textposition='top left')
+    fig.update_layout(xaxis_title='Factors', showlegend=False, xaxis=None)
+    # fig.update_xaxes(showticklabels=False, ticks='')
     st.plotly_chart(fig)
 
 def line():
@@ -117,11 +104,11 @@ def line():
     # Add points
     fig.add_scatter(x=labels, y=values, mode='markers')
     # offset the text by 0.1
-    fig.update_traces(textposition='top left')
-    fig.update_layout(xaxis_title='Factors', yaxis_title='Weight', showlegend=False, xaxis=None)
+    fig.update_traces(textposition='top center')
+    fig.update_layout(xaxis_title='Factors', showlegend=False, xaxis=None)
     # Remove the x axis and name
-    fig.update_xaxes(showticklabels=False, ticks='')
-    fig.update_yaxes(tickformat='.0%')
+    fig.update_xaxes(showticklabels=False, ticks='', range=[-.5, len(labels)-.5])
+    fig.update_yaxes(tickformat='.0%', title='Weight')
     # fill below the line
     fig.update_traces(fill='tozeroy')
     st.plotly_chart(fig)
@@ -169,9 +156,36 @@ def line1d():
 
     st.plotly_chart(fig)
 
-tmp = st.empty()
 
-with st.expander('Visualizations'):
+
+tmp = st.empty()
+with st.container(border=True):
+    vals = multi_handled_slider(
+        starting_values=values.tolist(),
+        names=labels.tolist(),
+        gradient=['#C1CBD6', '#002463'],
+        overlap='push',
+        start_text="Least Important",
+        end_text="Most Important",
+        show_values=True,
+        digits=0,
+        multiplier=100,
+        prefix='',
+        sep=' - ',
+        suffix='%',
+        step=.01,
+        label_pos='switch',
+        label_rotation=-35,
+        # label_rotation=-90,
+        # label_rotation=0,
+        height=200,
+        key='vals'
+    )
+    if st.button('Set as new weights'):
+        ss.decision.factors['weights'] = vals
+        st.rerun()
+
+with st.expander('Visualizations', True):
     l, r = st.columns(2)
     with l:
         st.caption('a')
@@ -247,51 +261,70 @@ if 'sorted' not in ss:
 
 
 with tmp:
-    with st.container():
-        if st.button('start over'):
-            ss.sort_gen = merge_sort_coroutine(ss.decision.factors['names'])
-            ss.pending = next(ss.sort_gen)
-            ss.sorted = []
-            st.rerun()
-
-        if not ss.sorted:
-            with st.container(border=True):
-                """ Which factor is more important? """
-                # Show comparison buttons
-                a, b = ss.pending
-                l, m, r = st.columns(3)
-                if l.button(f"{a}"):
-                    try:
-                        ss.pending = ss.sort_gen.send(True)
-                    except StopIteration as e:
-                        ss.sorted = e.value
-                    st.rerun()
-                if m.button("About the same"):
-                    try:
-                        ss.pending = ss.sort_gen.send(None)
-                    except StopIteration as e:
-                        ss.sorted = e.value
-                    st.rerun()
-                if r.button(f"{b}"):
-                    try:
-                        ss.pending = ss.sort_gen.send(False)
-                    except StopIteration as e:
-                        ss.sorted = e.value
-                    st.rerun()
-
-        else:
-            st.success("Done!")
-            st.write(ss.sorted)
-
-            if st.button('Set as new weights'):
-                labels = np.array(ss.sorted)
-                new_weights = np.linspace(1, 1/len(labels), len(labels))
-                ordered_labels = ss.decision.factors['names']
-                ordered_weights = np.zeros(len(ordered_labels))
-                for label, value in zip(labels, new_weights):
-                    ordered_weights[ordered_labels.index(label)] = value
-                ss.decision.factors['weights'] = ordered_weights.tolist()
+    with st.expander('Sort Factors', True):
+        with st.form('sort_factors', border=False):
+            if st.form_submit_button('start over'):
+                ss.sort_gen = merge_sort_coroutine(ss.decision.factors['names'])
+                ss.pending = next(ss.sort_gen)
+                ss.sorted = []
                 st.rerun()
+
+            if not ss.sorted:
+                with st.container(border=True):
+                    # """ Which factor is more important? """
+                    # Show comparison buttons
+                    a, b = ss.pending
+                    l, m, r = st.columns(3)
+                    val = st.select_slider(
+                        "Which is more important?",
+                        options=[a, "About the same", b],
+                        value="About the same",
+                    )
+                    if st.form_submit_button('Next'):
+                        try:
+                            if val == a:
+                                ss.pending = ss.sort_gen.send(True)
+                            elif val == b:
+                                ss.pending = ss.sort_gen.send(False)
+                            elif val == "About the same":
+                                ss.pending = ss.sort_gen.send(None)
+                        except StopIteration as e:
+                            ss.sorted = e.value
+                        st.rerun()
+
+                    # if l.button(f"{a}"):
+                    #     try:
+                    #         ss.pending = ss.sort_gen.send(True)
+                    #     except StopIteration as e:
+                    #         ss.sorted = e.value
+                    #     st.rerun()
+                    # if m.button("About the same"):
+                    #     try:
+                    #         ss.pending = ss.sort_gen.send(None)
+                    #     except StopIteration as e:
+                    #         ss.sorted = e.value
+                    #     st.rerun()
+                    # if r.button(f"{b}"):
+                    #     try:
+                    #         ss.pending = ss.sort_gen.send(False)
+                    #     except StopIteration as e:
+                    #         ss.sorted = e.value
+                    #     st.rerun()
+
+            else:
+                st.success("Done!")
+                """ In order of importance: """
+                st.write("\n".join(f"{cnt}. {i}" for cnt, i in enumerate(ss.sorted, 1)))
+
+                if st.form_submit_button('Set as new weights'):
+                    labels = np.array(ss.sorted)
+                    new_weights = np.linspace(1, 1/len(labels), len(labels))
+                    ordered_labels = ss.decision.factors['names']
+                    ordered_weights = np.zeros(len(ordered_labels))
+                    for label, value in zip(labels, new_weights):
+                        ordered_weights[ordered_labels.index(label)] = value
+                    ss.decision.factors['weights'] = ordered_weights.tolist()
+                    st.rerun()
 
 
 st.sidebar.write(ss.texts['fine_tune_weights']['explanation'])
