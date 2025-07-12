@@ -4,6 +4,11 @@ import numpy as np
 import pandas as pd
 
 st.title("Options")
+
+if ss.decision is None:
+    st.warning("Please add a decision first")
+    st.stop()
+
 st.dataframe(pd.DataFrame(ss.decision.options, columns=["Current Options"]), hide_index=True)
 
 

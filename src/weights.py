@@ -8,6 +8,9 @@ from streamlit import session_state as ss
 from src.multi_handled_slider import multi_handled_slider
 
 st.title("Fine Tune Weights")
+if ss.decision is None:
+    st.warning("Please add a decision first")
+    st.stop()
 
 """
 How much each factor matters (the "weight" of each factor) can have a large

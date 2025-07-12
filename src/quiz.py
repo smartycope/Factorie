@@ -7,6 +7,9 @@ if "idx" not in ss:
     ss.idx = 0
 
 st.title("Answers")
+if ss.decision is None:
+    st.warning("Please add a decision first")
+    st.stop()
 
 l, m, r = st.columns(3)
 if l.button("Go to the beginning"):

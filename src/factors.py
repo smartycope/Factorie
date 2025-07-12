@@ -4,6 +4,10 @@ import pandas as pd
 
 st.title("Factors")
 
+if ss.decision is None:
+    st.warning("Please add a decision first")
+    st.stop()
+
 l, r = st.columns(2)
 mode = l.selectbox('Add/Edit', ['Add', 'Edit'])
 

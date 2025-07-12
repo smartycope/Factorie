@@ -19,10 +19,11 @@ def example_decision(which, empty=False):
 ss.example_decision = example_decision
 
 if "decisions" not in ss:
-    ss.decisions = [example_decision(1), example_decision(2)]
+    # ss.decisions = [example_decision(1), example_decision(2)]
+    ss.decisions = []
 
 if "decision" not in ss:
-    ss.decision = ss.decisions[0]
+    ss.decision = None
 
 if 'texts' not in ss:
     ss.texts = json.load(open('texts.json'))

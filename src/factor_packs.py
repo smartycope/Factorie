@@ -22,19 +22,19 @@ for i, factor_pack in enumerate(FACTOR_PACKS):
 # desc = st.selectbox("Decision", ss.decisions, key="decision", format_func=lambda d: d.name)
 # pack = st.selectbox("Factor pack", ss.available_factor_packs, key="factor_pack", format_func=lambda f: f.name)
 # st.button("Apply", on_click=lambda: desc.apply_factor_pack(pack))
+if ss.decision:
+    "## Apply a factor pack to the current decision"
+    pack = st.selectbox("Factor pack", ss.available_factor_packs, format_func=lambda f: f.name)
+    if pack:
+        if st.button("Apply"):
+            ss.decision.apply_factor_pack(pack)
+            st.success("Factor pack applied")
+            st.rerun()
 
-"## Apply a factor pack to the current decision"
-pack = st.selectbox("Factor pack", ss.available_factor_packs, format_func=lambda f: f.name)
-if pack:
-    if st.button("Apply"):
-        ss.decision.apply_factor_pack(pack)
-        st.success("Factor pack applied")
-        st.rerun()
-
-"## Remove a factor pack from the current decision"
-pack2 = st.selectbox("Factor pack", ss.decision.factor_packs, key="factor_pack", format_func=lambda f: f.name)
-if pack2:
-    if st.button("Remove"):
-        ss.decision.remove_factor_pack(pack2)
-        st.success("Factor pack removed")
-        st.rerun()
+    "## Remove a factor pack from the current decision"
+    pack2 = st.selectbox("Factor pack", ss.decision.factor_packs, key="factor_pack", format_func=lambda f: f.name)
+    if pack2:
+        if st.button("Remove"):
+            ss.decision.remove_factor_pack(pack2)
+            st.success("Factor pack removed")
+            st.rerun()

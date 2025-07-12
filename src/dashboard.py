@@ -5,7 +5,7 @@ import plotly.express as px
 import matplotlib.pyplot as plt
 from src.classes.Decision import Decision
 
-st.title("<Name here>")
+st.title("Name of App")
 ss.decision = st.selectbox("You're currently deciding", ss.decisions, format_func=lambda d: d.name)
 
 

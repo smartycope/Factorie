@@ -11,15 +11,11 @@ if ss.decisions:
 
     st.divider()
 
-
-
 "# Import"
 if (file := st.file_uploader("Upload a decision", type="dec")):
     dec = Decision.deserialize(file.read())
     ss.decisions.append(dec)
     ss.decision = dec
     # st.rerun()
-
-
 
 st.sidebar.write(ss.texts['save']['explanation'])

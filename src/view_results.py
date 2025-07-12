@@ -1,33 +1,26 @@
 import re
+from string import ascii_uppercase
 from typing import Literal
 
-from string import ascii_uppercase
 import matplotlib
 import matplotlib.colors
-from plotly.colors import sample_colorscale
-
 import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
+import plotly.express as px
+import plotly.figure_factory as ff
+import plotly.graph_objects as go
 import streamlit as st
+import umap.umap_ as umap
 from matplotlib.collections import LineCollection
+from plotly.colors import sample_colorscale
+from plotly.subplots import make_subplots
+from sklearn.decomposition import PCA
+from sklearn.manifold import MDS
+from sklearn.metrics import pairwise_distances
 from streamlit import session_state as ss
 
-import plotly.express as px
-import plotly.graph_objects as go
-from plotly.subplots import make_subplots
 from src.classes.Decision import Decision
-
-from sklearn.decomposition import PCA
-import plotly.express as px
-import umap.umap_ as umap
-from sklearn.metrics import pairwise_distances
-import plotly.figure_factory as ff
-from sklearn.manifold import MDS
-import pandas as pd
-import plotly.express as px
-import matplotlib.pyplot as plt
-import numpy as np
 
 st.sidebar.write(ss.texts['view_results']['explanation'])
 
