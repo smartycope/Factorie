@@ -46,14 +46,17 @@ def show_answers_static():
     st.dataframe(pd.DataFrame(df, columns=ss.decision.factors['names'], index=ss.decision.options).style.pipe(style))
 
 def quiz():
-    l, m, r = st.columns(3)
+    l, m, r_col = st.columns(3)
     if l.button("Go to the beginning"):
         ss.idx = 0
     if m.button('Delete all'):
         ss.decision.clear_all_answers()
         ss.idx = 0
 
-    r.checkbox('Left to Right', value=True, key='anticolumnar')
+    # Add snap to integer toggle
+    cb1, cb2 = r_col.columns(2)
+    cb1.checkbox('Left to Right', value=True, key='anticolumnar')
+    cb2.checkbox('Snap to integers', value=True, key='snap_to_int')
 
     st.divider()
 
@@ -71,12 +74,20 @@ def quiz():
 
     unsure = st.checkbox("I'm not sure", value=cur_min != cur_max)
 
-    type = st.number_input if scale_min is None or scale_max is None else st.slider
-    if unsure:
-        min_resp = type(label='Minimum ' + factor, min_value=scale_min, max_value=scale_max, value=cur_min)
-        max_resp = type(label='Maximum ' + factor, min_value=scale_min, max_value=scale_max, value=cur_max)
+    # Determine input type and step size
+    is_slider = scale_min is not None and scale_max is not None
+    if is_slider:
+        step = 1 if ss.snap_to_int else 0.1
     else:
-        resp = type(label=factor, min_value=scale_min, max_value=scale_max, value=float(cur_min))
+        step = 1 if ss.snap_to_int else None
+
+    type = st.number_input if not is_slider else st.slider
+
+    if unsure:
+        min_resp = type(label='Minimum ' + factor, min_value=scale_min, max_value=scale_max, value=cur_min, step=step)
+        max_resp = type(label='Maximum ' + factor, min_value=scale_min, max_value=scale_max, value=cur_max, step=step)
+    else:
+        resp = type(label=factor, min_value=scale_min, max_value=scale_max, value=float(cur_min), step=step)
 
     l, m, r = st.columns(3)
     if m.button("Submit"):
