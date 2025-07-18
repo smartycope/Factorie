@@ -58,3 +58,5 @@ with st.expander("🤫 (Only for testing)"):
     if st.button('clear all decisions'):
         ss.decisions = []
         st.rerun()
+
+st.sidebar.write(ss.texts['dashboard']['explanation'])
