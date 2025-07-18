@@ -140,10 +140,33 @@ class Decision:
 
     def set_answer(self, option:str, factor:str, answer:str):
         m = self._parse_answer(answer)
-        if m and option in self.options and factor in self.factors['names']:
-            self.answers[self.options.index(option), self.factors['names'].index(factor)] = m
-        else:
-            raise ValueError(f"Invalid answer or option/factor: {answer}")
+        if (err := self.is_answer_invalid(option, factor, answer)):
+            raise ValueError(err)
+        self.answers[self.options.index(option), self.factors['names'].index(factor)] = m
+
+    def is_answer_invalid(self, option:str, factor:str, answer:str) -> str | None:
+        m = self._parse_answer(answer)
+        if not m:
+            return f"Invalid answer: {answer}"
+
+        if option not in self.options:
+            return f"Invalid option: {option}"
+        if factor not in self.factors['names']:
+            return f"Invalid factor: {factor}"
+
+        factor_idx = self.factors['names'].index(factor)
+        factor_min = self.factors['mins'][factor_idx]
+        factor_max = self.factors['maxs'][factor_idx]
+
+        if m[0] > m[1]:
+            return f"Answer min is greater than max: {answer}"
+
+        if not ((factor_min is None or m[0] >= factor_min) and
+                (factor_max is None or m[1] <= factor_max)
+        ):
+            return f"Answer out of bounds: {answer} (min: {factor_min}, max: {factor_max})"
+
+        return None
 
     def clear_answer(self, option:str, factor:str):
         self.answers[self.options.index(option), self.factors['names'].index(factor), :] = np.nan
@@ -416,5 +439,4 @@ class Decision:
         return hash(self.name)
 
     def __reduce__(self):
-        print("Reducing")
         return (self.deserialize, (self.serialize(),))

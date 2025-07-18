@@ -46,7 +46,7 @@ def show_answers_static():
     st.dataframe(pd.DataFrame(df, columns=ss.decision.factors['names'], index=ss.decision.options).style.pipe(style))
 
 def quiz():
-    l, m, r_col = st.columns(3)
+    l, m, r = st.columns(3)
     if l.button("Go to the beginning"):
         ss.idx = 0
     if m.button('Delete all'):
@@ -54,15 +54,21 @@ def quiz():
         ss.idx = 0
 
     # Add snap to integer toggle
-    cb1, cb2 = r_col.columns(2)
-    cb1.checkbox('Left to Right', value=True, key='anticolumnar')
-    cb2.checkbox('Snap to integers', value=True, key='snap_to_int')
+    # cb1, cb2 = r.columns(2)
+    r.checkbox('Left to Right', value=True, key='anticolumnar')
+    r.checkbox('Precise', value=True, key='precise')
 
     st.divider()
 
     option = ss.decision.options[index()[0]]
     factor = ss.decision.factors['names'][index()[1]]
-    st.title(f"On a scale of {ss.decision.factors['units'][index()[1]]}, how much `{factor}` does `{option}` have?")
+    scale = ss.decision.factors['units'][index()[1]]
+    if scale == '0-10':
+        # st.title(f"How much `{factor}` does `{option}` have?")
+        st.title(f"Rate `{option}` in terms of `{factor}`")
+    else:
+        # st.title(f"On a scale of {scale}, how much `{factor}` does `{option}` have?")
+        st.title(f"How much `{factor}` does `{option}` have? (in {scale})")
 
     scale_min = float(ss.decision.factors['mins'][index()[1]]) if ss.decision.factors['mins'][index()[1]] is not None else None
     scale_max = float(ss.decision.factors['maxs'][index()[1]]) if ss.decision.factors['maxs'][index()[1]] is not None else None
@@ -76,18 +82,32 @@ def quiz():
 
     # Determine input type and step size
     is_slider = scale_min is not None and scale_max is not None
+    # snap = (ss.precise
+    #     if  int(scale_min) == scale_min and
+    #         int(scale_max) == scale_max and
+    #         int(cur_min) == cur_min and
+    #         int(cur_max) == cur_max
+    #     else False
+    # )
     if is_slider:
-        step = 1 if ss.snap_to_int else 0.1
+        step = .1 if ss.precise else 0.5
     else:
-        step = 1 if ss.snap_to_int else None
+        step = .1 if ss.precise else 0.5
 
     type = st.number_input if not is_slider else st.slider
 
     if unsure:
-        min_resp = type(label='Minimum ' + factor, min_value=scale_min, max_value=scale_max, value=cur_min, step=step)
-        max_resp = type(label='Maximum ' + factor, min_value=scale_min, max_value=scale_max, value=cur_max, step=step)
+        if is_slider:
+            min_resp, max_resp = type(label=factor, min_value=scale_min, max_value=scale_max, value=(float(cur_min), float(cur_max)), step=step, format='%.1f')
+        else:
+            l, r = st.columns(2)
+            with l:
+                min_resp = type(label="Min " + factor.lower(), min_value=scale_min, max_value=scale_max, value=float(cur_min), step=step, format='%.1f')
+            with r:
+                max_resp = type(label="Max " + factor.lower(), min_value=scale_min, max_value=scale_max, value=float(cur_max), step=step, format='%.1f')
+
     else:
-        resp = type(label=factor, min_value=scale_min, max_value=scale_max, value=float(cur_min), step=step)
+        resp = type(label=factor, min_value=scale_min, max_value=scale_max, value=float(cur_min), step=step, format='%.1f')
 
     l, m, r = st.columns(3)
     if m.button("Submit"):
@@ -110,26 +130,23 @@ def direct_input():
     df = st.data_editor(pd.DataFrame(formatted_answers(), columns=ss.decision.factors['names'], index=ss.decision.options))
     # Get the index which was changed
     changed = df[df != formatted_answers()].stack().reset_index()
-    st.write(changed)
+    # st.write(changed)
     # st.write(changed['level_0'])
     # st.write(changed['level_1'])
     # st.write(changed[0])
     # make sure the new value is within the min and max
+    has_error = False
     for _, j in changed.iterrows():
-        try:
-            ss.decision.set_answer(j['level_0'], j['level_1'], j[0])
-        except ValueError as e:
-            # factor_min = ss.decision.factors['mins'][ss.decision.factors['names'].index(j['level_1'])]
-            # factor_max = ss.decision.factors['maxs'][ss.decision.factors['names'].index(j['level_1'])]
-            # st.warning(f"Invalid answer or answer out of bounds: \"{j[0]}\" (min: {factor_min}, max: {factor_max})")
-            st.error(e)
-            print(e)
-            st.exception(e)
-            # st.error(str(e))
-
-            # st.rerun()
-    st.write(df)
-    st.write(formatted_answers())
+        if (err := ss.decision.is_answer_invalid(j['level_0'], j['level_1'], j[0])):
+            has_error = True
+            st.error(f'Problem with option {j["level_0"]} with factor {j["level_1"]}: {err}')
+    # st.write(df)
+    # st.write(formatted_answers())
+    if not has_error:
+        if st.button('Save', key='direct_input_submit'):
+            for _, j in changed.iterrows():
+                ss.decision.set_answer(j['level_0'], j['level_1'], j[0])
+            st.rerun()
 
 a, b = st.tabs(['Quiz', 'Direct Input'])
 with a:

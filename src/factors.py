@@ -16,26 +16,32 @@ help_texts = ht = ss.texts['factors']
 if mode == 'Add':
     quick = r.checkbox("Quick Add", value=False, help=ht['quick-add'])
     with st.container(border=True):
-        factor = st.text_input("Factor", help=ht['factor'])
+        factor = st.text_input("Factor", help=ht['factor'], key='add_name')
         if not quick:
-            unit = st.text_input("Unit", placeholder='0-10 scale', value=None, key='1', help=ht['unit'])
-            optimal = st.number_input("Optimal", value=0, key='2', help=ht['optimal'])
-            weight = st.slider("How much do you care?", 0, 100, 100, format='%f%%', key='3', help=ht['weight']) / 100
+            unit = st.text_input("Unit", placeholder='0-10 scale', value=None, key='add_unit', help=ht['unit'])
+            optimal = st.number_input("Optimal", value=0, key='add_optimal', help=ht['optimal'])
+            weight = st.slider("How much do you care?", 0, 100, 100, format='%f%%', key='add_weight', help=ht['weight']) / 100
             with st.container(border=True):
                 st.subheader("Scale", help=ht['scale'])
                 l, r = st.columns(2)
                 ll, lr = l.columns(2)
                 rl, rr = r.columns(2)
-                min_unbounded = lr.checkbox("Unbounded?", value=False, key='5')
-                min_ = ll.number_input("Min", value=0, disabled=min_unbounded, key='6')
-                max_unbounded = rr.checkbox("Unbounded?", value=False, key='7')
-                max_ = rl.number_input("Max", value=10, disabled=max_unbounded, key='8')
+                min_unbounded = lr.checkbox("Unbounded?", value=False, key='add_min_unbounded')
+                min_ = ll.number_input("Min", value=0, disabled=min_unbounded, key='add_min')
+                max_unbounded = rr.checkbox("Unbounded?", value=False, key='add_max_unbounded')
+                max_ = rl.number_input("Max", value=10, disabled=max_unbounded, key='add_max')
         if st.button("Add") and factor:
             if quick:
                 # ss.decision.add_factor(factor, '0-10 scale', 10, 10, 0, 10)
                 ss.decision.add_factor(factor)
             else:
                 ss.decision.add_factor(factor, unit, optimal, weight, min_, max_)
+            # ss.add_name = ''
+            # ss.add_unit = ''
+            # ss.add_optimal = 0
+            # ss.add_weight = 1
+            # ss.add_min = 0
+            # ss.add_max = 10
             st.rerun()
 
 

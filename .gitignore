@@ -464,3 +464,6 @@ gradle-app.setting
 .nfs*
 
 # End of https://www.toptal.com/developers/gitignore/api/reactnative,react
+.aider*
+
+/backup_data/
