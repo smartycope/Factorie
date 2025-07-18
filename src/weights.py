@@ -87,7 +87,7 @@ def radar_bar():
         polar = dict(
             bgcolor='rgba(0,0,0,0)',
             radialaxis = dict(range=[0, 1], showticklabels=False, ticks=''),
-            angularaxis = dict(showticklabels=True, tickfont_color='#F2F0EF'),
+            angularaxis = dict(showticklabels=True, tickfont_color=st.get_option("theme.textColor")),
 
         ),
         paper_bgcolor='rgba(0,0,0,0)',
@@ -132,7 +132,7 @@ def line1d():
             y=-0.2,
             text=label,
             showarrow=False,
-            font=dict(color="white"),
+            font=dict(color=st.get_option("theme.textColor")),
             textangle=-45,
         )
     fig.add_annotation(
@@ -140,7 +140,7 @@ def line1d():
         y=0,
         text='Important',
         showarrow=False,
-        font=dict(color="white", size=15),
+        font=dict(color=st.get_option("theme.textColor"), size=15),
         textangle=270,
     )
 
@@ -149,7 +149,7 @@ def line1d():
         y=0,
         text='Unimportant',
         showarrow=False,
-        font=dict(color="white", size=15),
+        font=dict(color=st.get_option("theme.textColor"), size=15),
         textangle=270,
     )
 

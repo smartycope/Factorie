@@ -224,8 +224,8 @@ time as.
 """
 
 """
-## Good Practices
-* If you get an answer, and you go, "what? That's not right!", it's likely wrong. This program generally tells you what
+## Best Practices
+* If you get an answer, and you go, "what? That's not right!", you're probably right. This program generally tells you what
 you already know. It's supposed to help you break a decision down to make it easier to analyze. If you're surprised, you might need to add more factors. For example, if
 you got the answer "make chicken noodle soup", and go "ugh, but that's so much effort!", maybe you need to add an
 "effort" factor, or maybe the "effort" factor is weighted too low. (Unless you intentionally weighted it low because you don't *want* to care about the effort, in

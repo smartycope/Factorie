@@ -213,7 +213,7 @@ def single_line_plot_plotly():
             y=0,
             text=f'{results.Option[i]} ({results.Percentage[i]:.1f}%)',
             showarrow=False,
-            font=dict(color="white", size=15),
+            font=dict(color=st.get_option("theme.textColor"), size=15),
             # textposition='top',
             # position='top',
             # align='left',
@@ -245,7 +245,7 @@ def single_line_plot_plotly():
         y=0.1,
         text='Best option',
         showarrow=False,
-        font=dict(color="white", size=15),
+        font=dict(color=st.get_option("theme.textColor"), size=15),
         textangle=270,
     )
 
@@ -254,7 +254,7 @@ def single_line_plot_plotly():
         y=0,
         text='Worst option',
         showarrow=False,
-        font=dict(color="white", size=15),
+        font=dict(color=st.get_option("theme.textColor"), size=15),
         textangle=270,
     )
 
@@ -661,7 +661,11 @@ def contributions_heatmap_variable_sizes(data1=True):
     # It does need to be a little light, so we can read text that goes outside of a really small cell
     # background = 'white'
     # background = None
-    background = '#3F3F3F'
+    # color = st.get_option("theme.primaryColor")
+
+    # background = '#3F3F3F'
+    background = st.get_option("theme.primaryColor")
+    opposite_bg_color = st.get_option("theme.textColor")
     # cmin, cmax = -1, 1
 
     # The abs is because 0 is the best, and if it's non-zero in either direction, + or -, it's still
@@ -740,13 +744,14 @@ def contributions_heatmap_variable_sizes(data1=True):
                 fillcolor=fillcolor,
                 layer='below'
             )
+
             # Add text label
             heatmap1.add_trace(go.Scatter(
                 x=[cx],
                 y=[cy],
                 text=[main_texts[i][j]],
                 mode="text",
-                textfont=dict(color="black", size=12),
+                textfont=dict(color="black" if weight > .3 else opposite_bg_color, size=12),
                 hoverinfo="skip",
                 showlegend=False,
                 # z=norm_val
@@ -879,17 +884,20 @@ def goodness_bar():
     )
     fig.update_yaxes(ticktext=[f'{i:.0f}%' for i in range(0, 101, 10)])
     fig.update_traces(texttemplate='%{text:.0%}')
-    fig.update_layout(plot_bgcolor='#262730')
+    # fig.update_layout(plot_bgcolor='#262730')
     fig.update_yaxes(tickformat='.0%')
 
     st.plotly_chart(fig)
 
 @st.cache_data
-def plot_pca(X, labels):
+def get_pca(X):
     pca = PCA(n_components=2)
-    X_pca = pca.fit_transform(X)
+    return pca.fit_transform(X)
+
+def plot_pca(X, labels):
+    X_pca = get_pca(X)
     fig = px.scatter(x=X_pca[:,0], y=X_pca[:,1], text=labels, title='Visualizing the options')#, error_x=normalized_answers_conf.tolist() + [0, 0], error_y=normalized_answers_conf.tolist() + [0, 0])
-    fig.add_shape(type='line', x0=X_pca[-1,0], y0=X_pca[-1,1], x1=X_pca[-2,0], y1=X_pca[-2,1], line_color='white')
+    fig.add_shape(type='line', x0=X_pca[-1,0], y0=X_pca[-1,1], x1=X_pca[-2,0], y1=X_pca[-2,1], line_color='blue')
     fig.update_traces(textposition='top center')
     fig.update_layout(xaxis=None, yaxis=None, showlegend=False)
     fig.update_yaxes(showticklabels=False)
@@ -941,7 +949,7 @@ graph_idx = 0
 def explain(text, spec=[1, .0001]):
     global graph_idx
     l, r = st.columns(spec)
-    with r.popover(label='', icon='❔'):
+    with r.popover(label='', icon='❓'):
         st.caption(text)
     r.caption(ascii_uppercase[graph_idx])
     graph_idx += 1
