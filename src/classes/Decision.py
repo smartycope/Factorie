@@ -4,7 +4,7 @@ from typing import Any, Dict, List, Literal, Tuple, Union
 import numpy as np
 import json
 
-from src.classes.FactorPack import FactorPack
+# from src.classes.FactorPack import FactorPack
 
 # Define a type alias for the factor dictionary structure
 tiny = np.finfo(np.float64).tiny
@@ -68,15 +68,15 @@ class Decision:
             return "All factors must have a weight between 0 and 1"
         return None
 
-    def add_factor_pack(self, factor_pack:FactorPack):
+    def add_factor_pack(self, factor_pack:'FactorPack'):
         self.factor_packs.add(factor_pack)
 
-    def remove_factor_pack(self, factor_pack:FactorPack):
+    def remove_factor_pack(self, factor_pack:'FactorPack'):
         for factor in factor_pack.factors:
             self.remove_factor(factor['name'])
         self.factor_packs.remove(factor_pack)
 
-    def apply_factor_pack(self, factor_pack:FactorPack):
+    def apply_factor_pack(self, factor_pack:'FactorPack'):
         for factor in factor_pack.factors:
             try:
                 self.add_factor(**factor)
