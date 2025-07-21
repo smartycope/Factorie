@@ -173,8 +173,8 @@ ax.plot([0, 10], [0, 10], color="maroon")
 # ax.plot([, 10], [0, 10], color="maroon")
 ax.scatter([5], [5], color="maroon", s=15)
 ax.text(5.2, 4.8, "50% bad")
-ax.text(4, 8.5, f'~{np.sqrt((10-2)**2 + (10-6)**2)/np.sqrt((10-0)**2 + (10-0)**2):.0%} bad')
 ax.text(6.5, 6, f'Distance: ~{np.sqrt((10-0)**2 + (10-0)**2):.1f}', color='maroon')
+ax.text(2, 8.5, f'{np.sqrt((10-2)**2 + (10-6)**2):.1f} / {np.sqrt((10-0)**2 + (10-0)**2):.1f} = ~{np.sqrt((10-2)**2 + (10-6)**2)/np.sqrt((10-0)**2 + (10-0)**2):.0%} bad')
 st.pyplot(fig)
 
 """
@@ -248,6 +248,9 @@ you care about each factor.
 * This is self-reported. For best results, try to set the weights and threshold objectively: either before you have to
 make the decision, going over them with a friend. If you want to tune the weights to get the decision you want,
 you probably can. Don't do that.
+
+* This app is able to handle as many factors as you can think of. I've tested it up to 200 so far. However it
+may not handle as many options as well.
 """
 
 st.sidebar.write(ss.texts['explanation']['explanation'])
