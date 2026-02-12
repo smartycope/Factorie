@@ -83,13 +83,14 @@ with st.form("remove_factor"):
 st.divider()
 
 "## Current Factors"
-st.info(""" I can't decide which I like better""")
+# st.info(""" I can't decide which I like better""")
+# I like this one better
 data = pd.DataFrame(ss.decision.factors).fillna('calculated')
 st.dataframe(data, hide_index=True)
 # make the first column the column names
-d = data.T
-d.columns = d.iloc[0]
-d = d[1:]
-st.dataframe(d)
+# d = data.T
+# d.columns = d.iloc[0]
+# d = d[1:]
+# st.dataframe(d)
 
 st.sidebar.write(ss.texts['factors']['explanation'])

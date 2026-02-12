@@ -1,0 +1,1566 @@
+{
+    "Factors": [
+        // {
+        //     "Name": "You like them",
+        //     "Unit": "0 - 10",
+        //     "Optimal": 10,
+        //     "Min": 0,
+        //     "Max": 10
+        // },
+        // {
+        //     "Name": "You enjoy spending time with them",
+        //     "Unit": "0 - 10",
+        //     "Optimal": 10,
+        //     "Min": 0,
+        //     "Max": 10
+        // },
+        // {
+        //     "Name": "They're tall",
+        //     "Unit": "feet",
+        //     "Min": 4,
+        //     "Max": 6.8
+        // },
+        {
+            "Name": "You want to enter the relationship with them",
+            "Unit": "0 - 10",
+            "Optimal": 10,
+            "Min": 0,
+            "Max": 10
+        },
+        {
+            "Name": "You enjoy spending time around them",
+            "Unit": "0 - 10",
+            "Optimal": 10,
+            "Min": 0,
+            "Max": 10
+        },
+        {
+            "Name": "They enjoy spending time around you",
+            "Unit": "0 - 10",
+            "Min": 0,
+            "Max": 10
+        },
+        {
+            "Name": "They speak the same language you do",
+            "Unit": "0 - 10",
+            "Optimal": 10,
+            "Min": 0,
+            "Max": 10
+        },
+        {
+            "Name": "You can talk to them easily",
+            "Unit": "0 - 10",
+            "Optimal": 10,
+            "Min": 0,
+            "Max": 10
+        },
+        {
+            "Name": "They can talk to you easily",
+            "Unit": "0 - 10",
+            "Optimal": 10,
+            "Min": 0,
+            "Max": 10
+        },
+        {
+            "Name": "You feel like you can tell them anything",
+            "Unit": "0 - 10",
+            "Optimal": 10,
+            "Min": 0,
+            "Max": 10
+        },
+        {
+            "Name": "They feel like they can tell you anything",
+            "Unit": "0 - 10",
+            "Optimal": 10,
+            "Min": 0,
+            "Max": 10
+        },
+        {
+            "Name": "The number of children they want",
+            "Unit": "Number of children",
+            "Min": 0,
+            "Max": 12
+        },
+        {
+            "Name": "They want to adopt",
+            "Unit": "0 - 10",
+            "Min": 0,
+            "Max": 10
+        },
+        {
+            "Name": "They want to foster",
+            "Unit": "0 - 10",
+            "Min": 0,
+            "Max": 10
+        },
+        {
+            "Name": "They are passionate/enthusiastic about whatever it is they're into",
+            "Unit": "0 - 10",
+            "Optimal": 10,
+            "Min": 0,
+            "Max": 10
+        },
+        {
+            "Name": "You respect each other",
+            "Unit": "0 - 10",
+            "Optimal": 10,
+            "Min": 0,
+            "Max": 10
+        },
+        {
+            "Name": "They are a good communicator",
+            "Unit": "0 - 10",
+            "Optimal": 10,
+            "Min": 0,
+            "Max": 10
+        },
+        {
+            "Name": "They understand you",
+            "Unit": "0 - 10",
+            "Optimal": 10,
+            "Min": 0,
+            "Max": 10
+        },
+        {
+            "Name": "You understand them",
+            "Unit": "0 - 10",
+            "Optimal": 10,
+            "Min": 0,
+            "Max": 10
+        },
+        {
+            "Name": "They share your religious views",
+            "Unit": "0 - 10",
+            "Min": 0,
+            "Max": 10
+        },
+        {
+            "Name": "They care about religion",
+            "Unit": "0 - 10",
+            "Min": 0,
+            "Max": 10
+        },
+        {
+            "Name": "You've known each other for more than a month",
+            "Unit": "0 - 10",
+            "Min": 0,
+            "Max": 10
+        },
+        {
+            "Name": "You consider them to be a friend",
+            "Unit": "0 - 10",
+            "Min": 0,
+            "Max": 10
+        },
+        {
+            "Name": "They don't use their emotions to manipulate you",
+            "Unit": "0 - 10",
+            "Optimal": 10,
+            "Min": 0,
+            "Max": 10
+        },
+        {
+            "Name": "They don't manipulate you",
+            "Unit": "0 - 10",
+            "Optimal": 10,
+            "Min": 0,
+            "Max": 10
+        },
+        {
+            "Name": "You're flirty together",
+            "Unit": "0 - 10",
+            "Min": 0,
+            "Max": 10
+        },
+        {
+            "Name": "You can tease them without them getting offended",
+            "Unit": "0 - 10",
+            "Min": 0,
+            "Max": 10
+        },
+        {
+            "Name": "They tease you",
+            "Unit": "0 - 10",
+            "Min": 0,
+            "Max": 10
+        },
+        {
+            "Name": "They're dependant on you",
+            "Unit": "0 - 10",
+            "Min": 0,
+            "Max": 10
+        },
+        {
+            "Name": "The relationship doesn't feel one-sided in either direction",
+            "Unit": "0 - 10",
+            "Min": 0,
+            "Max": 10
+        },
+        {
+            "Name": "It feels right/They feel like \"the one\"",
+            "Unit": "0 - 10",
+            "Optimal": 10,
+            "Min": 0,
+            "Max": 10
+        },
+        {
+            "Name": "You feel safe with them",
+            "Unit": "0 - 10",
+            "Optimal": 10,
+            "Min": 0,
+            "Max": 10
+        },
+        {
+            "Name": "You don't want to have a relationship with anyone else",
+            "Unit": "0 - 10",
+            "Optimal": 10,
+            "Min": 0,
+            "Max": 10
+        },
+        {
+            "Name": "You're commited to them",
+            "Unit": "0 - 10",
+            "Min": 0,
+            "Max": 10
+        },
+        {
+            "Name": "They're commited to you",
+            "Unit": "0 - 10",
+            "Min": 0,
+            "Max": 10
+        },
+        {
+            "Name": "You relate to them often",
+            "Unit": "0 - 10",
+            "Optimal": 10,
+            "Min": 0,
+            "Max": 10
+        },
+        {
+            "Name": "Family is important to them",
+            "Unit": "0 - 10",
+            "Min": 0,
+            "Max": 10
+        },
+        {
+            "Name": "They make what is important to you important to them / they support you",
+            "Unit": "0 - 10",
+            "Optimal": 10,
+            "Min": 0,
+            "Max": 10
+        },
+        {
+            "Name": "You like their family",
+            "Unit": "0 - 10",
+            "Optimal": 10,
+            "Min": 0,
+            "Max": 10
+        },
+        {
+            "Name": "Their family likes you",
+            "Unit": "0 - 10",
+            "Optimal": 10,
+            "Min": 0,
+            "Max": 10
+        },
+        {
+            "Name": "You have inside jokes",
+            "Unit": "0 - 10",
+            "Optimal": 10,
+            "Min": 0,
+            "Max": 10
+        },
+        {
+            "Name": "They're willing to comprimise",
+            "Unit": "0 - 10",
+            "Optimal": 10,
+            "Min": 0,
+            "Max": 10
+        },
+        {
+            "Name": "You feel good after hanging out with them",
+            "Unit": "0 - 10",
+            "Optimal": 10,
+            "Min": 0,
+            "Max": 10
+        },
+        {
+            "Name": "They are romantic",
+            "Unit": "0 - 10",
+            "Optimal": 10,
+            "Min": 0,
+            "Max": 10
+        },
+        {
+            "Name": "They've been married before",
+            "Unit": "0 - 10",
+            "Min": 0,
+            "Max": 10
+        },
+        {
+            "Name": "They already have kids",
+            "Unit": "0 - 10",
+            "Min": 0,
+            "Max": 10
+        },
+        {
+            "Name": "They tell you how they feel often/they're communicative",
+            "Unit": "0 - 10",
+            "Min": 0,
+            "Max": 10
+        },
+        {
+            "Name": "They're willing to accommodate you",
+            "Unit": "0 - 10",
+            "Optimal": 10,
+            "Min": 0,
+            "Max": 10
+        },
+        {
+            "Name": "You're willing to accommodate them",
+            "Unit": "0 - 10",
+            "Optimal": 10,
+            "Min": 0,
+            "Max": 10
+        },
+        {
+            "Name": "They're not afraid to love the most",
+            "Unit": "0 - 10",
+            "Optimal": 10,
+            "Min": 0,
+            "Max": 10
+        },
+        {
+            "Name": "They don't make you do all the work in the relationship",
+            "Unit": "0 - 10",
+            "Optimal": 10,
+            "Min": 0,
+            "Max": 10
+        },
+        {
+            "Name": "You feel lucky to have them",
+            "Unit": "0 - 10",
+            "Optimal": 10,
+            "Min": 0,
+            "Max": 10
+        },
+        {
+            "Name": "It doesn't feel like you're settling",
+            "Unit": "0 - 10",
+            "Min": 0,
+            "Max": 10
+        },
+        {
+            "Name": "You care about them",
+            "Unit": "0 - 10",
+            "Optimal": 10,
+            "Min": 0,
+            "Max": 10
+        },
+        {
+            "Name": "They care about you",
+            "Unit": "0 - 10",
+            "Optimal": 10,
+            "Min": 0,
+            "Max": 10
+        },
+        {
+            "Name": "They support your beliefs",
+            "Unit": "0 - 10",
+            "Optimal": 10,
+            "Min": 0,
+            "Max": 10
+        },
+        {
+            "Name": "They're make good money",
+            "Unit": "0 - 10",
+            "Min": 0,
+            "Max": 10
+        },
+        {
+            "Name": "They have made you reevaluate some point that you've held",
+            "Unit": "0 - 10",
+            "Min": 0,
+            "Max": 10
+        },
+        {
+            "Name": "You can have rational discussions with them",
+            "Unit": "0 - 10",
+            "Optimal": 10,
+            "Min": 0,
+            "Max": 10
+        },
+        {
+            "Name": "You can't see it ending/You can't imagine your life without them",
+            "Unit": "0 - 10",
+            "Optimal": 10,
+            "Min": 0,
+            "Max": 10
+        },
+        {
+            "Name": "You've had a fight",
+            "Unit": "0 - 10",
+            "Min": 0,
+            "Max": 10
+        },
+        {
+            "Name": "You feel like you know them well",
+            "Unit": "0 - 10",
+            "Optimal": 10,
+            "Min": 0,
+            "Max": 10
+        },
+        {
+            "Name": "You feel like they're not gonna leave you at any moment",
+            "Unit": "0 - 10",
+            "Optimal": 10,
+            "Min": 0,
+            "Max": 10
+        },
+        {
+            "Name": "They're humble",
+            "Unit": "0 - 10",
+            "Optimal": 10,
+            "Min": 0,
+            "Max": 10
+        },
+        {
+            "Name": "They're talkative",
+            "Unit": "0 - 10",
+            "Min": 0,
+            "Max": 10
+        },
+        {
+            "Name": "They're a good listener",
+            "Unit": "0 - 10",
+            "Optimal": 10,
+            "Min": 0,
+            "Max": 10
+        },
+        {
+            "Name": "They're well read",
+            "Unit": "0 - 10",
+            "Min": 0,
+            "Max": 10
+        },
+        {
+            "Name": "They're spunky",
+            "Unit": "0 - 10",
+            "Min": 0,
+            "Max": 10
+        },
+        {
+            "Name": "They're a fun person",
+            "Unit": "0 - 10",
+            "Optimal": 10,
+            "Min": 0,
+            "Max": 10
+        },
+        {
+            "Name": "They're nice/kind/polite/friendly",
+            "Unit": "0 - 10",
+            "Optimal": 10,
+            "Min": 0,
+            "Max": 10
+        },
+        {
+            "Name": "They're sassy",
+            "Unit": "0 - 10",
+            "Min": 0,
+            "Max": 10
+        },
+        {
+            "Name": "They're responsible",
+            "Unit": "0 - 10",
+            "Optimal": 10,
+            "Min": 0,
+            "Max": 10
+        },
+        {
+            "Name": "They lie",
+            "Unit": "0 - 10",
+            "Optimal": 0,
+            "Min": 0,
+            "Max": 10
+        },
+        {
+            "Name": "They have good self-control",
+            "Unit": "0 - 10",
+            "Optimal": 10,
+            "Min": 0,
+            "Max": 10
+        },
+        {
+            "Name": "They're a logical thinker",
+            "Unit": "0 - 10",
+            "Min": 0,
+            "Max": 10
+        },
+        {
+            "Name": "You understand how they come to make decisions",
+            "Unit": "0 - 10",
+            "Optimal": 10,
+            "Min": 0,
+            "Max": 10
+        },
+        {
+            "Name": "They're an emotional person",
+            "Unit": "0 - 10",
+            "Min": 0,
+            "Max": 10
+        },
+        {
+            "Name": "They're make decisions based on emotion",
+            "Unit": "0 - 10",
+            "Optimal": 10,
+            "Min": 0,
+            "Max": 10
+        },
+        {
+            "Name": "They're interesting",
+            "Unit": "0 - 10",
+            "Min": 0,
+            "Max": 10
+        },
+        {
+            "Name": "They're messy",
+            "Unit": "0 - 10",
+            "Optimal": 0,
+            "Min": 0,
+            "Max": 10
+        },
+        {
+            "Name": "They're willing to talk at length about whatever it is they're enthusiastic about",
+            "Unit": "0 - 10",
+            "Optimal": 10,
+            "Min": 0,
+            "Max": 10
+        },
+        {
+            "Name": "They have a similar sense of humor",
+            "Unit": "0 - 10",
+            "Optimal": 10,
+            "Min": 0,
+            "Max": 10
+        },
+        {
+            "Name": "They're touchy",
+            "Unit": "0 - 10",
+            "Min": 0,
+            "Max": 10
+        },
+        {
+            "Name": "They have goals",
+            "Unit": "0 - 10",
+            "Min": 0,
+            "Max": 10
+        },
+        {
+            "Name": "They're self-sufficient",
+            "Unit": "0 - 10",
+            "Min": 0,
+            "Max": 10
+        },
+        {
+            "Name": "They're content with their life",
+            "Unit": "0 - 10",
+            "Min": 0,
+            "Max": 10
+        },
+        {
+            "Name": "They're respectfully competitive",
+            "Unit": "0 - 10",
+            "Min": 0,
+            "Max": 10
+        },
+        {
+            "Name": "They're intensely competitive",
+            "Unit": "0 - 10",
+            "Min": 0,
+            "Max": 10
+        },
+        {
+            "Name": "They're easily offended",
+            "Unit": "0 - 10",
+            "Optimal": 0,
+            "Min": 0,
+            "Max": 10
+        },
+        {
+            "Name": "They're a good driver",
+            "Unit": "0 - 10",
+            "Optimal": 10,
+            "Min": 0,
+            "Max": 10
+        },
+        {
+            "Name": "They're judgemental",
+            "Unit": "0 - 10",
+            "Optimal": 0,
+            "Min": 0,
+            "Max": 10
+        },
+        {
+            "Name": "They're loyal",
+            "Unit": "0 - 10",
+            "Optimal": 10,
+            "Min": 0,
+            "Max": 10
+        },
+        {
+            "Name": "They come from a big family",
+            "Unit": "0 - 10",
+            "Min": 0,
+            "Max": 10
+        },
+        {
+            "Name": "They come from money",
+            "Unit": "0 - 10",
+            "Min": 0,
+            "Max": 10
+        },
+        {
+            "Name": "They get good grades",
+            "Unit": "0 - 10",
+            "Min": 0,
+            "Max": 10
+        },
+        {
+            "Name": "They're a perfectionist",
+            "Unit": "0 - 10",
+            "Min": 0,
+            "Max": 10
+        },
+        {
+            "Name": "They have to do everything themselves",
+            "Unit": "0 - 10",
+            "Min": 0,
+            "Max": 10
+        },
+        {
+            "Name": "Number of people they've had sex with",
+            "Unit": "sex partners",
+            "Min": 0
+        },
+        {
+            "Name": "They hold the door for you",
+            "Unit": "0 - 10",
+            "Min": 0,
+            "Max": 10
+        },
+        {
+            "Name": "They're foriegn",
+            "Unit": "0 - 10",
+            "Min": 0,
+            "Max": 10
+        },
+        {
+            "Name": "You're attracted to them physically",
+            "Unit": "0 - 10",
+            "Optimal": 10,
+            "Min": 0,
+            "Max": 10
+        },
+        {
+            "Name": "They're attracted to you physically",
+            "Unit": "0 - 10",
+            "Optimal": 10,
+            "Min": 0,
+            "Max": 10
+        },
+        {
+            "Name": "They're good at sex",
+            "Unit": "0 - 10",
+            "Optimal": 10,
+            "Min": 0,
+            "Max": 10
+        },
+        {
+            "Name": "They're cute",
+            "Unit": "0 - 10",
+            "Optimal": 10,
+            "Min": 0,
+            "Max": 10
+        },
+        {
+            "Name": "They have a cute smile",
+            "Unit": "0 - 10",
+            "Optimal": 10,
+            "Min": 0,
+            "Max": 10
+        },
+        {
+            "Name": "They have dietary restrictions",
+            "Unit": "0 - 10",
+            "Optimal": 0,
+            "Min": 0,
+            "Max": 10
+        },
+        {
+            "Name": "They're a prude",
+            "Unit": "0 - 10",
+            "Min": 0,
+            "Max": 10
+        },
+        {
+            "Name": "Their age",
+            "Unit": "years",
+            "Min": 0,
+            "Max": 90
+        },
+        {
+            "Name": "Their height",
+            "Unit": "inches",
+            "Min": 42,
+            "Max": 84
+        },
+        {
+            "Name": "They have a nice voice",
+            "Unit": "0 - 10",
+            "Min": 0,
+            "Max": 10
+        },
+        {
+            "Name": "They dress nicely",
+            "Unit": "0 - 10",
+            "Optimal": 10,
+            "Min": 0,
+            "Max": 10
+        },
+        {
+            "Name": "They're willing to be touchy in public",
+            "Unit": "0 - 10",
+            "Min": 0,
+            "Max": 10
+        },
+        {
+            "Name": "They're physically healthy",
+            "Unit": "0 - 10",
+            "Optimal": 10,
+            "Min": 0,
+            "Max": 10
+        },
+        {
+            "Name": "They don't have constant, unexplainable medical problems",
+            "Unit": "0 - 10",
+            "Optimal": 10,
+            "Min": 0,
+            "Max": 10
+        },
+        {
+            "Name": "They have a strong libido",
+            "Unit": "0 - 10",
+            "Min": 0,
+            "Max": 10
+        },
+        {
+            "Name": "They're lazy",
+            "Unit": "0 - 10",
+            "Optimal": 0,
+            "Min": 0,
+            "Max": 10
+        },
+        {
+            "Name": "They give good hugs",
+            "Unit": "0 - 10",
+            "Optimal": 10,
+            "Min": 0,
+            "Max": 10
+        },
+        {
+            "Name": "They're a good kisser",
+            "Unit": "0 - 10",
+            "Optimal": 10,
+            "Min": 0,
+            "Max": 10
+        },
+        {
+            "Name": "The frequency of which they want to have sex",
+            "Unit": "per week",
+            "Min": 0,
+            "Max": 14
+        },
+        {
+            "Name": "The frequency of which you want to have sex with them",
+            "Unit": "per week",
+            "Min": 0,
+            "Max": 14
+        },
+        {
+            "Name": "You agree about pornography",
+            "Unit": "0 - 10",
+            "Optimal": 10,
+            "Min": 0,
+            "Max": 10
+        },
+        {
+            "Name": "They have an accent",
+            "Unit": "0 - 10",
+            "Min": 0,
+            "Max": 10
+        },
+        {
+            "Name": "They smell good",
+            "Unit": "0 - 10",
+            "Optimal": 10,
+            "Min": 0,
+            "Max": 10
+        },
+        {
+            "Name": "They have significant mental problems",
+            "Unit": "0 - 10",
+            "Optimal": 0,
+            "Min": 0,
+            "Max": 10
+        },
+        {
+            "Name": "They are emotionally mature",
+            "Unit": "0 - 10",
+            "Optimal": 10,
+            "Min": 0,
+            "Max": 10
+        },
+        {
+            "Name": "Their schedule fits yours decently",
+            "Unit": "0 - 10",
+            "Min": 0,
+            "Max": 10
+        },
+        {
+            "Name": "You work in the same fields",
+            "Unit": "0 - 10",
+            "Min": 0,
+            "Max": 10
+        },
+        {
+            "Name": "They need social activities in their life",
+            "Unit": "0 - 10",
+            "Min": 0,
+            "Max": 10
+        },
+        {
+            "Name": "How introverted - extroverted they are",
+            "Unit": "0 - 10",
+            "Min": 0,
+            "Max": 10
+        },
+        {
+            "Name": "How matrue they are",
+            "Unit": "0 - 10",
+            "Min": 0,
+            "Max": 10
+        },
+        {
+            "Name": "How experienced they are",
+            "Unit": "0 - 10",
+            "Min": 0,
+            "Max": 10
+        },
+        {
+            "Name": "How impulsive they are",
+            "Unit": "0 - 10",
+            "Min": 0,
+            "Max": 10
+        },
+        {
+            "Name": "They can handle stress well",
+            "Unit": "0 - 10",
+            "Optimal": 10,
+            "Min": 0,
+            "Max": 10
+        },
+        {
+            "Name": "They have an addiction you consider a problem",
+            "Unit": "0 - 10",
+            "Optimal": 0,
+            "Min": 0,
+            "Max": 10
+        },
+        {
+            "Name": "How similar their music tastes are",
+            "Unit": "0 - 10",
+            "Min": 0,
+            "Max": 10
+        },
+        {
+            "Name": "They actively dislike the kind of music you like",
+            "Unit": "0 - 10",
+            "Optimal": 0,
+            "Min": 0,
+            "Max": 10
+        },
+        {
+            "Name": "They share your love language[s]",
+            "Unit": "0 - 10",
+            "Min": 0,
+            "Max": 10
+        },
+        {
+            "Name": "One of you is able to remain calm while the other is stressed/angry/annoyed",
+            "Unit": "0 - 10",
+            "Optimal": 10,
+            "Min": 0,
+            "Max": 10
+        },
+        {
+            "Name": "You can have a fight/argument and still be fine afterwards",
+            "Unit": "0 - 10",
+            "Optimal": 10,
+            "Min": 0,
+            "Max": 10
+        },
+        {
+            "Name": "They share your political positions",
+            "Unit": "0 - 10",
+            "Optimal": 10,
+            "Min": 0,
+            "Max": 10
+        },
+        {
+            "Name": "They share your views on parenting",
+            "Unit": "0 - 10",
+            "Optimal": 10,
+            "Min": 0,
+            "Max": 10
+        },
+        {
+            "Name": "You agree on whether to homeschool or not",
+            "Unit": "0 - 10",
+            "Optimal": 10,
+            "Min": 0,
+            "Max": 10
+        },
+        {
+            "Name": "You feel like you understand how their mind works",
+            "Unit": "0 - 10",
+            "Optimal": 10,
+            "Min": 0,
+            "Max": 10
+        },
+        {
+            "Name": "They understand how your mind works",
+            "Unit": "0 - 10",
+            "Optimal": 10,
+            "Min": 0,
+            "Max": 10
+        },
+        {
+            "Name": "You share passions/interests",
+            "Unit": "0 - 10",
+            "Min": 0,
+            "Max": 10
+        },
+        {
+            "Name": "You agree on who will be a stay at home parent",
+            "Unit": "0 - 10",
+            "Optimal": 10,
+            "Min": 0,
+            "Max": 10
+        },
+        {
+            "Name": "They enjoy board games",
+            "Unit": "0 - 10",
+            "Min": 0,
+            "Max": 10
+        },
+        {
+            "Name": "They're okay with cats",
+            "Unit": "0 - 10",
+            "Min": 0,
+            "Max": 10
+        },
+        {
+            "Name": "They're okay with dogs",
+            "Unit": "0 - 10",
+            "Min": 0,
+            "Max": 10
+        },
+        {
+            "Name": "Their future goals are family driven",
+            "Unit": "0 - 10",
+            "Min": 0,
+            "Max": 10
+        },
+        {
+            "Name": "Their future goals are career driven",
+            "Unit": "0 - 10",
+            "Min": 0,
+            "Max": 10
+        },
+        {
+            "Name": "They're on their phone all the time",
+            "Unit": "0 - 10",
+            "Min": 0,
+            "Max": 10
+        },
+        {
+            "Name": "They're a good texter",
+            "Unit": "0 - 10",
+            "Min": 0,
+            "Max": 10
+        },
+        {
+            "Name": "They're frugal",
+            "Unit": "0 - 10",
+            "Min": 0,
+            "Max": 10
+        },
+        {
+            "Name": "They make good financial decisions",
+            "Unit": "0 - 10",
+            "Optimal": 10,
+            "Min": 0,
+            "Max": 10
+        },
+        {
+            "Name": "They have a direction in their life",
+            "Unit": "0 - 10",
+            "Optimal": 10,
+            "Min": 0,
+            "Max": 10
+        },
+        {
+            "Name": "They give good back rubs",
+            "Unit": "0 - 10",
+            "Optimal": 10,
+            "Min": 0,
+            "Max": 10
+        },
+        {
+            "Name": "They explain things more than is necessary",
+            "Unit": "0 - 10",
+            "Optimal": 0,
+            "Min": 0,
+            "Max": 10
+        },
+        {
+            "Name": "They swear",
+            "Unit": "0 - 10",
+            "Min": 0,
+            "Max": 10
+        },
+        {
+            "Name": "They hold grudges",
+            "Unit": "0 - 10",
+            "Optimal": 0,
+            "Min": 0,
+            "Max": 10
+        },
+        {
+            "Name": "They are the kind of person that keep things inside and not talk about them",
+            "Unit": "0 - 10",
+            "Min": 0,
+            "Max": 10
+        },
+        {
+            "Name": "They are the kind of person who keeps secrets",
+            "Unit": "0 - 10",
+            "Min": 0,
+            "Max": 10
+        },
+        {
+            "Name": "The number of things they won't talk to you about",
+            "Unit": "secrets",
+            "Min": 0
+        },
+        {
+            "Name": "Frequency at which they make dirty jokes",
+            "Unit": "per day",
+            "Min": 0
+        },
+        {
+            "Name": "They find dirty jokes funny",
+            "Unit": "0 - 10",
+            "Min": 0,
+            "Max": 10
+        },
+        {
+            "Name": "Number of times they interrupt you when you're talking",
+            "Unit": "interruptions per conversation",
+            "Optimal": 0,
+            "Min": 0
+        },
+        {
+            "Name": "They often take things the wrong way",
+            "Unit": "0 - 10",
+            "Optimal": 0,
+            "Min": 0,
+            "Max": 10
+        },
+        {
+            "Name": "They make you a better person",
+            "Unit": "0 - 10",
+            "Optimal": 10,
+            "Min": 0,
+            "Max": 10
+        },
+        {
+            "Name": "They make you feel loved without using words",
+            "Unit": "0 - 10",
+            "Optimal": 10,
+            "Min": 0,
+            "Max": 10
+        },
+        {
+            "Name": "They tell you when they're mad at you",
+            "Unit": "0 - 10",
+            "Min": 0,
+            "Max": 10
+        },
+        {
+            "Name": "They have a good work ethic/They're a hard worker",
+            "Unit": "0 - 10",
+            "Optimal": 10,
+            "Min": 0,
+            "Max": 10
+        },
+        {
+            "Name": "They do things for you without being prompted",
+            "Unit": "0 - 10",
+            "Min": 0,
+            "Max": 10
+        },
+        {
+            "Name": "They help you achive your goals",
+            "Unit": "0 - 10",
+            "Optimal": 10,
+            "Min": 0,
+            "Max": 10
+        },
+        {
+            "Name": "They get you to do things with them",
+            "Unit": "0 - 10",
+            "Min": 0,
+            "Max": 10
+        },
+        {
+            "Name": "They want to constantly spend time with you",
+            "Unit": "0 - 10",
+            "Min": 0,
+            "Max": 10
+        },
+        {
+            "Name": "They're clingy",
+            "Unit": "0 - 10",
+            "Min": 0,
+            "Max": 10
+        },
+        {
+            "Name": "They're willing to step back and give you space when you need it",
+            "Unit": "0 - 10",
+            "Optimal": 10,
+            "Min": 0,
+            "Max": 10
+        },
+        {
+            "Name": "They eat healty",
+            "Unit": "0 - 10",
+            "Optimal": 10,
+            "Min": 0,
+            "Max": 10
+        },
+        {
+            "Name": "They laugh at your jokes",
+            "Unit": "0 - 10",
+            "Optimal": 10,
+            "Min": 0,
+            "Max": 10
+        },
+        {
+            "Name": "They drive most of the time",
+            "Unit": "0 - 10",
+            "Min": 0,
+            "Max": 10
+        },
+        {
+            "Name": "They're willing to learn new things",
+            "Unit": "0 - 10",
+            "Optimal": 10,
+            "Min": 0,
+            "Max": 10
+        },
+        {
+            "Name": "They can cook",
+            "Unit": "0 - 10",
+            "Optimal": 10,
+            "Min": 0,
+            "Max": 10
+        },
+        {
+            "Name": "They're a good cook",
+            "Unit": "0 - 10",
+            "Optimal": 10,
+            "Min": 0,
+            "Max": 10
+        },
+        {
+            "Name": "They can dance",
+            "Unit": "0 - 10",
+            "Min": 0,
+            "Max": 10
+        },
+        {
+            "Name": "They're a problem solver",
+            "Unit": "0 - 10",
+            "Optimal": 10,
+            "Min": 0,
+            "Max": 10
+        },
+        {
+            "Name": "They can play an instrument",
+            "Unit": "0 - 10",
+            "Optimal": 10,
+            "Min": 0,
+            "Max": 10
+        },
+        {
+            "Name": "They can speak another language",
+            "Unit": "0 - 10",
+            "Optimal": 10,
+            "Min": 0,
+            "Max": 10
+        },
+        {
+            "Name": "They have good character",
+            "Unit": "0 - 10",
+            "Optimal": 10,
+            "Min": 0,
+            "Max": 10
+        },
+        {
+            "Name": "They're spiritual",
+            "Unit": "0 - 10",
+            "Optimal": 10,
+            "Min": 0,
+            "Max": 10
+        },
+        {
+            "Name": "They have a large vocabulary",
+            "Unit": "0 - 10",
+            "Min": 0,
+            "Max": 10
+        },
+        {
+            "Name": "You like their personality",
+            "Unit": "0 - 10",
+            "Optimal": 10,
+            "Min": 0,
+            "Max": 10
+        },
+        {
+            "Name": "You share common past experiences",
+            "Unit": "0 - 10",
+            "Min": 0,
+            "Max": 10
+        },
+        {
+            "Name": "They're the same race/ethnicity/culture as you",
+            "Unit": "0 - 10",
+            "Min": 0,
+            "Max": 10
+        },
+        {
+            "Name": "You frequently capitulate your standards when around them",
+            "Unit": "0 - 10",
+            "Optimal": 0,
+            "Min": 0,
+            "Max": 10
+        },
+        {
+            "Name": "They're significantly influenced by culture",
+            "Unit": "0 - 10",
+            "Optimal": 10,
+            "Min": 0,
+            "Max": 10
+        },
+        {
+            "Name": "The relationship started as a hookup",
+            "Unit": "0 - 10",
+            "Min": 0,
+            "Max": 10
+        },
+        {
+            "Name": "They're a moral person",
+            "Unit": "0 - 10",
+            "Min": 0,
+            "Max": 10
+        },
+        {
+            "Name": "They have good career prospects",
+            "Unit": "0 - 10",
+            "Optimal": 10,
+            "Min": 0,
+            "Max": 10
+        },
+        {
+            "Name": "They're ambitious",
+            "Unit": "0 - 10",
+            "Min": 0,
+            "Max": 10
+        },
+        {
+            "Name": "They're maternal/paternal",
+            "Unit": "0 - 10",
+            "Min": 0,
+            "Max": 10
+        },
+        {
+            "Name": "They're empathetic",
+            "Unit": "0 - 10",
+            "Optimal": 10,
+            "Min": 0,
+            "Max": 10
+        },
+        {
+            "Name": "They're able to multitask",
+            "Unit": "0 - 10",
+            "Optimal": 10,
+            "Min": 0,
+            "Max": 10
+        },
+        {
+            "Name": "They're phsycially strong",
+            "Unit": "0 - 10",
+            "Optimal": 10,
+            "Min": 0,
+            "Max": 10
+        },
+        {
+            "Name": "They're maternal/paternal to you",
+            "Unit": "0 - 10",
+            "Min": 0,
+            "Max": 10
+        },
+        {
+            "Name": "They build people up",
+            "Unit": "0 - 10",
+            "Optimal": 10,
+            "Min": 0,
+            "Max": 10
+        },
+        {
+            "Name": "You like their day-to-day life",
+            "Unit": "0 - 10",
+            "Optimal": 10,
+            "Min": 0,
+            "Max": 10
+        },
+        {
+            "Name": "You can imagine a life with them",
+            "Unit": "0 - 10",
+            "Min": 0,
+            "Max": 10
+        },
+        {
+            "Name": "It would be okay if how you hang out with them now is what your life looks like",
+            "Unit": "0 - 10",
+            "Optimal": 10,
+            "Min": 0,
+            "Max": 10
+        },
+        {
+            "Name": "They put effort into the relationship",
+            "Unit": "0 - 10",
+            "Min": 0,
+            "Max": 10
+        },
+        {
+            "Name": "The frequency at which you go on dates",
+            "Unit": "per month",
+            "Min": 0
+        },
+        {
+            "Name": "Their timeline for having kids is similar to yours",
+            "Unit": "0 - 10",
+            "Optimal": 10,
+            "Min": 0,
+            "Max": 10
+        },
+        {
+            "Name": "They have a savings account",
+            "Unit": "0 - 10",
+            "Optimal": 10,
+            "Min": 0,
+            "Max": 10
+        },
+        {
+            "Name": "They have debt",
+            "Unit": "0 - 10",
+            "Optimal": 0,
+            "Min": 0,
+            "Max": 10
+        },
+        {
+            "Name": "They donate to charity",
+            "Unit": "0 - 10",
+            "Optimal": 10,
+            "Min": 0,
+            "Max": 10
+        },
+        {
+            "Name": "They get along with their family",
+            "Unit": "0 - 10",
+            "Optimal": 10,
+            "Min": 0,
+            "Max": 10
+        },
+        {
+            "Name": "They want to spend time with their family",
+            "Unit": "0 - 10",
+            "Min": 0,
+            "Max": 10
+        },
+        {
+            "Name": "They want to spend time with your family",
+            "Unit": "0 - 10",
+            "Min": 0,
+            "Max": 10
+        },
+        {
+            "Name": "You handle disagreeing with each other well",
+            "Unit": "0 - 10",
+            "Optimal": 10,
+            "Min": 0,
+            "Max": 10
+        },
+        {
+            "Name": "They admit their mistakes",
+            "Unit": "0 - 10",
+            "Optimal": 10,
+            "Min": 0,
+            "Max": 10
+        },
+        {
+            "Name": "They interact with children well",
+            "Unit": "0 - 10",
+            "Optimal": 10,
+            "Min": 0,
+            "Max": 10
+        },
+        {
+            "Name": "You feel like you're trying to justify the relationship",
+            "Unit": "0 - 10",
+            "Optimal": 0,
+            "Min": 0,
+            "Max": 10
+        },
+        {
+            "Name": "You can enjoy spending time with them, even if you're not doing anything",
+            "Unit": "0 - 10",
+            "Min": 0,
+            "Max": 10
+        },
+        {
+            "Name": "The relationship is trending in a positive direction",
+            "Unit": "0 - 10",
+            "Optimal": 10,
+            "Min": 0,
+            "Max": 10
+        },
+        {
+            "Name": "They are continually improving",
+            "Unit": "0 - 10",
+            "Optimal": 10,
+            "Min": 0,
+            "Max": 10
+        },
+        {
+            "Name": "How often they compliment you",
+            "Unit": "per week",
+            "Min": 0
+        },
+        {
+            "Name": "How often they tell you they love you",
+            "Unit": "per week",
+            "Min": 0
+        },
+        {
+            "Name": "How often you tell them you love them",
+            "Unit": "per week",
+            "Min": 0
+        },
+        {
+            "Name": "How often they give you their full attention",
+            "Unit": "per week",
+            "Min": 0
+        },
+        {
+            "Name": "They're confident",
+            "Unit": "0 - 10",
+            "Optimal": 10,
+            "Min": 0,
+            "Max": 10
+        },
+        {
+            "Name": "You've observed them deal with setbacks well",
+            "Unit": "0 - 10",
+            "Optimal": 10,
+            "Min": 0,
+            "Max": 10
+        },
+        {
+            "Name": "You've observed them respond to failure well",
+            "Unit": "0 - 10",
+            "Optimal": 10,
+            "Min": 0,
+            "Max": 10
+        },
+        {
+            "Name": "How often they get angry",
+            "Unit": "per month",
+            "Min": 0
+        },
+        {
+            "Name": "How often they get sad",
+            "Unit": "per month",
+            "Min": 0,
+            "Optimal": 0
+        },
+        {
+            "Name": "How often they take a shower",
+            "Unit": "per week",
+            "Min": 0,
+            "Optimal": 3
+        },
+        {
+            "Name": "How often they brush their teeth",
+            "Unit": "per day",
+            "Min": 0,
+            "Optimal": 2
+        },
+        {
+            "Name": "How often they floss",
+            "Unit": "per week",
+            "Min": 0,
+            "Optimal": 7
+        },
+        {
+            "Name": "How often they go to the gym",
+            "Unit": "per month",
+            "Min": 0
+        },
+        {
+            "Name": "How often they meditate",
+            "Unit": "per month",
+            "Min": 0
+        },
+        {
+            "Name": "They've been to therapy",
+            "Unit": "0 - 10",
+            "Min": 0,
+            "Max": 10
+        },
+        {
+            "Name": "They're willing to go to therapy",
+            "Unit": "0 - 10",
+            "Min": 0,
+            "Max": 10
+        },
+        {
+            "Name": "They're ",
+            "Unit": "0 - 10",
+            "Min": 0,
+            "Max": 10
+        }
+    ]
+}

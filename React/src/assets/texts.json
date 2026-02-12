@@ -11,10 +11,10 @@
     "dashboard": {
         "explanation": "This is (or will be) an app to help you make decisions!\n\nExplanations for each page will be here.\n\nStart by going to the `Decisions` page and add a new decision.\nThen, if you have multiple decisions, you can come back here and switch between them. You can also click the `only for testing` box to add some pre-made decisions for testing (though I encourage you to make your own to test it first)."
     },
-    "fine_tune_weights": {
+    "fine tune weights": {
         "explanation": "This is where you can fine tune how much each factor matters. Because getting\nthe weights right can have a large impact on the final answer, I've created a\nseperate way to break it down as well. Remember, this is targeted towards making\nbig decisions that might have lots of factors.\n\nIf you think the weights you added when adding factors are already pretty accurate,\nyou can skip this step.\n\nThere's steps to fine tuning the factors. You can do either one, both, or neither\nof them as you'd like. First, you can go through the section that helps you sort\nthe factors in order of importance. It breaks it down into pairs of factors\nand asks which is more important. It uses a custom algorithm to make the sorting\nas efficient as possible. It won't change any of the weights until you're done\nsorting them, and then it will ask you if you want to set them as the new weights.\n\nFrom there, you can go to the slider, which shows the weights next to each other.\nYou can adjust the weights by dragging the sliders, so they're not simply evenly\nspaced. I've also included several graphs to help you visualize the weights.\n\nOnce you're done here, head over to the `Answers` page to start making the\ndecision."
     },
-    "decisions": {
+    "decision": {
         "explanation": "This page allows you to add, edit, and remove decisions to your dashboard. Decisions are\npretty self explanatory.\n\nOnce you're done here, go to the `Options` page to add options to your decision."
     },
     "options": {
@@ -23,7 +23,7 @@
     "answers": {
         "explanation": "Now that you've specified what the decision you're trying to make actually is, you can start inputting what you know. This page breaks down the decision into parts so you can evaluate each part of the decision induvidually. This part usually takes the longest. If you're not sure about an answer, you can skip it and come back to it later, or you can select \"I'm not sure\" and provide a range of values that you think is appropriate. The behind the scenes algorithm will take your uncertainty into account.\n\nThere are 2 options for inputting answers: \n\n1.A quiz, which will ask you each answer one at a time, and you can input it interactively. \n\n2. A manual input table, in which you can put the answers in directly, if that makes more sense to you. \n\nOnce you're finished filling in all the answers, you can move on to the `View Results` page to finally see the results of your decision!"
     },
-    "view_results": {
+    "results": {
         "explanation": "This page shows the results of your decision. It shows the best option, the worst option, and graphs of the results to help you understand why they're the best and worst.\n\nWhen providing feedback, you can use the letters on the right side to reference specific graphs.",
         "line1d": "This shows the results in terms of how \"bad\" each option is, or in other words, how far way each option is from the optimal",
         "PCA": "This shows each option as a point in 2D space. Each point is actually in a much higher dimension, but this is projected down to 2D to make it easier to visualize. (For those who are interested, it uses the PCA algorithm to do this.)",
@@ -39,7 +39,7 @@
     "explanation": {
         "explanation": "This page explains the details of how the algorithm works. Let me know if I've explained it clearly enough, and if the graphs are helpful."
     },
-    "factor_packs": {
+    "factor packs": {
         "explanation": "This page allows you to add and remove factor packs to your decisions. These will be in-app purchases, but for now, just click 'buy' to mess with them. They're currently full of placeholder factors, and there's only 2. In the future, there will be more of them, they'll scroll to the side, and they'll have better pictures (probably).",
         "page_explanation": "Factor packs are pre-made groups of factors that apply to certain decisions."
     }

@@ -1047,7 +1047,7 @@ with explain(ss.texts['view_results']['heatmap1d']):
 
 
 # Shows stuff in the sidebar
-# internals()
+internals()
 
 
 with explain(ss.texts['view_results']['line1d']):
