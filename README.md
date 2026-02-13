@@ -1,6 +1,17 @@
 # Factorie
-
 Factorie is a tool to help you make big decisions.
+
+
+## To Install
+```bash
+nvm use v22.20.0
+npm install
+```
+## To Run
+```bash
+npm run dev
+```
+
 
 This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
 
