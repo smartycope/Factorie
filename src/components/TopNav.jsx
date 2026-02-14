@@ -13,7 +13,7 @@ const pages = [
   ['Quiz', '/quiz'],
   ['Fine Tune Weights', '/weights'],
   ['Results', '/results'],
-  ['Factor Packs', '/factor-packs'],
+//   ['Factor Packs', '/factor-packs'],
 //   ['Import/Export', '/save'],
   ['Explanation', '/explanation'],
 ]
@@ -21,7 +21,7 @@ const pages = [
 export default function TopNav() {
   return (
     <AppBar position="static" color="transparent" elevation={1}>
-      <Toolbar sx={{ maxWidth: 1200, margin: "0 auto", width: "100%" }}>
+      <Toolbar sx={{ maxWidth: 1200, margin: "0 auto", width: "100%"}}>
         {/* Keep it vertical */}
         <Button
           component={NavLink}
@@ -50,7 +50,7 @@ export default function TopNav() {
 
         <Box
           component="nav"
-          sx={{ ml: 3, display: { xs: "none", md: "flex" }, gap: 1 }}
+          sx={{ ml: 3, display: { xs: "none", md: "flex" }, gap: { xs: 0, md: 2 } }}
         >
           {pages.map(([label, path]) => (
             <Button

@@ -18,6 +18,7 @@ import CardContent from "@mui/material/CardContent";
 import { TextField } from "@mui/material";
 
 // TODO: negative values don't work well with this right now
+// TODO: when there's 2 sliders (unsure), only one is labeled, neither should be
 function cloneDecision(decision) {
   return Decision.deserialize(JSON.parse(decision.serialize()));
 }
@@ -161,7 +162,7 @@ export default function Quiz() {
       <Typography>Select a decision to take the quiz.</Typography>
     </Box>
   ) : (
-    <Box sx={{ p: 2 }}>
+    <Box sx={{ p: 2, minWidth: "60%" }}>
       {/* Top stuff */}
       <Box
         sx={{

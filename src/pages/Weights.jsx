@@ -175,22 +175,6 @@ export default function Weights() {
     unsaved = positions.some((p, i) => p !== decision.factors.weights[i]);
 
   // Plotly visuals
-  const radarData = [
-    {
-      type: "scatterpolar",
-      r: positions,
-      theta: labels,
-      fill: "none",
-      mode: "lines+markers",
-    },
-  ];
-  const radarLayout = {
-    polar: { radialaxis: { visible: true, range: [0, 1] } },
-    showlegend: false,
-    width: 400,
-    height: 360,
-  };
-
   // sort bars by value (ascending)
   const pairs = labels.map((lab, i) => ({ lab, val: positions[i] ?? 0 }));
   pairs.sort((a, b) => a.val - b.val);
@@ -200,8 +184,37 @@ export default function Weights() {
   const barLayout = {
     yaxis: { tickformat: ".0%", title: "Weight" },
     showlegend: false,
-    width: 600,
+    width: 400,
     height: 360,
+  };
+
+  const radarData = [
+    {
+      type: "barpolar",
+    //   r: positions,
+    //   theta: labels,
+    r: barY,
+        theta: barX,
+      width: 0.7,
+      opacity: 0.8,
+    },
+  ];
+  const radarLayout = {
+    width: 350,
+    height: 360,
+    polar: {
+      //   bgcolor: "rgba(68, 25, 25, 0)",
+      radialaxis: {
+        range: [0, 1],
+        showticklabels: false,
+        ticks: "",
+      },
+      angularaxis: {
+        showticklabels: true,
+        // tickfont: { color: textColor },
+      },
+    },
+    // paper_bgcolor: "rgba(0,0,0,0)",
   };
 
   return !decision ? (
@@ -210,7 +223,7 @@ export default function Weights() {
       <Typography>Please select or create a decision first.</Typography>
     </Box>
   ) : (
-    <Box sx={{ flex: 1 }}>
+    <Box sx={{ flex: 1, maxWidth: "65%" }}>
       <Typography variant="h4">Fine Tune Weights</Typography>
       <Paper sx={{ p: 2, mb: 2 }} elevation={2}>
         <Typography variant="h6">Sort Factors</Typography>
@@ -317,13 +330,13 @@ export default function Weights() {
         </Box>
       </Paper>
 
-      <Box sx={{ display: "flex", gap: 2, mt: 3 }}>
+      <Box sx={{ display: "flex", gap: 0, mh: 0, mt: 1, p:0 }}>
         <Box>
-          <Typography variant="subtitle1">Radar</Typography>
+          {/* <Typography variant="subtitle1">Radar</Typography> */}
           <Plot data={radarData} layout={radarLayout} />
         </Box>
         <Box>
-          <Typography variant="subtitle1">Bar</Typography>
+          {/* <Typography variant="subtitle1">Bar</Typography> */}
           <Plot data={barData} layout={barLayout} />
         </Box>
       </Box>

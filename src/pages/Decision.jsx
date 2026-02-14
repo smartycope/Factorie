@@ -23,7 +23,7 @@ import DecisionList from "../components/DecisionList";
 import Explanation from "./Explanation";
 import ExplanationSidebar from "../components/ExplanationSidebar";
 
-function FactorIndivudialEditTable({}) {
+function FactorIndivudialEditTableTransposed() {
   const {
     decisions,
     setDecisions,
@@ -157,7 +157,212 @@ function FactorIndivudialEditTable({}) {
   );
 }
 
-function DecisionInduvidualEditTable({}) {
+function FactorIndivudialEditTable() {
+    const {
+        decisions,
+        setDecisions,
+        selectedIndex,
+        setSelectedIndex,
+        decision,
+        addFactor,
+        editFactor,
+        removeFactor,
+        addOption,
+        removeOption,
+    } = useDecisions();
+    const [newFactorName, setNewFactorName] = useState("");
+
+    const factorTableCellSx = { minWidth: 50 };
+    const optionTableCellSx = { minWidth: 80 };
+
+    function setAnswer(option, factor, answerStr) {
+        if (!decision) return;
+        const copy = [...decisions];
+        const d = Decision.deserialize(JSON.parse(decision.serialize()));
+        try {
+            d.setAnswer(option, factor, answerStr);
+            copy[selectedIndex] = d;
+            setDecisions(copy);
+        } catch (e) {
+            alert(e.message);
+        }
+    }
+
+    if (!decision) return null;
+
+    return (
+        <>
+            <Box sx={{ display: "flex", gap: 2, alignItems: "center", mt: 1 }}>
+                <TextField
+                    label="New factor name"
+                    value={newFactorName}
+                    onChange={(e) => setNewFactorName(e.target.value)}
+                    size="small"
+                    onKeyDown={(e) => {
+                        if (e.key === "Enter") addFactor();
+                    }}
+                />
+                <Button startIcon={<AddIcon />} variant="contained" onClick={addFactor}>
+                    Add Factor
+                </Button>
+            </Box>
+
+            <TableContainer sx={{ mt: 2 }}>
+                <Table size="small">
+                    <TableHead>
+                        <TableRow>
+                            <TableCell>Factor</TableCell>
+                            {decision.options.map((opt, oi) => (
+                                <TableCell key={oi}>{opt}</TableCell>
+                            ))}
+                            <TableCell>Actions</TableCell>
+                        </TableRow>
+                    </TableHead>
+                    <TableBody>
+                        {decision.factors.names.map((facName, fi) => (
+                            <TableRow key={fi}>
+                                <TableCell>{facName}</TableCell>
+                                {decision.options.map((opt, oi) => {
+                                    const ans = decision.answers?.[oi]?.[fi];
+                                    if (!ans) {
+                                        return (
+                                            <TableCell key={oi}>
+                                                <TextField
+                                                    size="small"
+                                                    sx={{
+                                                        ...optionTableCellSx,
+                                                        backgroundColor: "rgb(175, 88, 88)",
+                                                    }}
+                                                    defaultValue=""
+                                                    onBlur={(e) => setAnswer(opt, facName, e.target.value)}
+                                                />
+                                            </TableCell>
+                                        );
+                                    }
+                                    const a = ans[0];
+                                    const b = ans[1];
+                                    const hasA = Number.isFinite(a);
+                                    const hasB = Number.isFinite(b);
+                                    return (
+                                        <TableCell key={oi}>
+                                            <TextField
+                                                size="small"
+                                                sx={{
+                                                    ...optionTableCellSx,
+                                                    backgroundColor: hasA || hasB ? "white" : "rgb(175, 88, 88)",
+                                                }}
+                                                defaultValue={(() => {
+                                                    if (!hasA && !hasB) return "";
+                                                    if (!hasA) return `${b}`;
+                                                    if (!hasB) return `${a}`;
+                                                    if (a === b) return `${a}`;
+                                                    return `${a} - ${b}`;
+                                                })()}
+                                                onBlur={(e) => setAnswer(opt, facName, e.target.value)}
+                                            />
+                                        </TableCell>
+                                    );
+                                })}
+                                <TableCell>
+                                    <IconButton size="small" onClick={() => removeFactor(fi)}>
+                                        <DeleteIcon />
+                                    </IconButton>
+                                </TableCell>
+                            </TableRow>
+                        ))}
+                    </TableBody>
+                </Table>
+            </TableContainer>
+        </>
+    );
+}
+
+function DecisionInduvidualEditTableTransposed() {
+    const {
+        decisions,
+        setDecisions,
+        selectedIndex,
+        setSelectedIndex,
+        decision,
+        addFactor,
+        editFactor,
+        removeFactor,
+        addOption,
+        removeOption,
+    } = useDecisions();
+    const [newOptionName, setNewOptionName] = useState("");
+    const optionTableCellSx = { minWidth: 80 };
+
+    function setAnswer(option, factor, answerStr) {
+        if (!decision) return;
+        const copy = [...decisions];
+        const d = Decision.deserialize(JSON.parse(decision.serialize()));
+        try {
+            d.setAnswer(option, factor, answerStr);
+            copy[selectedIndex] = d;
+            setDecisions(copy);
+        } catch (e) {
+            // TODO: show basic alert for invalid input; we could improve with inline validation
+            alert(e.message);
+        }
+    }
+
+    if (!decision) return null;
+
+    return (
+        <>
+            <TableContainer sx={{ mt: 2 }}>
+                <Table size="small">
+                    <TableHead>
+                        <TableRow>
+                            <TableCell sx={{ whiteSpace: "nowrap" }}>Options ⇨<br/>Factors ⇩</TableCell>
+                            {decision.options.map((opt, oi) => (
+                                <TableCell key={oi}>{opt}</TableCell>
+                            ))}
+                        </TableRow>
+                    </TableHead>
+                    <TableBody>
+                        {decision.factors.names.map((fac, fi) => (
+                            <TableRow key={fi}>
+                                <TableCell>{fac}</TableCell>
+                                {decision.options.map((opt, oi) => {
+                                    const ans = decision.answers?.[oi]?.[fi];
+                                    if (!ans) return <TableCell key={oi} />;
+                                    const a = ans[0];
+                                    const b = ans[1];
+                                    const hasA = Number.isFinite(a);
+                                    const hasB = Number.isFinite(b);
+                                    return (
+                                        <TableCell key={oi}>
+                                            <TextField
+                                                size="small"
+                                                sx={{
+                                                    ...optionTableCellSx,
+                                                    backgroundColor:
+                                                        hasA || hasB ? "white" : "rgb(175, 88, 88)",
+                                                }}
+                                                defaultValue={(() => {
+                                                    if (!hasA && !hasB) return "";
+                                                    if (!hasA) return `${b}`;
+                                                    if (!hasB) return `${a}`;
+                                                    if (a === b) return `${a}`;
+                                                    return `${a} - ${b}`;
+                                                })()}
+                                                onBlur={(e) => setAnswer(opt, fac, e.target.value)}
+                                            />
+                                        </TableCell>
+                                    );
+                                })}
+                            </TableRow>
+                        ))}
+                    </TableBody>
+                </Table>
+            </TableContainer>
+        </>
+    );
+}
+
+function DecisionInduvidualEditTable() {
   const {
     decisions,
     setDecisions,
@@ -353,7 +558,7 @@ export default function Decisions() {
           </Button>
         </Box>
 
-        <DecisionInduvidualEditTable/>
+        <DecisionInduvidualEditTableTransposed/>
       </>
     );
 

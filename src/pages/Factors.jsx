@@ -234,7 +234,7 @@ export default function Factors() {
                 onChange={(e) => setAddName(e.target.value)}
                 disabled={Boolean(editFactorName)}
                 helperText={
-                  editFactorName ? "Name cannot be changed while editing" : ""
+                  editFactorName ? "Delete this factor and create a new one to change the name" : ""
                 }
                 fullWidth
                 size="small"
@@ -354,15 +354,94 @@ export default function Factors() {
             </Box>
           </Paper>
 
-          {/* <Paper sx={{ p: 2, flex: 1 }}>
+        {/* <Paper sx={{ p: 2, flex: 1 }}>
             <Typography variant="h6">Factors</Typography>
-            <Typography variant="body2" sx={{ mb: 1 }}>Edit or delete rows directly below; drag the rows to reorder factors.</Typography>
-            <Box>
-            </Box>
-          </Paper> */}
+            <Typography variant="body2" sx={{ mb: 1 }}>
+                Edit or delete rows directly below; drag the rows to reorder factors.
+            </Typography>
+            <Box></Box>
+        </Paper> */}
         </Box>
 
         <Box sx={{ mt: 3 }}>
+            <Typography variant="h6">Current Factors</Typography>
+            <Paper sx={{ mt: 1 }}>
+                <Table size="small">
+                    <TableHead>
+                        <TableRow>
+                            <TableCell>Name</TableCell>
+                            <TableCell>Unit</TableCell>
+                            <TableCell>Optimal</TableCell>
+                            <TableCell>Weight</TableCell>
+                            <TableCell>Min</TableCell>
+                            <TableCell>Max</TableCell>
+                            <TableCell>Delete</TableCell>
+                        </TableRow>
+                    </TableHead>
+                    <TableBody>
+                        {decision.factors.names.map((name, i) => (
+                            <TableRow
+                                key={name}
+                                draggable
+                                hover
+                                selected={editFactorName === name}
+                                onClick={() => setEditFactorName(name)}
+                                onDragStart={(e) => onDragStart(e, i)}
+                                onDragOver={onDragOver}
+                                onDrop={(e) => onDropRow(e, i)}
+                                sx={{ cursor: "pointer" }}
+                            >
+                                <TableCell>{name}</TableCell>
+                                <TableCell>{decision.factors.units[i] ?? ""}</TableCell>
+                                <TableCell>{String(decision.factors.optimals[i] ?? "")}</TableCell>
+                                <TableCell>
+                                    {Number.isFinite(decision.factors.weights[i])
+                                        ? (decision.factors.weights[i] * 100).toFixed(0) + "%"
+                                        : ""}
+                                </TableCell>
+                                <TableCell>
+                                    {decision.factors.mins[i] == null
+                                        ? "calculated"
+                                        : String(decision.factors.mins[i])}
+                                </TableCell>
+                                <TableCell>
+                                    {decision.factors.maxs[i] == null
+                                        ? "calculated"
+                                        : String(decision.factors.maxs[i])}
+                                </TableCell>
+                                <TableCell>
+                                    <IconButton
+                                        size="small"
+                                        onClick={(e) => {
+                                            e.stopPropagation();
+                                            handleRemove(name);
+                                        }}
+                                        title="Delete"
+                                    >
+                                        <DeleteIcon fontSize="small" />
+                                    </IconButton>
+                                </TableCell>
+                            </TableRow>
+                        ))}
+                    </TableBody>
+                </Table>
+            </Paper>
+        </Box>
+        </Box>
+    //   {/* <ExplanationSidebar page="factors" />
+    // </Box> */}
+  ));
+}
+
+
+
+
+
+
+
+
+
+{/* <Box sx={{ mt: 3 }}>
           <Typography variant="h6">Current Factors</Typography>
           <Paper sx={{ mt: 1 }}>
             <Table size="small">
@@ -427,10 +506,4 @@ export default function Factors() {
               </TableBody>
             </Table>
           </Paper>
-        </Box>
-      </Box>
-    )
-    //   {/* <ExplanationSidebar page="factors" />
-    // </Box> */}
-  );
-}
+        </Box> */}

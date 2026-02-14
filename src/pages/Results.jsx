@@ -13,6 +13,8 @@ import { useTheme } from "@mui/material/styles";
 import Plot from "react-plotly.js";
 import ExplanationSidebar from "../components/ExplanationSidebar";
 import * as PCAImport from "pca-js";
+import texts from "../assets/texts.json";
+import HelpOverlay from "../components/HelpOverlay";
 
 const PCA = PCAImport.default ?? PCAImport;
 
@@ -157,13 +159,6 @@ export default function Results() {
     setIncludedRadar(defaultIncluded);
   }, [best, labels]);
 
-  const resultsExplanation = best && worst
-    ? [
-        `The best option is "${best.is}" because of ${joinAnd(best.because)}, even though ${joinAnd(best.despite)} isn't what you want.`,
-        `The worst option is "${worst.is}" because of ${joinAnd(worst.because)}, even though ${joinAnd(worst.despite)} is what you want.`,
-      ]
-    : [];
-
   const singleLinePlot = useMemo(() => {
     const t = linspace(0, 100, 1000);
     const annotations = results.map((r) => ({
@@ -233,7 +228,7 @@ export default function Results() {
         },
         yaxis: { range: [-1, 1], visible: false },
         height: 300,
-        title: "Relative distance of each option",
+        // title: {text:"Relative distance of each option"},
         showlegend: false,
         annotations,
         margin: { t: 50, b: 40, l: 30, r: 30 },
@@ -241,6 +236,7 @@ export default function Results() {
     };
   }, [results, theme]);
 
+  // The variable sizes one
   const heatmapPlot = useMemo(() => {
     const colorscale = ["#9B1127", "#FFFFBF", "#195695"];
     const nRows = normalizedAnswers.length;
@@ -308,48 +304,71 @@ export default function Results() {
           zeroline: false,
           autorange: "reversed",
         },
-        plot_bgcolor: theme.palette.primary.main,
+        // plot_bgcolor: theme.palette.primary.main,
         margin: { t: 60, b: 20, l: 20, r: 20 },
-        title: "How good each option is",
+        title: { text: "How good each option is" },
         title_x: 0.2,
         title_font_size: 20,
         shapes,
       },
     };
-  }, [
-    normalizedAnswers,
-    factorNames,
-    weights,
-    theme,
-    decision,
-    answers,
-    calc,
-  ]);
+  }, [normalizedAnswers, factorNames, weights, theme, decision, answers, calc]);
 
+  // Multi color bar plot
   const entropyPlot = useMemo(() => {
     const entropies = factorNames.map((_, j) => {
-      const col = answers.map((row) => row[j]);
-      return stdDev(col) * weights[j];
+      return stdDev(answers.map((row) => row[j])) * weights[j];
     });
+
     return {
       data: [
         {
           type: "bar",
-          x: factorNames,
-          y: entropies,
+          // Sort by entropy
+          x: factorNames.toSorted(
+            (a, b) =>
+              entropies[factorNames.indexOf(b)] -
+              entropies[factorNames.indexOf(a)],
+          ),//.map(x => x * 1),
+          y: entropies.toSorted((a, b) => b - a),
+          width: weights,
           marker: {
-            color: weights,
-            colorscale: "Blues",
+            // This is just to invert the colorscale (since inverting the colorscale doesn't work??)
+            color: weights.map(x => 1-x),
+            colorscale: [
+              ["0.0", "#08326e"],
+              ["1.0", theme.palette.background.paper],
+            ],
             cmin: 0,
             cmax: 1,
+            line: {
+              color: theme.palette.background.paper,
+              // color: "#ffffff",
+              width: 2,
+            }
           },
         },
       ],
       layout: {
-        title: "Usefulness of each factor",
-        xaxis: { showticklabels: true, showgrid: true },
-        yaxis: { title: "How much each factor contributed to the decision" },
+        // borderwidth: 2,
+        // gap: 2,
+        // legend: {bordercolor: "#000000", borderwidth: 1, visible: true},
+        // bordercolor: theme.palette.divider,
+        // bordercolor: "#000000",
+        // border: {color: theme.palette.divider, width: 1},
+        title: { text: "Usefulness of each factor" },
+        // legend: { visible: true, orientation: "h", y: -0.2 },
+        xaxis: {
+          showticklabels: true,
+          showgrid: true,
+          title: { text: "Factors" },
+        },
+        yaxis: {
+          title: { text: "How much each factor contributed to the decision" },
+          showticklabels: false,
+        },
         margin: { t: 60, b: 40, l: 50, r: 20 },
+        // plot_bgcolor: theme.palette.primary.main,
       },
     };
   }, [factorNames, answers, weights]);
@@ -379,7 +398,7 @@ export default function Results() {
         },
       ],
       layout: {
-        title: "How good each option is",
+        title: { text: "How good each option is" },
         yaxis: {
           range: [0, 1],
           tickformat: ".0%",
@@ -390,12 +409,12 @@ export default function Results() {
   }, [decision, goodness, goodnessConf]);
 
   const pcaPlot = useMemo(() => {
-    console.warn("TODO: PCA plot")
+    console.warn("TODO: PCA plot");
     return null;
     const data = [...normalizedAnswers];
     data.push(optimalNormalized, worstPossibleOptionNormalized);
     const adjusted = computePca2D(data) || data.map(() => [0, 0]);
-    console.log('adjusted', adjusted);
+    console.log("adjusted", adjusted);
     const xs = adjusted.map((row) => row[0]);
     const ys = adjusted.map((row) => row[1]);
     return {
@@ -477,25 +496,26 @@ export default function Results() {
     return (
       // <Box sx={{ display: "flex", gap: 3, flex: 1 }}>
       //   <DecisionList />
-        // <Box sx={{ flex: 1, p: 3 }}>
-          <Typography variant="h6">Select a decision to view results.</Typography>
-        // {/* </Box> */}
+      // <Box sx={{ flex: 1, p: 3 }}>
+      <Typography variant="h6">Select a decision to view results.</Typography>
+      // {/* </Box> */}
       //   <ExplanationSidebar />
       // </Box>
     );
   }
 
   const invalid = decision.isInvalid();
+  const help = texts.results;
   if (invalid) {
     return (
       // <Box sx={{ display: "flex", gap: 3, flex: 1 }}>
       //   <DecisionList />
-        <Box sx={{ flex: 1, p: 3 }}>
-          <Typography variant="h6">Results unavailable</Typography>
-          <Typography variant="body2" sx={{ mt: 1 }}>
-            {invalid}
-          </Typography>
-        </Box>
+      <Box sx={{ flex: 1, p: 3 }}>
+        <Typography variant="h6">Results unavailable</Typography>
+        <Typography variant="body2" sx={{ mt: 1 }}>
+          {invalid}
+        </Typography>
+      </Box>
       //   <ExplanationSidebar />
       // </Box>
     );
@@ -504,17 +524,24 @@ export default function Results() {
   return (
     // <Box sx={{ display: "flex", gap: 3, flex: 1 }}>
     //   <DecisionList />
-      <Box sx={{ flex: 1, p: 3, minWidth: 0 }}>
-        <Stack spacing={3}>
-          <Box>
-            <Typography variant="h5">Results</Typography>
-            <Typography variant="body2" sx={{ mt: 1, whiteSpace: "pre-line" }}>
-              {resultsExplanation.join("\n\n")}
-            </Typography>
-          </Box>
+    <Box sx={{ flex: 1, p: 3, minWidth: 0 }}>
+      <Stack spacing={3}>
+        <Box>
+          <Typography variant="h5">Results</Typography>
+          <Typography variant="body2" sx={{ mt: 1, whiteSpace: "pre-line" }}>
+            The best option is <code>{best.is}</code> because of{" "}
+            <code>{joinAnd(best.because)}</code>, even though{" "}
+            <code>{joinAnd(best.despite)}</code> isn't what you want.
+            <br />
+            The worst option is <code>{worst.is}</code> because of{" "}
+            <code>{joinAnd(worst.because)}</code>, even though{" "}
+            <code>{joinAnd(worst.despite)}</code> is what you want.
+          </Typography>
+        </Box>
 
-          <Divider />
+        <Divider />
 
+        <HelpOverlay helpText={help.goodness_bar}>
           <Paper sx={{ p: 2 }}>
             <Plot
               data={goodnessPlot.data}
@@ -524,7 +551,9 @@ export default function Results() {
               config={{ displayModeBar: false }}
             />
           </Paper>
+        </HelpOverlay>
 
+        <HelpOverlay helpText={help.entropy}>
           <Paper sx={{ p: 2 }}>
             <Plot
               data={entropyPlot.data}
@@ -534,7 +563,8 @@ export default function Results() {
               config={{ displayModeBar: false }}
             />
           </Paper>
-
+        </HelpOverlay>
+        <HelpOverlay helpText={help.contributions_var_size}>
           <Paper sx={{ p: 2 }}>
             <Plot
               data={heatmapPlot.data}
@@ -544,9 +574,12 @@ export default function Results() {
               config={{ displayModeBar: false }}
             />
           </Paper>
-          <Typography variant="h6" align="center">
-            Relative Distance of Each Option
-          </Typography>
+        </HelpOverlay>
+
+        <Typography variant="h6" align="center">
+          Relative Distance of Each Option
+        </Typography>
+        <HelpOverlay helpText={help.line1d}>
           <Paper sx={{ p: 2, width: "100%" }}>
             <Plot
               data={singleLinePlot.data}
@@ -556,17 +589,24 @@ export default function Results() {
               config={{ displayModeBar: false }}
             />
           </Paper>
+        </HelpOverlay>
 
-          <Paper sx={{ p: 2 }}>
-            <Plot
-              data={pcaPlot?.data}
-              layout={pcaPlot?.layout}
-              style={{ width: "100%", height: 450 }}
-              useResizeHandler
-              config={{ displayModeBar: false }}
-            />
-          </Paper>
+        {/*  PCA plot*/}
+        {pcaPlot && (
+          <HelpOverlay helpText={help.PCA}>
+            <Paper sx={{ p: 2 }}>
+              <Plot
+                data={pcaPlot?.data}
+                layout={pcaPlot?.layout}
+                style={{ width: "100%", height: 450 }}
+                useResizeHandler
+                config={{ displayModeBar: false }}
+              />
+            </Paper>
+          </HelpOverlay>
+        )}
 
+        <HelpOverlay helpText={help.radar}>
           <Paper sx={{ p: 2 }}>
             <Stack spacing={2}>
               <Typography variant="subtitle1">Radar Selection</Typography>
@@ -576,13 +616,19 @@ export default function Results() {
                 value={includedRadar}
                 onChange={(e, value) => setIncludedRadar(value)}
                 renderTags={(value, getTagProps) =>
-                  value.map((option, index) => (
-                    <Chip
-                      variant="outlined"
-                      label={option}
-                      {...getTagProps({ index })}
-                    />
-                  ))
+                  value.map((option, index) => {
+                    let props = getTagProps({ index });
+                    // React doesn't like spreading the key prop
+                    delete props.key;
+                    return (
+                      <Chip
+                        variant="outlined"
+                        label={option}
+                        key={`${option}-${index}-radar`}
+                        {...props}
+                      />
+                    );
+                  })
                 }
                 renderInput={(params) => (
                   <TextField {...params} label="Options" size="small" />
@@ -597,9 +643,10 @@ export default function Results() {
               />
             </Stack>
           </Paper>
-        </Stack>
-      </Box>
-      // {/* <ExplanationSidebar /> */}
+        </HelpOverlay>
+      </Stack>
+    </Box>
+    // {/* <ExplanationSidebar /> */}
     // </Box>
   );
 }

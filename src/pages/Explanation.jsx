@@ -14,125 +14,29 @@ import graph7 from '../assets/graph7.png'
 import graph8 from '../assets/graph8.png'
 
 export default function Explanation() {
-  // Distances for the first example
-//   const tacos = { x: 8, y: 10 }
-//   const spaghetti = { x: 4, y: 6 }
-//   const perfect = { x: 10, y: 0 }
-//   const dist = (a, b, weightY = 1) => Math.sqrt(Math.pow(a.x - b.x, 2) + Math.pow((a.y - b.y) * weightY, 2))
-
-
-//   const scatter2d = {
-//     data: [
-//       { x: [tacos.x, spaghetti.x], y: [tacos.y, spaghetti.y], mode: 'markers+text', text: ['Tacos', 'Spaghetti'], textposition: 'top center', marker: { size: 10 } },
-//       { x: [perfect.x], y: [perfect.y], mode: 'markers+text', text: ['Perfect Meal'], textposition: 'bottom right', marker: { size: 10 } },
-//       { x: [tacos.x, perfect.x], y: [tacos.y, perfect.y], mode: 'lines', line: { color: 'green' }, hoverinfo: 'none' },
-//       { x: [spaghetti.x, perfect.x], y: [spaghetti.y, perfect.y], mode: 'lines', line: { color: 'green' }, hoverinfo: 'none' },
-//     ],
-//     layout: {
-//       title: 'What should I eat for dinner?',
-//       xaxis: { title: 'Taste', range: [0, 11], tickmode: 'array', tickvals: [0,2,4,6,8,10], ticktext: ['0/10','2/10','4/10','6/10','8/10','10/10'], showgrid: false, zeroline: false },
-//       yaxis: { title: 'Cost', range: [0, 11], tickmode: 'array', tickvals: [0,2,4,6,8,10], ticktext: ['$0','$2','$4','$6','$8','$10'], showgrid: false, zeroline: false },
-//       showlegend: false,
-//       width: 640,
-//       height: 480,
-//     }
-//   }
-
-//   const weightedD = {
-//     data: [
-//       { x: [tacos.x, spaghetti.x], y: [tacos.y * 0.5, spaghetti.y * 0.5], mode: 'markers+text', text: ['Tacos', 'Spaghetti'], textposition: 'top center', marker: { size: 10 } },
-//       { x: [perfect.x], y: [perfect.y * 0.5], mode: 'markers+text', text: ['Perfect Meal'], textposition: 'bottom right', marker: { size: 10 } },
-//       { x: [tacos.x, perfect.x], y: [tacos.y * 0.5, perfect.y * 0.5], mode: 'lines', line: { color: 'green' } },
-//       { x: [spaghetti.x, perfect.x], y: [spaghetti.y * 0.5, perfect.y * 0.5], mode: 'lines', line: { color: 'green' } },
-//     ],
-//     layout: {
-//       title: 'Weighted example (taste 100%, cost 50%)',
-//       xaxis: { title: 'Taste - 100% weight', range: [0, 11], tickmode: 'array', tickvals: [0,2,4,6,8,10] },
-//       yaxis: { title: 'Cost - 50% weight', range: [0, 11], tickmode: 'array', tickvals: [0,2,4,6,8,10] },
-//       width: 640,
-//       height: 480,
-//       showlegend: false,
-//     }
-//   }
-
-//   // 3D example
-//   const scatter3d = {
-//     data: [
-//       { x: [8,4], y: [10,6], z: [4,8], mode: 'markers+text', text: ['Tacos','Spaghetti'], textposition: 'top center', marker: { size: 4 } },
-//       { x: [10], y: [0], z: [10], mode: 'markers+text', text: ['Perfect Meal'], textposition: 'bottom right', marker: { size: 4 } },
-//       { x: [8,10], y: [10,0], z: [4,10], mode: 'lines', line: { color: 'green' } },
-//       { x: [4,10], y: [6,0], z: [8,10], mode: 'lines', line: { color: 'green' } },
-//     ],
-//     layout: {
-//       title: '3D: Taste vs Cost vs Healthiness',
-//       scene: { xaxis: { title: 'Taste (0-10)' }, yaxis: { title: 'Cost ($)' }, zaxis: { title: 'Healthiness (0-10)' } },
-//       width: 700,
-//       height: 500,
-//     }
-//   }
-
-//   // Single-option interpretation distances
-//   const partner = { x: 2, y: 6 }
-//   const perfectPartner = { x: 10, y: 10 }
-//   const worst = { x: 0, y: 0 }
-//   const marriedDist = dist(partner, perfectPartner)
-//   const worstDist = dist(worst, perfectPartner)
-
-//   const partner2d = {
-//     data: [
-//       { x: [partner.x], y: [partner.y], mode: 'markers+text', text: ['Your partner'], textposition: 'top center', marker: { size: 10 } },
-//       { x: [perfectPartner.x], y: [perfectPartner.y], mode: 'markers+text', text: ['The perfect partner'], textposition: 'top right', marker: { size: 10 } },
-//       { x: [0,10], y: [0,10], mode: 'lines', line: { color: 'maroon' } },
-//       { x: [0], y: [0], mode: 'markers+text', text: ['The worst possible partner'], textposition: 'bottom left', marker: { size: 8, color: 'red' } },
-//     ],
-//     layout: {
-//       title: 'Should I marry this person?',
-//       xaxis: { title: 'How much they love me', range: [0, 11], tickmode: 'array', tickvals: [0,2,4,6,8,10] },
-//       yaxis: { title: 'How much I enjoy spending time with them', range: [0, 11], tickmode: 'array', tickvals: [0,2,4,6,8,10] },
-//       width: 640,
-//       height: 480,
-//     }
-//   }
-
-//   const badnessScale = {
-//     data: [
-//       { x: [0, worstDist], y: [0, 0], mode: 'lines', line: { color: 'black' } },
-//       { x: [marriedDist], y: [0], mode: 'markers+text', text: ['Married to them'], textposition: 'top center' },
-//       { x: [0], y: [0], mode: 'markers+text', text: ['Perfect option'], textposition: 'top center' },
-//       { x: [worstDist], y: [0], mode: 'markers+text', text: ['Worst option'], textposition: 'top center', marker: { color: 'red' } },
-//     ],
-//     layout: {
-//       title: 'Badness (distance from perfect)',
-//       xaxis: { title: 'Badness (distance)', showticklabels: false, range: [0, Math.max(worstDist, marriedDist) * 1.1] },
-//       yaxis: { visible: false },
-//       width: 700,
-//       height: 160,
-//     }
-//   }
-
   return (
     <Box sx={{ p: 2 }}>
       <Typography variant="h4" gutterBottom>
         On this page
       </Typography>
       {/* TODO: these don't work, and aren't very pretty */}
-      <Typography component="div" paragraph>
-        <ul>
+      <Typography component="ul" paragraph sx={{  listStylePosition: "inside"}}>
+        {/* <ul> */}
           <li>
-            <a href="#How it works">How it works</a>
+            <a href="#how-it-works">How it works</a>
           </li>
           <li>
-            <a href="#Interpreting a single option">
+            <a href="#interpreting-a-single-option">
               Interpreting a single option
             </a>
           </li>
           <li>
-            <a href="#Good Practices">Good Practices</a>
+            <a href="#good-practices">Best Practices</a>
           </li>
-        </ul>
+        {/* </ul> */}
       </Typography>
 
-      <Typography variant="h5" gutterBottom>
+      <Typography variant="h5" gutterBottom id="how-it-works">
         How it works
       </Typography>
       <Typography paragraph>
@@ -210,7 +114,7 @@ export default function Explanation() {
         distance between the options and the perfect option, even if it's hard
         to graph.
       </Typography>
-      <Typography variant="h5" paragraph>
+      <Typography variant="h5" paragraph id="interpreting-a-single-option">
         Interpreting a single option
       </Typography>
       <Typography paragraph>
@@ -247,10 +151,10 @@ export default function Explanation() {
         picky, and then get less picky over time as.
       </Typography>
 
-      <Typography variant="h5" gutterBottom>
+      <Typography variant="h5" gutterBottom id="good-practices">
         Best Practices
       </Typography>
-      <ul>
+      <ul style={{  listStylePosition: "inside"}}>
         <li>
           If you get an answer, and you go, "what? That's not right!", you're
           probably right. This program generally tells you what you already

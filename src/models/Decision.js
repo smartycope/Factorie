@@ -1,4 +1,4 @@
-// A lightweight JS port of src/classes/Decision.py
+// Most of this was directly AI translated from the handwritten class in Decision.py
 export default class Decision {
   static numSamples = 100;
 
