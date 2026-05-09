@@ -302,8 +302,7 @@ function DecisionInduvidualEditTableTransposed() {
             copy[selectedIndex] = d;
             setDecisions(copy);
         } catch (e) {
-            // TODO: show basic alert for invalid input; we could improve with inline validation
-            alert(e.message);
+            // alert(e.message);
         }
     }
 
@@ -339,7 +338,7 @@ function DecisionInduvidualEditTableTransposed() {
                                                 sx={{
                                                     ...optionTableCellSx,
                                                     backgroundColor:
-                                                        hasA || hasB ? "white" : "rgb(175, 88, 88)",
+                                                        hasA || hasB ? "white" : "rgb(249, 135, 135)",
                                                 }}
                                                 defaultValue={(() => {
                                                     if (!hasA && !hasB) return "";
