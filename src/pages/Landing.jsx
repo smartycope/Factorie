@@ -16,19 +16,24 @@ export default function Landing() {
       </Typography>
       {/* <Typography variant="caption" gutterBottom>Make better decisions with factors and weights.</Typography> */}
       {/* make it italic */}
-      <Typography variant="body1" paragraph sx={{ fontStyle: "italic" }}>
-        A tool to help you decide what to do when it's complicated
+      <Typography
+        variant="caption"
+        paragraph
+        sx={{ fontStyle: "italic", mt: -2, color: "text.secondary" }}
+      >
+        {/* A tool to help you decide what to do when it's complicated */}
+        Helping you live a more examined life
       </Typography>
       <Typography variant="h5">Cool, I'm here. What is this?</Typography>
       <Typography variant="body2" paragraph>
-        Factorie is a tool for helping you make better decisions, particularly
-        big life decisions you want to think hard about and matter a lot. You
-        outline all the options you have, and then list all the factors that
-        might affect your decision. You then specify how much each those factor
-        actually matters to you, and rate each option according to each factor.
-        Factorie then combines all that information (using complicated, but not
-        mysterious, math) to give you a recommendation for what to do based on
-        the information you gave.
+        Factorie is a tool for helping you make big life decisions. You use it
+        kinda like a pro-con list: you specify what options you have, then list
+        all the factors that might affect your decision. Then you specify how
+        much each those factors actually matters to you, and rate each option
+        according to each factor. Factorie then combines all that information
+        (using complicated, but not mysterious, math) to help inform you
+        objectively on each option about each option, and explain how it came to
+        that answer based on the information you gave.
       </Typography>
       <Typography variant="h5">Where do I start?</Typography>
       <Typography variant="body2" paragraph>
@@ -44,8 +49,10 @@ export default function Landing() {
         This seems mysterious and hand wavy. How does it work?
       </Typography>
       <Typography variant="body2" paragraph>
-        I'm glad you asked! The concept (if not the math) is actually pretty simple, and it's all
-        explained in the <a href="explanations">explanations</a> page (with pictures, and without math).
+        I'm glad you asked! The concept is actually pretty
+        simple, and it's all explained in the{" "}
+        <a href="explanations">explanations</a> page (with pictures, and without
+        math).
       </Typography>
       <Typography variant="h5">
         I'm not totally sold... why would I let a "computer" make major life

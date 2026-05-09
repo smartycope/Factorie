@@ -6,16 +6,16 @@ import Button from '@mui/material/Button'
 import Box from '@mui/material/Box'
 
 const pages = [
-  ['Dashboard', '/dashboard'],
-  ['Decision', '/decisions'],
-  ['Options', '/options'],
-  ['Factors', '/factors'],
-  ['Quiz', '/quiz'],
-  ['Fine Tune Weights', '/weights'],
-  ['Results', '/results'],
+  ['Dashboard', 'dashboard'],
+  ['Decision', 'decisions'],
+  ['Options', 'options'],
+  ['Factors', 'factors'],
+  ['Quiz', 'quiz'],
+  ['Fine Tune Weights', 'weights'],
+  ['Results', 'results'],
 //   ['Factor Packs', '/factor-packs'],
 //   ['Import/Export', '/save'],
-  ['Explanation', '/explanation'],
+  ['Explanation', 'explanation'],
 ]
 
 export default function TopNav() {
