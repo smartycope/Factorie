@@ -130,6 +130,7 @@ export default class Decision {
   editFactor(
     factor,
     {
+      name = undefined,
       unit = undefined,
       optimal = undefined,
       weight = undefined,
@@ -139,11 +140,12 @@ export default class Decision {
   ) {
     const idx = this._parseFactorParam(factor)
     if (idx === -1) throw new Error("Factor not found")
+    if (name !== undefined) this.factors.names[idx] = name
     if (unit !== undefined) this.factors.units[idx] = unit
     if (optimal !== undefined) this.factors.optimals[idx] = optimal
     if (weight !== undefined) this.factors.weights[idx] = weight
-    this.factors.mins[idx] = min
-    this.factors.maxs[idx] = max
+    if (min !== undefined) this.factors.mins[idx] = min
+    if (max !== undefined) this.factors.maxs[idx] = max
   }
 
   removeFactor(factor) {

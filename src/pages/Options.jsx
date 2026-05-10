@@ -14,14 +14,11 @@ import DecisionList from "../components/DecisionList";
 import ExplanationSidebar from "../components/ExplanationSidebar";
 
 export default function Options() {
-  const { decisions, setDecisions, selectedIndex, addOption, removeOption } =
-    useDecisions();
+  const { decisions, selectedIndex, addOption, removeOption, renameOption } = useDecisions();
   const decision = selectedIndex != null ? decisions[selectedIndex] : null;
   const [newOption, setNewOption] = useState("");
 
   return (
-    // <Box sx={{ display: 'flex', gap: 3 }}>
-    //   <DecisionList />
     <Box sx={{ flex: 1 }}>
       {!decision ? (
         <>
@@ -56,15 +53,19 @@ export default function Options() {
                   </IconButton>
                 }
               >
-                {o}
+                {/* {o} */}
+                <TextField
+                  value={o}
+                  onChange={(e) => {renameOption(i, e.target.value)}}
+                  sx={{width: "100%"}}
+                  size="small"
+                  variant="standard"
+                />
               </ListItem>
             ))}
           </List>
         </>
       )}
     </Box>
-    //   <ExplanationSidebar page="options" />
-
-    // </Box>
   );
 }

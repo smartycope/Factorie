@@ -268,11 +268,13 @@ export default function Quiz() {
     return <Box sx={{ p: 2 }}>
       <Typography variant="h4">Quiz</Typography>
       <Typography>
+        There are unfinished factors! We can't decide how good each option is until we know what "good" means.
+        <br/>
+        Go back to the <Link to="/factors">Factors</Link> page and fill in the red areas first
+        <br/>
         The following factors are unfinished:
         <br/>
         {unfinishedFactors.map((n) => <>"{n}"<br/></>)}
-        <br/>
-        Go back to the <Link to="/factors">Factors</Link> and fill in the red areas first
         </Typography>
     </Box>
   }

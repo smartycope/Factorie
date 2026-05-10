@@ -49,16 +49,20 @@ export function DecisionsProvider({ children }) {
     setDecisions(copy)
   }
 
-  function addFactor(name = "") {
+  function addFactor(factor = "") {
+    const patch =
+      typeof factor === "object" && factor !== null ?
+        factor
+      : { name: factor ?? "" }
     modifyCurrentDecision((d) =>
-        d.addFactor({
-            name: name ?? "",
-            unit: null,
-            optimal: null,
-            weight: 0.0,
-            min: null,
-            max: null,
-        })
+      d.addFactor({
+        name: patch.name ?? "",
+        unit: patch.unit ?? null,
+        optimal: patch.optimal ?? null,
+        weight: patch.weight ?? 0.0,
+        min: patch.min ?? null,
+        max: patch.max ?? null,
+      }),
     )
   }
 
@@ -204,6 +208,7 @@ export function DecisionsProvider({ children }) {
     renameDecision,
     addFactorPack,
     removeFactorPack,
+    modifyCurrentDecision,
   }
 
   return (
