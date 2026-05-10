@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react"
+import React, { useCallback, useEffect, useMemo, useState } from "react"
 import Box from "@mui/material/Box"
 import Typography from "@mui/material/Typography"
 import TextField from "@mui/material/TextField"
@@ -81,6 +81,39 @@ function FactorNameText({ value }) {
     </Typography>
   )
 }
+
+const factorsDataGridInitialState = {
+  pagination: { paginationModel: { page: 0, pageSize: 10 } },
+  pinnedColumns: { left: ["delete", "name"] },
+}
+
+const getAutoRowHeight = () => "auto"
+
+const factorsDataGridSx = (theme) => ({
+  "& .pinned-column": {
+    backgroundColor: "rgba(15, 23, 42, 0.06)",
+  },
+  "& .MuiDataGrid-columnHeader.pinned-column": {
+    backgroundColor: "rgba(15, 23, 42, 0.1)",
+  },
+  "& .MuiDataGrid-pinnedColumns, & .MuiDataGrid-pinnedColumnHeaders": {
+    backgroundColor: "rgba(15, 23, 42, 0.06)",
+  },
+  "& .MuiDataGrid-cell.invalid-cell": {
+    backgroundColor: "rgba(247, 82, 82, 0.41)",
+  },
+  "& .MuiDataGrid-cell.pinned-column": {
+    alignItems: "flex-start",
+    py: 1,
+  },
+  "& .selected-factor-row": {
+    backgroundColor: theme.palette.action.selected,
+  },
+  "& .selected-factor-row:hover": {
+    backgroundColor: theme.palette.action.hover,
+  },
+})
+
 function FactorsTable({
   decision,
   editFactorIndex,
@@ -169,90 +202,102 @@ function FactorsTable({
   )
 }
 
-function FactorsDataGrid({
+const FactorsDataGrid = React.memo(function FactorsDataGrid({
   decision,
   editFactorIndex,
   setEditFactorIndex,
   handleRemove,
 }) {
-  const rows = factorRows(decision)
-  const columns = [
-    {
-      field: "delete",
-      headerName: "",
-      sortable: false,
-      filterable: false,
-      width: 56,
-      headerClassName: "pinned-column",
-      cellClassName: "pinned-column",
-      renderCell: (params) => (
-        <IconButton
-          size="small"
-          onClick={(e) => {
-            e.stopPropagation()
-            handleRemove(params.row.index)
-          }}
-          title="Delete">
-          <DeleteIcon fontSize="small" />
-        </IconButton>
-      ),
-    },
-    {
-      field: "name",
-      headerName: "Name",
-      width: 180,
-      sortable: true,
-      headerClassName: "pinned-column",
-      cellClassName: (params) =>
-        (params.value ? "" : "invalid-cell") + " pinned-column",
-      renderCell: (params) => <FactorNameText value={params.value} />,
-    },
-    {
-      field: "unit",
-      headerName: "Unit",
-      width: 80,
-      sortable: false,
-      cellClassName: (params) => (params.value ? "" : "invalid-cell"),
-      renderCell: (params) => params.value || "",
-    },
-    {
-      field: "optimal",
-      headerName: "Optimal",
-      width: 80,
-      sortable: false,
-      cellClassName: (params) =>
-        params.value !== null && params.value !== "" ? "" : "invalid-cell",
-      renderCell: (params) => params.value ?? "",
-    },
-    {
-      field: "weight",
-      headerName: "Weight",
-      width: 80,
-      sortable: true,
-      cellClassName: (params) =>
-        params.value !== null && params.value !== "" ? "" : "invalid-cell",
-      renderCell: (params) =>
-        Number.isFinite(params.value) ?
-          `${(params.value * 100).toFixed(0)}%`
-        : "",
-    },
-    {
-      field: "min",
-      headerName: "Min",
-      width: 90,
-      sortable: false,
-      renderCell: (params) =>
-        params.value == null ? "calculated" : String(params.value),
-    },
-    {
-      field: "max",
-      headerName: "Max",
-      width: 90,
-      sortable: false,
-      renderCell: (params) =>
-        params.value == null ? "calculated" : String(params.value),
-    },
-  ]
+  const rows = useMemo(() => factorRows(decision), [decision])
+  const handleRowClick = useCallback(
+    (params) => setEditFactorIndex(params.row.index),
+    [setEditFactorIndex],
+  )
+  const getRowClassName = useCallback(
+    (params) =>
+      params.row.index === editFactorIndex ? "selected-factor-row" : "",
+    [editFactorIndex],
+  )
+  const columns = useMemo(
+    () => [
+      {
+        field: "delete",
+        headerName: "",
+        sortable: false,
+        filterable: false,
+        width: 56,
+        headerClassName: "pinned-column",
+        cellClassName: "pinned-column",
+        renderCell: (params) => (
+          <IconButton
+            size="small"
+            onClick={(e) => {
+              e.stopPropagation()
+              handleRemove(params.row.index)
+            }}
+            title="Delete">
+            <DeleteIcon fontSize="small" />
+          </IconButton>
+        ),
+      },
+      {
+        field: "name",
+        headerName: "Name",
+        width: 180,
+        sortable: true,
+        headerClassName: "pinned-column",
+        cellClassName: (params) =>
+          (params.value ? "" : "invalid-cell") + " pinned-column",
+        renderCell: (params) => <FactorNameText value={params.value} />,
+      },
+      {
+        field: "unit",
+        headerName: "Unit",
+        width: 80,
+        sortable: false,
+        cellClassName: (params) => (params.value ? "" : "invalid-cell"),
+        renderCell: (params) => params.value || "",
+      },
+      {
+        field: "optimal",
+        headerName: "Optimal",
+        width: 80,
+        sortable: false,
+        cellClassName: (params) =>
+          params.value !== null && params.value !== "" ? "" : "invalid-cell",
+        renderCell: (params) => params.value ?? "",
+      },
+      {
+        field: "weight",
+        headerName: "Weight",
+        width: 80,
+        sortable: true,
+        cellClassName: (params) =>
+          params.value !== null && params.value !== "" ? "" : "invalid-cell",
+        renderCell: (params) =>
+          Number.isFinite(params.value) ?
+            `${(params.value * 100).toFixed(0)}%`
+          : "",
+      },
+      {
+        field: "min",
+        headerName: "Min",
+        width: 90,
+        sortable: false,
+        renderCell: (params) =>
+          params.value == null ? "calculated" : String(params.value),
+      },
+      {
+        field: "max",
+        headerName: "Max",
+        width: 90,
+        sortable: false,
+        renderCell: (params) =>
+          params.value == null ? "calculated" : String(params.value),
+      },
+    ],
+    [handleRemove],
+  )
 
   return (
     // <Paper sx={{ mt: 1, height: 420, minWidth: 0 }}>
@@ -263,43 +308,15 @@ function FactorsDataGrid({
         disableColumnMenu
         disableRowSelectionOnClick={false}
         // hideFooter
-        getRowHeight={() => "auto"}
-        initialState={{
-          pagination: { paginationModel: { page: 0, pageSize: 10 } },
-          pinnedColumns: { left: ["delete", "name"] },
-        }}
-        onRowClick={(params) => setEditFactorIndex(params.row.index)}
-        getRowClassName={(params) =>
-          params.row.index === editFactorIndex ? "selected-factor-row" : ""
-        }
-        sx={(theme) => ({
-          "& .pinned-column": {
-            backgroundColor: "rgba(15, 23, 42, 0.06)",
-          },
-          "& .MuiDataGrid-columnHeader.pinned-column": {
-            backgroundColor: "rgba(15, 23, 42, 0.1)",
-          },
-          "& .MuiDataGrid-pinnedColumns, & .MuiDataGrid-pinnedColumnHeaders": {
-            backgroundColor: "rgba(15, 23, 42, 0.06)",
-          },
-          "& .MuiDataGrid-cell.invalid-cell": {
-            backgroundColor: "rgba(247, 82, 82, 0.41)",
-          },
-          "& .MuiDataGrid-cell.pinned-column": {
-            alignItems: "flex-start",
-            py: 1,
-          },
-          "& .selected-factor-row": {
-            backgroundColor: theme.palette.action.selected,
-          },
-          "& .selected-factor-row:hover": {
-            backgroundColor: theme.palette.action.hover,
-          },
-        })}
+        getRowHeight={getAutoRowHeight}
+        initialState={factorsDataGridInitialState}
+        onRowClick={handleRowClick}
+        getRowClassName={getRowClassName}
+        sx={factorsDataGridSx}
       />
     </Paper>
   )
-}
+})
 
 export default function Factors() {
   const {
@@ -328,7 +345,7 @@ export default function Factors() {
   // Edit state tracks which factor (by index) is being modified. We reuse the add form fields while editing.
   const [editFactorIndex, setEditFactorIndex] = useState(null)
 
-  function resetFormFields() {
+  const resetFormFields = useCallback(() => {
     setAddName(DEFAULTS.name)
     setAddUnit(DEFAULTS.unit)
     setAddOptimal(DEFAULTS.optimal)
@@ -337,7 +354,7 @@ export default function Factors() {
     setAddMaxUnbounded(DEFAULTS.maxUnbounded)
     setAddMin(DEFAULTS.min)
     setAddMax(DEFAULTS.max)
-  }
+  }, [])
 
   useEffect(() => {
     // when decision changes, reset forms (scheduled to avoid sync setState in effect)
@@ -348,7 +365,7 @@ export default function Factors() {
       setAddError("")
     }, 0)
     return () => clearTimeout(t)
-  }, [selectedIndex])
+  }, [selectedIndex, resetFormFields])
 
   // when choosing factor to edit, populate fields
   useEffect(() => {
@@ -442,13 +459,13 @@ export default function Factors() {
     }
   }
 
-  function handleRemove(factorToRemove) {
+  const handleRemove = useCallback((factorToRemove) => {
     removeFactor(factorToRemove)
     if (editFactorIndex === factorToRemove) {
       setEditFactorIndex(null)
       resetFormFields()
     }
-  }
+  }, [editFactorIndex, removeFactor, resetFormFields])
 
   // Drag and drop the factor rows
   const onDragStart = (e, idx) => {
