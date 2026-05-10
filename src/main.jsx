@@ -8,6 +8,7 @@ import { ThemeProvider, createTheme } from '@mui/material/styles'
 import CssBaseline from '@mui/material/CssBaseline'
 import { DecisionsProvider } from './contexts/DecisionsContext'
 import {ShowExplanationsProvider} from './contexts/ShowExplanationsContext.jsx';
+import {ToastProvider} from './contexts/ToastContext.jsx';
 
 const theme = createTheme({
   palette: {
@@ -21,9 +22,11 @@ createRoot(document.getElementById('root')).render(
       <ThemeProvider theme={theme}>
         <CssBaseline />
         <ShowExplanationsProvider>
+        <ToastProvider>
         <DecisionsProvider>
           <App />
         </DecisionsProvider>
+        </ToastProvider>
         </ShowExplanationsProvider>
       </ThemeProvider>
     </HashRouter>

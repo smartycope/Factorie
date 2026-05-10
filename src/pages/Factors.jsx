@@ -21,7 +21,8 @@ import { useDecisions } from "../contexts/DecisionsContext";
 import Decision from "../models/Decision";
 import ExplanationSidebar from "../components/ExplanationSidebar";
 import {Tooltip} from "@mui/material";
-import HelpOutlineIcon from '@mui/icons-material/HelpOutline';
+// import HelpOutlineOutlinedIcon from '@mui/icons-material/HelpOutlineOutlinedIcon';
+
 import texts from '../assets/texts.json';
 
 export default function Factors() {
@@ -207,7 +208,8 @@ export default function Factors() {
       <Box sx={{ flex: 1 }}>
         <Typography variant="h4">Factors</Typography>
 
-        <Box sx={{ display: "flex", gap: 1, alignItems: "center" }}>
+        {/* Quick add Box (I can't decide if I like this or not, now that I updated the Decision page) */}
+        {/* <Box sx={{ display: "flex", gap: 1, alignItems: "center" }}>
           <TextField
             label="New factor name"
             value={quickAddName}
@@ -222,7 +224,8 @@ export default function Factors() {
             Quick add
           </Button>
           <Tooltip title={texts.factors.quick_add}><HelpOutlineIcon/></Tooltip>
-        </Box>
+        </Box> */}
+
         <Box sx={{ display: "flex", gap: 2, mt: 2 }}>
           <Paper sx={{ p: 2, width: 700 }}>
             <Box sx={{ mb: 1 }}></Box>
@@ -391,24 +394,42 @@ export default function Factors() {
                                 onDrop={(e) => onDropRow(e, i)}
                                 sx={{ cursor: "pointer" }}
                             >
-                                <TableCell>{name}</TableCell>
-                                <TableCell>{decision.factors.units[i] ?? ""}</TableCell>
-                                <TableCell>{String(decision.factors.optimals[i] ?? "")}</TableCell>
-                                <TableCell>
+                                {/* Name */}
+                                {/* <TableCell>{name}</TableCell> */}
+                                <TableCell sx={{backgroundColor: decision.factors.names[i] ? "" : "rgba(247, 82, 82, 0.41)"}}>{decision.factors.names[i] ?? ""}</TableCell>
+
+
+                                {/* Unit */}
+                                {/* TODO: make this color part of a theme */}
+                                <TableCell sx={{backgroundColor: decision.factors.units[i] ? "" : "rgba(247, 82, 82, 0.41)"}}>{decision.factors.units[i] ?? ""}</TableCell>
+
+                                {/* Optimal */}
+                                {/* <TableCell>{String(decision.factors.optimals[i] ?? "")}</TableCell> */}
+                                <TableCell sx={{backgroundColor: decision.factors.optimals[i] !== null ? "" : "rgba(247, 82, 82, 0.41)"}}>{decision.factors.optimals[i] ?? ""}</TableCell>
+
+
+                                {/* Weight */}
+                                <TableCell sx={{backgroundColor: decision.factors.weights[i] !== null ? "" : "rgba(247, 82, 82, 0.41)"}}>
                                     {Number.isFinite(decision.factors.weights[i])
                                         ? (decision.factors.weights[i] * 100).toFixed(0) + "%"
                                         : ""}
                                 </TableCell>
+
+                                {/* Min */}
                                 <TableCell>
                                     {decision.factors.mins[i] == null
                                         ? "calculated"
                                         : String(decision.factors.mins[i])}
                                 </TableCell>
+
+                                {/* Max */}
                                 <TableCell>
                                     {decision.factors.maxs[i] == null
                                         ? "calculated"
                                         : String(decision.factors.maxs[i])}
                                 </TableCell>
+
+                                {/* Delete Button */}
                                 <TableCell>
                                     <IconButton
                                         size="small"

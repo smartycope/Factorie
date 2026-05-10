@@ -8,12 +8,12 @@ import Box from '@mui/material/Box'
 const pages = [
   ['Dashboard', 'dashboard'],
   ['Decision', 'decisions'],
-  ['Options', 'options'],
+//   ['Options', 'options'],
   ['Factors', 'factors'],
   ['Quiz', 'quiz'],
   ['Fine Tune Weights', 'weights'],
   ['Results', 'results'],
-//   ['Factor Packs', '/factor-packs'],
+  ['Factor Packs', '/factor-packs'],
 //   ['Import/Export', '/save'],
   ['Explanation', 'explanation'],
 ]

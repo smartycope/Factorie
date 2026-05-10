@@ -7,14 +7,15 @@ import Typography from "@mui/material/Typography";
 import Button from "@mui/material/Button";
 import List from "@mui/material/List";
 import ListItem from "@mui/material/ListItem";
+import ListItemButton from "@mui/material/ListItemButton";
 import ListItemText from "@mui/material/ListItemText";
-import ListItemSecondaryAction from "@mui/material/ListItemSecondaryAction";
 import IconButton from "@mui/material/IconButton";
 import Card from "@mui/material/Card";
 import CardContent from "@mui/material/CardContent";
 import DeleteIcon from "@mui/icons-material/Delete";
 import UploadFileIcon from "@mui/icons-material/UploadFile";
 import DownloadIcon from "@mui/icons-material/Download";
+import LaunchIcon from '@mui/icons-material/Launch';
 import Dialog from "@mui/material/Dialog";
 import DialogTitle from "@mui/material/DialogTitle";
 import DialogContent from "@mui/material/DialogContent";
@@ -23,7 +24,14 @@ import DialogActions from "@mui/material/DialogActions";
 import ExplanationSidebar from "../components/ExplanationSidebar";
 
 export default function Dashboard() {
-  const { decisions, setDecisions, setSelectedIndex } = useDecisions();
+  const {
+    decisions,
+    setDecisions,
+    setSelectedIndex,
+    selectedIndex,
+    createDecision,
+    removeDecision,
+  } = useDecisions();
   const navigate = useNavigate();
   const fileInputRef = React.useRef(null);
 
@@ -38,12 +46,13 @@ export default function Dashboard() {
       ...prev,
       Decision.deserialize(ex1),
       Decision.deserialize(ex2),
-    ])
+    ]);
   }
 
   function goToDecision(i) {
     setSelectedIndex(i);
-    navigate(`/decisions?selected=${i}`);
+    // navigate(`/decisions?selected=${i}`);
+    navigate(`/decisions`);
   }
 
   function downloadDecision(d) {
@@ -102,48 +111,6 @@ export default function Dashboard() {
     }
   }
 
-  function createDecision() {
-    const name = window.prompt("Decision name");
-    if (!name) return;
-    // prevent duplicate names
-    if (decisions.some((d) => d.name.toLowerCase() === name.toLowerCase())) {
-      alert("A decision with that name already exists. Choose a unique name.");
-      return;
-    }
-    const d = new Decision(name);
-    d.addFactor({
-      name: "Cost",
-      unit: "$",
-      optimal: 0,
-      weight: 0.5,
-      min: 0,
-      max: 100,
-    });
-    d.addFactor({
-      name: "Time",
-      unit: "hrs",
-      optimal: 0,
-      weight: 0.5,
-      min: 0,
-      max: 100,
-    });
-    d.addOption("Option A");
-    d.addOption("Option B");
-    d.clearAllAnswers();
-    setDecisions((prev) => {
-      const next = [...prev, d];
-      setSelectedIndex(next.length - 1);
-      return next;
-    });
-  }
-
-  function removeDecision(idx) {
-    setDecisions((prev) => {
-      const next = prev.filter((_, i) => i !== idx);
-      return next;
-    });
-  }
-
   return (
     // <Box sx={{ display: "flex", gap: 3 }}>
     <Box sx={{ width: "100%" }}>
@@ -176,6 +143,9 @@ export default function Dashboard() {
           />
         </Box>
       </Box>
+      <Typography variant="subtitle1">
+        Currently Deciding: {decisions[selectedIndex]?.name}
+      </Typography>
 
       {decisions.length === 0 ? (
         <Typography>No decisions yet — create one to get started.</Typography>
@@ -187,42 +157,58 @@ export default function Dashboard() {
                 <ListItem
                   key={i}
                   divider
-                  button
-                  onClick={() => goToDecision(i)}
-                >
-                  <ListItemText
-                    primary={d.name}
-                    secondary={`${d.options.length} options • ${d.factors.names.length} factors`}
-                  />
-                  <ListItemSecondaryAction>
-                    {/* We want to keep this as a download button, not an import button */}
-                    <IconButton
-                      edge="end"
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        downloadDecision(d);
-                      }}
-                      title="Download"
-                    >
-                      <DownloadIcon />
-                    </IconButton>
-                    <IconButton
-                      edge="end"
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        if (
-                          !window.confirm(
-                            `Are you sure you want to delete "${d.name}"? This action cannot be undone.`,
+                  disablePadding
+                  secondaryAction={
+                    <>
+                      {/* We want to keep this as a download button, not an import button */}
+                      <IconButton
+                        edge="start"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          goToDecision(i);
+                        }}
+                        title="Open"
+                      >
+                        <LaunchIcon />
+                      </IconButton>
+                      <IconButton
+                        edge="end"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          downloadDecision(d);
+                        }}
+                        title="Download"
+                      >
+                        <DownloadIcon />
+                      </IconButton>
+                      <IconButton
+                        edge="end"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          if (
+                            !window.confirm(
+                              `Are you sure you want to delete "${d.name}"? This action cannot be undone.`,
+                            )
                           )
-                        )
-                          return;
-                        removeDecision(i);
-                      }}
-                      title="Delete"
-                    >
-                      <DeleteIcon />
-                    </IconButton>
-                  </ListItemSecondaryAction>
+                            return;
+                          removeDecision(i);
+                        }}
+                        title="Delete"
+                      >
+                        <DeleteIcon />
+                      </IconButton>
+                    </>
+                  }
+                >
+                  <ListItemButton
+                    selected={i === selectedIndex}
+                    onClick={() => setSelectedIndex(i)}
+                  >
+                    <ListItemText
+                      primary={d.name}
+                      secondary={`${d.options.length} options • ${d.factors.names.length} factors`}
+                    />
+                  </ListItemButton>
                 </ListItem>
               ))}
             </List>
@@ -230,9 +216,9 @@ export default function Dashboard() {
         </Card>
       )}
       {decisions.length === 0 && (
-      <Button variant="outlined" sx={{ mt: 2 }} onClick={addExamples}>
-        Load examples
-      </Button>
+        <Button variant="outlined" sx={{ mt: 2 }} onClick={addExamples}>
+          Load examples
+        </Button>
       )}
     </Box>
     //   <ExplanationSidebar page="Dashboard" />
