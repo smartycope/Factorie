@@ -1,228 +1,500 @@
-import React, { useEffect, useState } from "react";
-import Box from "@mui/material/Box";
-import Typography from "@mui/material/Typography";
-import TextField from "@mui/material/TextField";
-import Button from "@mui/material/Button";
-import IconButton from "@mui/material/IconButton";
-import Checkbox from "@mui/material/Checkbox";
-import FormControlLabel from "@mui/material/FormControlLabel";
-import Slider from "@mui/material/Slider";
-import EditIcon from "@mui/icons-material/Edit";
-import DeleteIcon from "@mui/icons-material/Delete";
+import React, { useEffect, useState } from "react"
+import Box from "@mui/material/Box"
+import Typography from "@mui/material/Typography"
+import TextField from "@mui/material/TextField"
+import Button from "@mui/material/Button"
+import IconButton from "@mui/material/IconButton"
+import Checkbox from "@mui/material/Checkbox"
+import FormControlLabel from "@mui/material/FormControlLabel"
+import Slider from "@mui/material/Slider"
+import EditIcon from "@mui/icons-material/Edit"
+import DeleteIcon from "@mui/icons-material/Delete"
 // Select/MenuItem not needed anymore
-import Paper from "@mui/material/Paper";
-import Table from "@mui/material/Table";
-import TableBody from "@mui/material/TableBody";
-import TableCell from "@mui/material/TableCell";
-import TableHead from "@mui/material/TableHead";
-import TableRow from "@mui/material/TableRow";
-import DecisionList from "../components/DecisionList";
-import { useDecisions } from "../contexts/DecisionsContext";
-import Decision from "../models/Decision";
-import ExplanationSidebar from "../components/ExplanationSidebar";
-import {Tooltip} from "@mui/material";
-import HelpOutlineIcon from '@mui/icons-material/HelpOutline';
-import texts from '../assets/texts.json';
+import Paper from "@mui/material/Paper"
+import Table from "@mui/material/Table"
+import TableBody from "@mui/material/TableBody"
+import TableCell from "@mui/material/TableCell"
+import TableHead from "@mui/material/TableHead"
+import TableRow from "@mui/material/TableRow"
+import { DataGrid } from "@mui/x-data-grid"
+import DecisionList from "../components/DecisionList"
+import { useDecisions } from "../contexts/DecisionsContext"
+import Decision from "../models/Decision"
+import ExplanationSidebar from "../components/ExplanationSidebar"
+import { Tooltip } from "@mui/material"
+// import HelpOutlineOutlinedIcon from '@mui/icons-material/HelpOutlineOutlinedIcon';
+
+import texts from "../assets/texts.json"
+
+const DEFAULTS = {
+  name: "",
+  unit: "",
+  optimal: null,
+  weight: 0.0,
+  minUnbounded: false,
+  maxUnbounded: false,
+  min: null,
+  max: null,
+}
+
+function factorNameText(value) {
+  if (typeof value === "string") return value
+  if (value && typeof value === "object") return value.name ?? ""
+  return value ?? ""
+}
+
+function factorRows(decision) {
+  return decision.factors.names.map((name, i) => {
+    const factorName = factorNameText(name)
+    return {
+      id: i,
+      index: i,
+      name: factorName,
+      unit: decision.factors.units[i] ?? "",
+      optimal: decision.factors.optimals[i],
+      weight: decision.factors.weights[i],
+      min: decision.factors.mins[i],
+      max: decision.factors.maxs[i],
+    }
+  })
+}
+
+function missingCellSx(value) {
+  return {
+    backgroundColor: value ? "" : "rgba(247, 82, 82, 0.41)",
+  }
+}
+function FactorNameText({ value }) {
+  const isUnnamed = !value
+  return (
+    <Typography
+      component="span"
+      variant="body2"
+      sx={{
+        color: isUnnamed ? "text.disabled" : "text.primary",
+        fontStyle: isUnnamed ? "italic" : "normal",
+        lineHeight: 1.3,
+        overflowWrap: "anywhere",
+        whiteSpace: "normal",
+      }}>
+      {isUnnamed ? "unnamed" : value}
+    </Typography>
+  )
+}
+function FactorsTable({
+  decision,
+  editFactorIndex,
+  setEditFactorIndex,
+  handleRemove,
+  onDragStart,
+  onDragOver,
+  onDropRow,
+}) {
+  const rows = factorRows(decision)
+
+  return (
+    <Paper sx={{ mt: 1 }}>
+      <Table size="small">
+        <TableHead>
+          <TableRow>
+            <TableCell
+              sx={{
+                position: "sticky",
+                left: 0,
+                zIndex: 2,
+                backgroundColor: "rgba(15, 23, 42, 0.1)",
+              }}>
+              Name
+            </TableCell>
+            <TableCell>Unit</TableCell>
+            <TableCell>Optimal</TableCell>
+            <TableCell>Weight</TableCell>
+            <TableCell>Min</TableCell>
+            <TableCell>Max</TableCell>
+            <TableCell>Delete</TableCell>
+          </TableRow>
+        </TableHead>
+        <TableBody>
+          {rows.map((row) => (
+            <TableRow
+              key={`${row.name}-${row.index}`}
+              draggable
+              hover
+              selected={editFactorIndex === row.index}
+              onClick={() => setEditFactorIndex(row.index)}
+              onDragStart={(e) => onDragStart(e, row.index)}
+              onDragOver={onDragOver}
+              onDrop={(e) => onDropRow(e, row.index)}
+              sx={{ cursor: "pointer" }}>
+              <TableCell
+                sx={{
+                  ...missingCellSx(row.name),
+                  position: "sticky",
+                  left: 0,
+                  zIndex: 1,
+                }}>
+                <FactorNameText value={row.name} />
+              </TableCell>
+              <TableCell sx={missingCellSx(row.unit)}>{row.unit}</TableCell>
+              <TableCell sx={missingCellSx(row.optimal !== null)}>
+                {row.optimal ?? ""}
+              </TableCell>
+              <TableCell>
+                {Number.isFinite(row.weight) ?
+                  (row.weight * 100).toFixed(0) + "%"
+                : ""}
+              </TableCell>
+              <TableCell>
+                {row.min == null ? "calculated" : String(row.min)}
+              </TableCell>
+              <TableCell>
+                {row.max == null ? "calculated" : String(row.max)}
+              </TableCell>
+              <TableCell>
+                <IconButton
+                  size="small"
+                  onClick={(e) => {
+                    e.stopPropagation()
+                    handleRemove(row.index)
+                  }}
+                  title="Delete">
+                  <DeleteIcon fontSize="small" />
+                </IconButton>
+              </TableCell>
+            </TableRow>
+          ))}
+        </TableBody>
+      </Table>
+    </Paper>
+  )
+}
+
+function FactorsDataGrid({
+  decision,
+  editFactorIndex,
+  setEditFactorIndex,
+  handleRemove,
+}) {
+  const rows = factorRows(decision)
+  const columns = [
+    {
+      field: "delete",
+      headerName: "",
+      sortable: false,
+      filterable: false,
+      width: 56,
+      headerClassName: "pinned-column",
+      cellClassName: "pinned-column",
+      renderCell: (params) => (
+        <IconButton
+          size="small"
+          onClick={(e) => {
+            e.stopPropagation()
+            handleRemove(params.row.index)
+          }}
+          title="Delete">
+          <DeleteIcon fontSize="small" />
+        </IconButton>
+      ),
+    },
+    {
+      field: "name",
+      headerName: "Name",
+      width: 180,
+      sortable: true,
+      headerClassName: "pinned-column",
+      cellClassName: (params) =>
+        (params.value ? "" : "invalid-cell") + " pinned-column",
+      renderCell: (params) => <FactorNameText value={params.value} />,
+    },
+    {
+      field: "unit",
+      headerName: "Unit",
+      width: 80,
+      sortable: false,
+      cellClassName: (params) => (params.value ? "" : "invalid-cell"),
+      renderCell: (params) => params.value || "",
+    },
+    {
+      field: "optimal",
+      headerName: "Optimal",
+      width: 80,
+      sortable: false,
+      cellClassName: (params) =>
+        params.value !== null && params.value !== "" ? "" : "invalid-cell",
+      renderCell: (params) => params.value ?? "",
+    },
+    {
+      field: "weight",
+      headerName: "Weight",
+      width: 80,
+      sortable: true,
+      cellClassName: (params) =>
+        params.value !== null && params.value !== "" ? "" : "invalid-cell",
+      renderCell: (params) =>
+        Number.isFinite(params.value) ?
+          `${(params.value * 100).toFixed(0)}%`
+        : "",
+    },
+    {
+      field: "min",
+      headerName: "Min",
+      width: 90,
+      sortable: false,
+      renderCell: (params) =>
+        params.value == null ? "calculated" : String(params.value),
+    },
+    {
+      field: "max",
+      headerName: "Max",
+      width: 90,
+      sortable: false,
+      renderCell: (params) =>
+        params.value == null ? "calculated" : String(params.value),
+    },
+  ]
+
+  return (
+    // <Paper sx={{ mt: 1, height: 420, minWidth: 0 }}>
+    <Paper sx={{ mt: 1, height: "calc(100vh - 230px)", minHeight: 300, minWidth: 0 }}>
+      <DataGrid
+        rows={rows}
+        columns={columns}
+        disableColumnMenu
+        disableRowSelectionOnClick={false}
+        // hideFooter
+        getRowHeight={() => "auto"}
+        initialState={{
+          pagination: { paginationModel: { page: 0, pageSize: 10 } },
+          pinnedColumns: { left: ["delete", "name"] },
+        }}
+        onRowClick={(params) => setEditFactorIndex(params.row.index)}
+        getRowClassName={(params) =>
+          params.row.index === editFactorIndex ? "selected-factor-row" : ""
+        }
+        sx={(theme) => ({
+          "& .pinned-column": {
+            backgroundColor: "rgba(15, 23, 42, 0.06)",
+          },
+          "& .MuiDataGrid-columnHeader.pinned-column": {
+            backgroundColor: "rgba(15, 23, 42, 0.1)",
+          },
+          "& .MuiDataGrid-pinnedColumns, & .MuiDataGrid-pinnedColumnHeaders": {
+            backgroundColor: "rgba(15, 23, 42, 0.06)",
+          },
+          "& .MuiDataGrid-cell.invalid-cell": {
+            backgroundColor: "rgba(247, 82, 82, 0.41)",
+          },
+          "& .MuiDataGrid-cell.pinned-column": {
+            alignItems: "flex-start",
+            py: 1,
+          },
+          "& .selected-factor-row": {
+            backgroundColor: theme.palette.action.selected,
+          },
+          "& .selected-factor-row:hover": {
+            backgroundColor: theme.palette.action.hover,
+          },
+        })}
+      />
+    </Paper>
+  )
+}
 
 export default function Factors() {
-  const { decisions, setDecisions, selectedIndex } = useDecisions();
-  const decision = selectedIndex != null ? decisions[selectedIndex] : null;
-
-  const [quickAddName, setQuickAddName] = useState("");
-  const [addError, setAddError] = useState("");
+  const {
+    decisions,
+    setDecisions,
+    selectedIndex,
+    renameFactor,
+    editFactor,
+    addFactor,
+    removeFactor,
+    modifyCurrentDecision,
+  } = useDecisions()
+  const decision = selectedIndex != null ? decisions[selectedIndex] : null
+  const [addError, setAddError] = useState("")
 
   // Add form state
-  const [addName, setAddName] = useState("");
-  const [addUnit, setAddUnit] = useState("");
-  const [addOptimal, setAddOptimal] = useState(0);
-  const [addWeight, setAddWeight] = useState(1);
-  const [addMinUnbounded, setAddMinUnbounded] = useState(false);
-  const [addMaxUnbounded, setAddMaxUnbounded] = useState(false);
-  const [addMin, setAddMin] = useState(0);
-  const [addMax, setAddMax] = useState(10);
+  const [addName, setAddName] = useState(DEFAULTS.name)
+  const [addUnit, setAddUnit] = useState(DEFAULTS.unit)
+  const [addOptimal, setAddOptimal] = useState(DEFAULTS.optimal)
+  const [addWeight, setAddWeight] = useState(DEFAULTS.weight)
+  const [addMinUnbounded, setAddMinUnbounded] = useState(DEFAULTS.minUnbounded)
+  const [addMaxUnbounded, setAddMaxUnbounded] = useState(DEFAULTS.maxUnbounded)
+  const [addMin, setAddMin] = useState(DEFAULTS.min)
+  const [addMax, setAddMax] = useState(DEFAULTS.max)
 
-  // Edit state tracks which factor (by name) is being modified. We reuse the add form fields while editing.
-  const [editFactorName, setEditFactorName] = useState("");
+  // Edit state tracks which factor (by index) is being modified. We reuse the add form fields while editing.
+  const [editFactorIndex, setEditFactorIndex] = useState(null)
+
+  function resetFormFields() {
+    setAddName(DEFAULTS.name)
+    setAddUnit(DEFAULTS.unit)
+    setAddOptimal(DEFAULTS.optimal)
+    setAddWeight(DEFAULTS.weight)
+    setAddMinUnbounded(DEFAULTS.minUnbounded)
+    setAddMaxUnbounded(DEFAULTS.maxUnbounded)
+    setAddMin(DEFAULTS.min)
+    setAddMax(DEFAULTS.max)
+  }
 
   useEffect(() => {
     // when decision changes, reset forms (scheduled to avoid sync setState in effect)
     const t = setTimeout(() => {
-      setAddName("");
-      setAddUnit("");
-      setAddOptimal(0);
-      setAddWeight(1);
-      setAddMinUnbounded(false);
-      setAddMaxUnbounded(false);
-      setAddMin(0);
-      setAddMax(10);
+      resetFormFields()
 
-      setEditFactorName("");
-      setQuickAddName("");
-      setAddError("");
-    }, 0);
-    return () => clearTimeout(t);
-  }, [selectedIndex]);
+      setEditFactorIndex(null)
+      setAddError("")
+    }, 0)
+    return () => clearTimeout(t)
+  }, [selectedIndex])
 
   // when choosing factor to edit, populate fields
   useEffect(() => {
-    if (!editFactorName) return;
-    const idx = decision.factors.names.indexOf(editFactorName);
-    if (idx === -1) return;
+    if (editFactorIndex == null || !decision) return
+    const idx = editFactorIndex
+    if (idx < 0 || idx >= decision.factors.names.length) return
     const t = setTimeout(() => {
       // fill the add form with the selected factor's values
-      setAddName(editFactorName);
-      setAddUnit(decision.factors.units[idx] ?? "");
-      setAddOptimal(decision.factors.optimals[idx] ?? 0);
+      setAddName(factorNameText(decision.factors.names[idx]) || DEFAULTS.name)
+      setAddUnit(decision.factors.units[idx] ?? DEFAULTS.unit)
+      setAddOptimal(decision.factors.optimals[idx] ?? DEFAULTS.optimal)
       setAddWeight(
-        Number.isFinite(decision.factors.weights[idx])
-          ? decision.factors.weights[idx]
-          : 1,
-      );
-      setAddMinUnbounded(decision.factors.mins[idx] == null);
-      setAddMaxUnbounded(decision.factors.maxs[idx] == null);
-      setAddMin(decision.factors.mins[idx] ?? 0);
-      setAddMax(decision.factors.maxs[idx] ?? 10);
-    }, 0);
-    return () => clearTimeout(t);
-  }, [editFactorName, decision]);
+        Number.isFinite(decision.factors.weights[idx]) ?
+          decision.factors.weights[idx]
+        : DEFAULTS.weight,
+      )
+      // TODO: should this use !! instead?
+      setAddMinUnbounded(decision.factors.mins[idx] == null)
+      setAddMaxUnbounded(decision.factors.maxs[idx] == null)
+      setAddMin(decision.factors.mins[idx] ?? DEFAULTS.min)
+      setAddMax(decision.factors.maxs[idx] ?? DEFAULTS.max)
+    }, 0)
+    return () => clearTimeout(t)
+  }, [editFactorIndex, decision])
 
-  function saveDecision(newDecision) {
-    const copy = [...decisions];
-    copy[selectedIndex] = newDecision;
-    setDecisions(copy);
-  }
-
-  function handleAdd() {
-    // validate name
-    if (!addName || !addName.trim()) {
-      setAddError("Factor name is required");
-      return;
+  function isFormInvalid(){
+    if (!factorNameText(addName).trim()) {
+      return "Factor name is required"
     }
+    // Validate min/max
     if (
       !addMinUnbounded &&
       !addMaxUnbounded &&
+      addMin !== null &&
+      addMax !== null &&
       Number(addMin) >= Number(addMax)
     ) {
-      setAddError("Min must be less than Max");
-      return;
+      return "Min must be less than Max"
     }
-    setAddError("");
+    // Optimal must be between min and max, if provided and bounded
+    if (
+      !addMinUnbounded &&
+      !addMaxUnbounded &&
+      addOptimal !== null &&
+      addOptimal !== "" &&
+      (addOptimal < Number(addMin) || addOptimal > Number(addMax))
+    )
+      return (
+        "Optimal must be between Min and Max, or leave blank to finish later"
+    )
+    // Reset error
+    return null
+  }
 
-    const d = Decision.deserialize(JSON.parse(decision.serialize()));
-    if (editFactorName) {
-      // modify existing factor (do not change name)
-      d.editFactor(editFactorName, {
-        unit: addUnit || undefined,
-        optimal: Number(addOptimal),
-        weight: Number(addWeight),
-        min: addMinUnbounded ? null : Number(addMin),
-        max: addMaxUnbounded ? null : Number(addMax),
-      });
-      saveDecision(d);
-      // exit edit mode
-      setEditFactorName("");
-      // reset add form
-      setAddName("");
-      setAddUnit("");
-      setAddOptimal(0);
-      setAddWeight(1);
-      setAddMinUnbounded(false);
-      setAddMaxUnbounded(false);
-      setAddMin(0);
-      setAddMax(10);
-      return;
+  // Handles either add or modify, as appropriate
+  function handleUpsert() {
+    const nextName = factorNameText(addName).trim()
+    // validate name
+    const error = isFormInvalid()
+    if (error) {
+      setAddError(error)
+      return
     }
+    setAddError("")
 
-    // normal add
-    d.addFactor({
-      name: addName.trim(),
-      unit: addUnit || null,
-      optimal: Number(addOptimal),
+
+    // Reset all the the form fields
+    resetFormFields()
+
+    const newFactor = {
+      name: nextName,
+      optimal: Number.isFinite(addOptimal) ? Number(addOptimal) : undefined,
       weight: Number(addWeight),
-      min: addMinUnbounded ? null : Number(addMin),
-      max: addMaxUnbounded ? null : Number(addMax),
-    });
-    saveDecision(d);
-    // clear name
-    setAddName("");
+      min: addMinUnbounded || !Number.isFinite(addMin) ? null : Number(addMin),
+      max: addMaxUnbounded || !Number.isFinite(addMax) ? null : Number(addMax),
+      unit: addUnit || undefined,
+    }
+    console.log('newFactor', newFactor, 'addOptimal', addOptimal, typeof addOptimal)
+    if (editFactorIndex != null) {
+      // modify existing factor, including the name
+      editFactor(editFactorIndex, newFactor)
+      // exit edit mode
+      setEditFactorIndex(null)
+      // reset add form
+      resetFormFields()
+    } else {
+      // normal add
+      addFactor(newFactor)
+      // clear name
+      setAddName("")
+    }
   }
 
   function handleRemove(factorToRemove) {
-    const d = Decision.deserialize(JSON.parse(decision.serialize()));
-    d.removeFactor(factorToRemove);
-    saveDecision(d);
+    removeFactor(factorToRemove)
+    if (editFactorIndex === factorToRemove) {
+      setEditFactorIndex(null)
+      resetFormFields()
+    }
   }
 
-  function handleQuickAdd() {
-    if (!quickAddName || !quickAddName.trim()) return;
-    const d = Decision.deserialize(JSON.parse(decision.serialize()));
-    d.addFactor({ name: quickAddName.trim() });
-    saveDecision(d);
-    setQuickAddName("");
-  }
-
+  // Drag and drop the factor rows
   const onDragStart = (e, idx) => {
-    e.dataTransfer.setData("text/plain", String(idx));
-    e.dataTransfer.effectAllowed = "move";
-  };
+    e.dataTransfer.setData("text/plain", String(idx))
+    e.dataTransfer.effectAllowed = "move"
+  }
 
   const onDragOver = (e) => {
-    e.preventDefault();
-    e.dataTransfer.dropEffect = "move";
-  };
+    e.preventDefault()
+    e.dataTransfer.dropEffect = "move"
+  }
 
   const onDropRow = (e, targetIdx) => {
-    e.preventDefault();
-    const from = Number(e.dataTransfer.getData("text/plain"));
-    const to = targetIdx;
-    if (Number.isNaN(from)) return;
-    if (from === to) return;
-    const d = Decision.deserialize(JSON.parse(decision.serialize()));
-    const move = (arr) => {
-      const item = arr.splice(from, 1)[0];
-      arr.splice(to, 0, item);
-    };
-    move(d.factors.names);
-    move(d.factors.units);
-    move(d.factors.optimals);
-    move(d.factors.weights);
-    move(d.factors.mins);
-    move(d.factors.maxs);
-    for (let r = 0; r < d.answers.length; r++) {
-      const col = d.answers[r].splice(from, 1)[0];
-      d.answers[r].splice(to, 0, col);
-    }
-    saveDecision(d);
-  };
+    e.preventDefault()
+    const from = Number(e.dataTransfer.getData("text/plain"))
+    const to = targetIdx
+    if (Number.isNaN(from)) return
+    if (from === to) return
 
-  return (
-    // <Box sx={{ display: "flex", gap: 3, flex: 1}}>
-    //   <DecisionList />
-    !decision ? (
+    const move = (arr) => {
+      const item = arr.splice(from, 1)[0]
+      arr.splice(to, 0, item)
+    }
+
+    modifyCurrentDecision((d) => {
+      move(d.factors.names)
+      move(d.factors.units)
+      move(d.factors.optimals)
+      move(d.factors.weights)
+      move(d.factors.mins)
+      move(d.factors.maxs)
+      for (let r = 0; r < d.answers.length; r++) {
+        const col = d.answers[r].splice(from, 1)[0]
+        d.answers[r].splice(to, 0, col)
+      }
+    })
+  }
+
+  return !decision ?
       <Box sx={{ flex: 1 }}>
         <Typography variant="h4">Factors</Typography>
         <Typography>Please select or create a decision first.</Typography>
       </Box>
-    ) : (
-      <Box sx={{ flex: 1 }}>
+    : <Box sx={{ flex: 1 }}>
         <Typography variant="h4">Factors</Typography>
 
-        <Box sx={{ display: "flex", gap: 1, alignItems: "center" }}>
-          <TextField
-            label="New factor name"
-            value={quickAddName}
-            onChange={(e) => setQuickAddName(e.target.value)}
-            size="small"
-            onKeyDown={(e) => {
-              if (e.key === "Enter") handleQuickAdd();
-            }}
-            sx={{ flex: 1 }}
-          />
-          <Button variant="outlined" onClick={handleQuickAdd}>
-            Quick add
-          </Button>
-          <Tooltip title={texts.factors.quick_add}><HelpOutlineIcon/></Tooltip>
-        </Box>
         <Box sx={{ display: "flex", gap: 2, mt: 2 }}>
           <Paper sx={{ p: 2, width: 700 }}>
             <Box sx={{ mb: 1 }}></Box>
@@ -232,10 +504,9 @@ export default function Factors() {
                 label="Factor"
                 value={addName}
                 onChange={(e) => setAddName(e.target.value)}
-                disabled={Boolean(editFactorName)}
-                helperText={
-                  editFactorName ? "Delete this factor and create a new one to change the name" : ""
-                }
+                onKeyDown={(e) => {
+                  if (e.key === "Enter") handleUpsert()
+                }}
                 fullWidth
                 size="small"
                 sx={{ mb: 1 }}
@@ -252,8 +523,8 @@ export default function Factors() {
               <TextField
                 label="Optimal"
                 type="number"
-                value={addOptimal}
-                onChange={(e) => setAddOptimal(e.target.value)}
+                value={addOptimal ?? ""}
+                onChange={(e) => setAddOptimal(Number(e.target.value))}
                 fullWidth
                 size="small"
                 sx={{ mb: 1 }}
@@ -261,7 +532,7 @@ export default function Factors() {
               <Box sx={{ display: "flex", alignItems: "center", gap: 2 }}>
                 <Typography>How much do you care?</Typography>
                 <Slider
-                  value={addWeight * 100}
+                  value={Math.round(addWeight * 100)}
                   onChange={(e, v) => setAddWeight(v / 100)}
                   valueLabelDisplay="auto"
                   min={0}
@@ -284,7 +555,7 @@ export default function Factors() {
                     <TextField
                       label="Min"
                       type="number"
-                      value={addMin}
+                      value={addMin ?? ""}
                       onChange={(e) => setAddMin(e.target.value)}
                       size="small"
                       disabled={addMinUnbounded}
@@ -305,7 +576,7 @@ export default function Factors() {
                     <TextField
                       label="Max"
                       type="number"
-                      value={addMax}
+                      value={addMax ?? ""}
                       onChange={(e) => setAddMax(e.target.value)}
                       size="small"
                       disabled={addMaxUnbounded}
@@ -321,189 +592,57 @@ export default function Factors() {
                 </Typography>
               )}
               <Box sx={{ mt: 1 }}>
-                {editFactorName ? (
+                {editFactorIndex != null ?
                   <>
-                    <Button variant="contained" onClick={handleAdd}>
+                    <Button variant="contained" onClick={handleUpsert}>
                       Modify
                     </Button>
                     <Button
                       variant="text"
                       onClick={() => {
                         // cancel edit
-                        setEditFactorName("");
-                        setAddName("");
-                        setAddUnit("");
-                        setAddOptimal(0);
-                        setAddWeight(1);
-                        setAddMinUnbounded(false);
-                        setAddMaxUnbounded(false);
-                        setAddMin(0);
-                        setAddMax(10);
+                        setEditFactorIndex(null)
+                        resetFormFields()
                       }}
-                      sx={{ ml: 1 }}
-                    >
+                      sx={{ ml: 1 }}>
                       Cancel
                     </Button>
                   </>
-                ) : (
-                  <Button variant="contained" onClick={handleAdd}>
+                : <Button variant="contained" onClick={handleUpsert}>
                     Add
                   </Button>
-                )}
+                }
               </Box>
             </Box>
           </Paper>
-
-        {/* <Paper sx={{ p: 2, flex: 1 }}>
-            <Typography variant="h6">Factors</Typography>
-            <Typography variant="body2" sx={{ mb: 1 }}>
-                Edit or delete rows directly below; drag the rows to reorder factors.
-            </Typography>
-            <Box></Box>
-        </Paper> */}
         </Box>
 
         <Box sx={{ mt: 3 }}>
-            <Typography variant="h6">Current Factors</Typography>
-            <Paper sx={{ mt: 1 }}>
-                <Table size="small">
-                    <TableHead>
-                        <TableRow>
-                            <TableCell>Name</TableCell>
-                            <TableCell>Unit</TableCell>
-                            <TableCell>Optimal</TableCell>
-                            <TableCell>Weight</TableCell>
-                            <TableCell>Min</TableCell>
-                            <TableCell>Max</TableCell>
-                            <TableCell>Delete</TableCell>
-                        </TableRow>
-                    </TableHead>
-                    <TableBody>
-                        {decision.factors.names.map((name, i) => (
-                            <TableRow
-                                key={name}
-                                draggable
-                                hover
-                                selected={editFactorName === name}
-                                onClick={() => setEditFactorName(name)}
-                                onDragStart={(e) => onDragStart(e, i)}
-                                onDragOver={onDragOver}
-                                onDrop={(e) => onDropRow(e, i)}
-                                sx={{ cursor: "pointer" }}
-                            >
-                                <TableCell>{name}</TableCell>
-                                <TableCell>{decision.factors.units[i] ?? ""}</TableCell>
-                                <TableCell>{String(decision.factors.optimals[i] ?? "")}</TableCell>
-                                <TableCell>
-                                    {Number.isFinite(decision.factors.weights[i])
-                                        ? (decision.factors.weights[i] * 100).toFixed(0) + "%"
-                                        : ""}
-                                </TableCell>
-                                <TableCell>
-                                    {decision.factors.mins[i] == null
-                                        ? "calculated"
-                                        : String(decision.factors.mins[i])}
-                                </TableCell>
-                                <TableCell>
-                                    {decision.factors.maxs[i] == null
-                                        ? "calculated"
-                                        : String(decision.factors.maxs[i])}
-                                </TableCell>
-                                <TableCell>
-                                    <IconButton
-                                        size="small"
-                                        onClick={(e) => {
-                                            e.stopPropagation();
-                                            handleRemove(name);
-                                        }}
-                                        title="Delete"
-                                    >
-                                        <DeleteIcon fontSize="small" />
-                                    </IconButton>
-                                </TableCell>
-                            </TableRow>
-                        ))}
-                    </TableBody>
-                </Table>
-            </Paper>
-        </Box>
-        </Box>
-    //   {/* <ExplanationSidebar page="factors" />
-    // </Box> */}
-  ));
-}
-
-
-
-
-
-
-
-
-
-{/* <Box sx={{ mt: 3 }}>
           <Typography variant="h6">Current Factors</Typography>
-          <Paper sx={{ mt: 1 }}>
-            <Table size="small">
-              <TableHead>
-                <TableRow>
-                  <TableCell>Name</TableCell>
-                  <TableCell>Unit</TableCell>
-                  <TableCell>Optimal</TableCell>
-                  <TableCell>Weight</TableCell>
-                  <TableCell>Min</TableCell>
-                  <TableCell>Max</TableCell>
-                  <TableCell>Actions</TableCell>
-                </TableRow>
-              </TableHead>
-              <TableBody>
-                {decision.factors.names.map((name, i) => (
-                  <TableRow
-                    key={name}
-                    draggable
-                    onDragStart={(e) => onDragStart(e, i)}
-                    onDragOver={onDragOver}
-                    onDrop={(e) => onDropRow(e, i)}
-                  >
-                    <TableCell>{name}</TableCell>
-                    <TableCell>{decision.factors.units[i] ?? ""}</TableCell>
-                    <TableCell>
-                      {String(decision.factors.optimals[i] ?? "")}
-                    </TableCell>
-                    <TableCell>
-                      {Number.isFinite(decision.factors.weights[i])
-                        ? (decision.factors.weights[i] * 100).toFixed(0) + "%"
-                        : ""}
-                    </TableCell>
-                    <TableCell>
-                      {decision.factors.mins[i] == null
-                        ? "calculated"
-                        : String(decision.factors.mins[i])}
-                    </TableCell>
-                    <TableCell>
-                      {decision.factors.maxs[i] == null
-                        ? "calculated"
-                        : String(decision.factors.maxs[i])}
-                    </TableCell>
-                    <TableCell>
-                      <IconButton
-                        size="small"
-                        onClick={() => setEditFactorName(name)}
-                        title="Edit"
-                      >
-                        <EditIcon fontSize="small" />
-                      </IconButton>
-                      <IconButton
-                        size="small"
-                        onClick={() => handleRemove(name)}
-                        title="Delete"
-                      >
-                        <DeleteIcon fontSize="small" />
-                      </IconButton>
-                    </TableCell>
-                  </TableRow>
-                ))}
-              </TableBody>
-            </Table>
-          </Paper>
-        </Box> */}
+          <Box
+            sx={{
+              display: "flex",
+              gap: 2,
+              alignItems: "stretch",
+              minWidth: 0,
+              overflow: "hidden",
+            }}>
+              {/* <FactorsTable
+                decision={decision}
+                editFactorIndex={editFactorIndex}
+                setEditFactorIndex={setEditFactorIndex}
+                handleRemove={handleRemove}
+                onDragStart={onDragStart}
+                onDragOver={onDragOver}
+                onDropRow={onDropRow}
+              /> */}
+            </Box>
+              <FactorsDataGrid
+                decision={decision}
+                editFactorIndex={editFactorIndex}
+                setEditFactorIndex={setEditFactorIndex}
+                handleRemove={handleRemove}
+              />
+        </Box>
+      </Box>
+}

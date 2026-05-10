@@ -1,5 +1,8 @@
 {
-    "Factors": [
+    "description": "Factors to consider when choosing a college. Just a few, mostly added as an example.",
+    "name": "Choosing a College",
+    "decisionName": "What college should I go to?",
+    "factors": [
         {
             "name": "It's close to home",
             "unit": "miles",

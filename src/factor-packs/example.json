@@ -1,0 +1,41 @@
+{
+    "description": "Factors relating to choosing what to eat for dinner. This is just an example, you (hopefully) aren't thinking this hard about what to eat for dinner.",
+    "name": "Choosing Dinner",
+    "decisionName": "What should I eat for dinner?",
+    "factors": [
+        {
+            "name": "Taste",
+            "unit": "0 - 10",
+            "optimal": 10,
+            "min": 0,
+            "max": 10
+        },
+        {
+            "name": "Cost",
+            "unit": "$",
+            "optimal": 0,
+            "min": 0,
+            "max": null
+        },
+        {
+            "name": "Healthiness",
+            "unit": "0 - 10",
+            "optimal": 10,
+            "min": 0,
+            "max": 10
+        },
+        {
+            "name": "Time to Make",
+            "unit": "minutes",
+            "optimal": 0,
+            "min": 0,
+            "max": null
+        },
+        {
+            "name": "Leftovers",
+            "unit": "portions",
+            "optimal": 0,
+            "max": null
+        }
+    ]
+}

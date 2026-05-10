@@ -3,10 +3,12 @@ import TopNav from "./TopNav";
 import Container from "@mui/material/Container";
 import DecisionList from "./DecisionList";
 import ExplanationSidebar from "./ExplanationSidebar";
-import {Box} from "@mui/material";
+import {Box, Snackbar} from "@mui/material";
+import {useToast} from "../contexts/ToastContext";
 
 export default function Layout() {
     const location = useLocation();
+    const {toastText, toast, toastDuration} = useToast();
     const excludeDecisionList = ["/dashboard", "/explanation", "/"];
     const excludeExplanation = ["/explanation", "/", "/results"];
 
@@ -18,11 +20,17 @@ export default function Layout() {
       <TopNav />
       <Container component="main" sx={{ flex: 1, py: 3, maxWidth: 1200 }}>
         <Box sx={{ display: "flex", gap: 3 }}>
-          {!excludeDecisionList.includes(location.pathname) && <DecisionList />}
+          {/* {!excludeDecisionList.includes(location.pathname) && <DecisionList />} */}
           <Outlet />
           {!excludeExplanation.includes(location.pathname) && <ExplanationSidebar />}
         </Box>
       </Container>
+      <Snackbar
+        open={!!toastText}
+        autoHideDuration={toastDuration}
+        onClose={() => toast(null)}
+        message={toastText}
+      />
     </div>
   );
 }
