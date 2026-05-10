@@ -81,9 +81,7 @@ export default class Decision {
       return `Not all answers are filled: ${this.answers.filter((row) => row.some((ans) => !ans.isAnswered())).length} answers are not filled`
 
     if (this.factors.names.some((_, i) => !this.isFactorValid(i)))
-      return this.factors.names.filter((_, i) =>
-        this.isFactorValid(this.factors.names[i]),
-      )
+      return "Invalid factors: " + this.factors.names.filter((_, i) =>this.isFactorValid(i)).join(", ")
     return null
   }
 
@@ -149,8 +147,13 @@ export default class Decision {
   }
 
   removeFactor(factor) {
-    const idx = this._parseFactorParam(factor)
-    if (idx === -1) return
+    let idx
+    try{
+    idx = this._parseFactorParam(factor)
+    }catch(e){
+        // If it's not a valid factor, good, we don't need to do anything
+        return
+    }
     this.factors.names.splice(idx, 1)
     this.factors.units.splice(idx, 1)
     this.factors.optimals.splice(idx, 1)

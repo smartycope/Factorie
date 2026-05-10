@@ -443,7 +443,6 @@ export default function Factors() {
       max: addMaxUnbounded || !Number.isFinite(addMax) ? null : Number(addMax),
       unit: addUnit || undefined,
     }
-    console.log('newFactor', newFactor, 'addOptimal', addOptimal, typeof addOptimal)
     if (editFactorIndex != null) {
       // modify existing factor, including the name
       editFactor(editFactorIndex, newFactor)

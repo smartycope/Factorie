@@ -263,20 +263,20 @@ export default function Quiz() {
   : false
 
 //   if (!decision.isInvalid(true)) {
-    if (decision.factors.names.some((_, i) => !decision.isFactorValid(i))){
-        const unfinishedFactors = decision.factors.names.filter((_, i) => decision.isFactorValid(decision.factors.names[i]))
-    return <Box sx={{ p: 2 }}>
-      <Typography variant="h4">Quiz</Typography>
-      <Typography>
-        There are unfinished factors! We can't decide how good each option is until we know what "good" means.
-        <br/>
-        Go back to the <Link to="/factors">Factors</Link> page and fill in the red areas first
-        <br/>
-        The following factors are unfinished:
-        <br/>
-        {unfinishedFactors.map((n) => <>"{n}"<br/></>)}
-        </Typography>
-    </Box>
+  const unfinishedFactors = decision.factors.names.filter((_, i) => decision.isFactorValid(decision.factors.names[i]))
+    if (unfinishedFactors.length > 0){
+      return <Box sx={{ p: 2 }}>
+        <Typography variant="h4">Quiz</Typography>
+        <Typography>
+          There are unfinished factors! We can't decide how good each option is until we know what "good" means.
+          <br/>
+          Go back to the <Link to="/factors">Factors</Link> page and fill in the red areas first
+          <br/>
+          The following factors are unfinished:
+          <br/>
+          {unfinishedFactors.map((n) => <>"{n}"<br/></>)}
+          </Typography>
+      </Box>
   }
 
   return !decision ?

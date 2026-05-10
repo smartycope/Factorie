@@ -13,6 +13,7 @@ import Plot from "react-plotly.js"
 import * as PCAImport from "pca-js"
 import texts from "../assets/texts.json"
 import HelpOverlay from "../components/HelpOverlay"
+import Link from "@mui/material/Link";
 
 const PCA = PCAImport.default ?? PCAImport
 
@@ -642,15 +643,29 @@ export default function Results() {
   }
 
   const invalid = decision.isInvalid()
+  let err
+    if (invalid === "No factors added")
+        err = <Typography variant="body2">No factors added! Head over to the <Link to="/factors">Factors</Link> page to add some.</Typography>
+    else if (invalid === "No options added")
+        err = <Typography variant="body2">No options added! Head over to the <Link to="/options">Options</Link> page to add some.</Typography>
+    else if (invalid.startsWith("Answers length"))
+        err = <Typography variant="body2">Internal Error! Let Cope know about this. <br />{invalid}</Typography>
+    else if (invalid.startsWith("Not all answers are valid"))
+      err = <Typography variant="body2">Not all answers are valid! This probably means you have an answer that's out of range of the min/max of it's factor. Head over to the <Link to="/Decision">Decision</Link> page to fix this.</Typography>
+    else if (invalid.startsWith("Not all answers are filled"))
+      err = <Typography variant="body2">Not all answers are filled! Head over to the <Link to="/decisions">Decision</Link> page or the <Link to="/quiz">Quiz</Link> page to add them.</Typography>
+    else if (invalid.startsWith("Invalid factors:"))
+      err = <Typography variant="body2">Some factors are invalid. Head over to the <Link to="/factors">Factors</Link> page to fix them. {invalid}</Typography>
+
   if (invalid) {
     return (
       // <Box sx={{ display: "flex", gap: 3, flex: 1 }}>
       //   <DecisionList />
       <Box sx={{ flex: 1, p: 3 }}>
         <Typography variant="h6">Results unavailable</Typography>
-        <Typography variant="body2" sx={{ mt: 1 }}>
-          {invalid}
-        </Typography>
+        {/* <Typography variant="body2" sx={{ mt: 1 }}> */}
+          {err}
+        {/* </Typography> */}
       </Box>
       //   <ExplanationSidebar />
       // </Box>
