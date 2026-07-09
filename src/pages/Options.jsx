@@ -18,6 +18,11 @@ export default function Options() {
   const decision = selectedIndex != null ? decisions[selectedIndex] : null;
   const [newOption, setNewOption] = useState("");
 
+  function add(){
+    addOption(newOption)
+    setNewOption('')
+  }
+
   return (
     <Box sx={{ flex: 1 }}>
       {!decision ? (
@@ -35,10 +40,10 @@ export default function Options() {
               label="New option"
               size="small"
               onKeyDown={(e) => {
-                if (e.key === "Enter") addOption();
+                if (e.key === "Enter") add()
               }}
             />
-            <Button variant="contained" onClick={addOption}>
+            <Button variant="contained" onClick={add}>
               Add
             </Button>
           </Box>

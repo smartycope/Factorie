@@ -26,6 +26,8 @@ import { Tooltip } from "@mui/material"
 
 import texts from "../assets/texts.json"
 
+// TODO: a place (on this page? New page?) that asks the user what the optimal value is for each factor that doesn't have one set yet
+
 const DEFAULTS = {
   name: "",
   unit: "",
@@ -431,7 +433,6 @@ export default function Factors() {
     }
     setAddError("")
 
-
     // Reset all the the form fields
     resetFormFields()
 
@@ -439,10 +440,11 @@ export default function Factors() {
       name: nextName,
       optimal: Number.isFinite(addOptimal) ? Number(addOptimal) : undefined,
       weight: Number(addWeight),
-      min: addMinUnbounded || !Number.isFinite(addMin) ? null : Number(addMin),
-      max: addMaxUnbounded || !Number.isFinite(addMax) ? null : Number(addMax),
+      min: addMinUnbounded || !Number.isFinite(Number(addMin)) ? null : Number(addMin),
+      max: addMaxUnbounded || !Number.isFinite(Number(addMax)) ? null : Number(addMax),
       unit: addUnit || undefined,
     }
+    console.log(newFactor)
     if (editFactorIndex != null) {
       // modify existing factor, including the name
       editFactor(editFactorIndex, newFactor)
@@ -559,15 +561,6 @@ export default function Factors() {
                 <Typography variant="subtitle2">Scale</Typography>
                 <Box sx={{ display: "flex", gap: 1, mt: 1 }}>
                   <Box sx={{ flex: 1 }}>
-                    <FormControlLabel
-                      control={
-                        <Checkbox
-                          checked={addMinUnbounded}
-                          onChange={(e) => setAddMinUnbounded(e.target.checked)}
-                        />
-                      }
-                      label="Min Unbounded"
-                    />
                     <TextField
                       label="Min"
                       type="number"
@@ -578,17 +571,17 @@ export default function Factors() {
                       fullWidth
                       sx={{ mt: 1 }}
                     />
-                  </Box>
-                  <Box sx={{ flex: 1 }}>
                     <FormControlLabel
                       control={
                         <Checkbox
-                          checked={addMaxUnbounded}
-                          onChange={(e) => setAddMaxUnbounded(e.target.checked)}
+                          checked={addMinUnbounded}
+                          onChange={(e) => setAddMinUnbounded(e.target.checked)}
                         />
                       }
-                      label="Max Unbounded"
+                      label="Calculate the Min from the answers"
                     />
+                  </Box>
+                  <Box sx={{ flex: 1 }}>
                     <TextField
                       label="Max"
                       type="number"
@@ -598,6 +591,15 @@ export default function Factors() {
                       disabled={addMaxUnbounded}
                       fullWidth
                       sx={{ mt: 1 }}
+                    />
+                    <FormControlLabel
+                      control={
+                        <Checkbox
+                          checked={addMaxUnbounded}
+                          onChange={(e) => setAddMaxUnbounded(e.target.checked)}
+                        />
+                      }
+                      label="Calculate the Max from the answers"
                     />
                   </Box>
                 </Box>
@@ -622,6 +624,14 @@ export default function Factors() {
                       }}
                       sx={{ ml: 1 }}>
                       Cancel
+                    </Button>
+                    <Button
+                      variant="text"
+                      color="error"
+                      startIcon={<DeleteIcon />}
+                      onClick={() => handleRemove(editFactorIndex)}
+                      sx={{ ml: 1 }}>
+                      Delete
                     </Button>
                   </>
                 : <Button variant="contained" onClick={handleUpsert}>

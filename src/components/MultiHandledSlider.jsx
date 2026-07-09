@@ -1,4 +1,6 @@
-import React, { useEffect, useRef, useState } from "react";
+import { useRef, useState } from "react";
+
+// TODO: the labels when to the left (i.e. value >50%, so the handle is on the right) don't align next to the handles properly
 
 const clamp = (value, min, max) => Math.min(Math.max(value, min), max);
 
@@ -33,7 +35,7 @@ export default function MultiHandledSlider({
   // names = [],
   handles = {},
   gradient = ["#C1CBD6", "#002463"],
-  overlap = "pasdfush",
+  overlap = "block",
   step = 0.01,
   showValues = true,
   digits = 1,
@@ -44,6 +46,7 @@ export default function MultiHandledSlider({
   // this is a ref instead of a state so it can be updated inside of startDrag/endDrag events.
   // It's not really a ref, really just a persistant global variable that doesn't trigger re-renders when it changes
   const draggingLabel = useRef(null);
+  const [selectedLabel, setSelectedLabel] = useState(null);
   // Same for this.
   const blockingBounds = useRef({ min: 0, max: 1 });
 
@@ -53,6 +56,7 @@ export default function MultiHandledSlider({
     document.addEventListener("touchmove", onDrag, { passive: false });
     document.addEventListener("touchend", endDrag);
     draggingLabel.current = label;
+    setSelectedLabel(label);
     const orderedLabels = Object.entries(handles).sort((a, b) => a[1] - b[1]).map(([label]) => label);
     const currentIndex = orderedLabels.indexOf(label);
     // the .0001 is to make sure the handles don't get stuck next to another and flip the labels awkwardly
@@ -69,6 +73,7 @@ export default function MultiHandledSlider({
     document.removeEventListener("touchmove", onDrag);
     document.removeEventListener("touchend", endDrag);
     draggingLabel.current = null;
+    setSelectedLabel(null);
     blockingBounds.current = { min: 0, max: 1 };
   };
 
@@ -126,6 +131,7 @@ export default function MultiHandledSlider({
       .sort((a, b) => a[1] - b[1])
       .map(([label, pos], i) => {
         const color = getColorFromGradient(gradient, pos);
+        const selected = selectedLabel === label;
         return (
           <div key={i}>
             <div
@@ -147,8 +153,8 @@ export default function MultiHandledSlider({
                 cursor: "grab",
                 display: "flex",
                 transform: "translate(-50%, -50%)",
-                backgroundColor: color,
-                border: "2px solid white",
+                backgroundColor: !selected ? color : "white",
+                border: `2px solid ${!selected ? "white" : color}`,
                 borderRadius: "50%",
                 height: sliderDiam,
                 width: sliderDiam,
@@ -164,6 +170,7 @@ export default function MultiHandledSlider({
       .sort((a, b) => a[1] - b[1])
       .map(([label, pos], i) => {
         const color = getColorFromGradient(gradient, pos);
+        const selected = selectedLabel === label;
         const flip = pos < 0.5;
         const text = formatLabel(label);
         const labelWidth = text.length * 8;
@@ -193,9 +200,9 @@ export default function MultiHandledSlider({
                 cursor: "grab",
                 height: sliderDiam,
                 transform: "translate(-50%, -50%)",
-                backgroundColor: color,
+                backgroundColor: !selected ? color : "white",
                 // border: "2px solid " + (flip ? "black" : "white"),
-                border: "2px solid white",
+                border: `2px solid ${!selected ? "white" : color}`,
                 borderRadius: "50%",
                 width: sliderDiam,
               }}

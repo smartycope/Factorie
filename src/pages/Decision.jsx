@@ -481,6 +481,14 @@ export default function Decisions() {
         </Stack>
         <br />
         {/* <br /> */}
+        <Stack direction="row">
+        <Button
+          sx={{ display: "flex" }}
+          startIcon={<AddIcon />}
+          variant="contained"
+          onClick={() => addFactor()}>
+          Add Factor
+        </Button>
         <Button
           startIcon={<AddIcon />}
           variant="contained"
@@ -489,15 +497,9 @@ export default function Decisions() {
           onClick={() => addOption()}>
           Add Option
         </Button>
+        </Stack>
         {/* <DecisionInduvidualEditTableTransposed /> */}
         <DecisionEditTableTransposed_MuiTable />
-        <Button
-          sx={{ display: "flex" }}
-          startIcon={<AddIcon />}
-          variant="contained"
-          onClick={() => addFactor()}>
-          Add Factor
-        </Button>
       </>
     )
 
@@ -511,5 +513,6 @@ export default function Decisions() {
       }}>
       {content}
     </Box>
+    // content
   )
 }

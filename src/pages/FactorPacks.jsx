@@ -10,8 +10,12 @@ import List from "@mui/material/List"
 import ListItem from "@mui/material/ListItem"
 import ListItemText from "@mui/material/ListItemText"
 import AddIcon from "@mui/icons-material/Add"
+import DownloadIcon from "@mui/icons-material/Download"
 import RemoveIcon from "@mui/icons-material/Remove"
 import { useDecisions } from "../contexts/DecisionsContext"
+import Decision from "../models/Decision"
+
+// TODO: search bar on this page
 
 const factorPackModules = import.meta.glob("../factor-packs/*.json", {
   eager: true,
@@ -63,12 +67,52 @@ function FactorSummary({ factors }) {
   )
 }
 
+function downloadFactorPackFactors(pack) {
+  try {
+    const text = `${pack.factors
+      .map((factor) => factor.name)
+      .filter(Boolean)
+      .join("\n")}\n`
+    const blob = new Blob([text], { type: "text/plain" })
+    const url = URL.createObjectURL(blob)
+    const a = document.createElement("a")
+    const safe = (pack.name || "factor-pack").replace(/[^a-z0-9_.-]/gi, "_")
+    a.href = url
+    a.download = `${safe}-factors.txt`
+    document.body.appendChild(a)
+    a.click()
+    a.remove()
+    URL.revokeObjectURL(url)
+  } catch (e) {
+    console.error("Download failed", e)
+    alert("Failed to download factors")
+  }
+}
+
 export default function FactorPacks() {
-  const { decision, addFactorPack, removeFactorPack } = useDecisions()
+  const {
+    decisions,
+    setDecisions,
+    setSelectedIndex,
+    decision,
+    addFactorPack,
+    removeFactorPack,
+  } = useDecisions()
+  const hasDecisions = decisions.length > 0
   const activePacks =
     decision?.factorPacks instanceof Set ?
       decision.factorPacks
     : new Set(decision?.factorPacks ?? [])
+
+  function startNewDecisionFromPack(pack) {
+    const newDecision = new Decision(pack.decisionName || pack.name)
+    newDecision.addFactorPack(pack)
+    setDecisions((prev) => {
+      const next = [...prev, newDecision]
+      setSelectedIndex(next.length - 1)
+      return next
+    })
+  }
 
   return (
     <Box sx={{ flex: 1, width: "100%", maxWidth: 960 }}>
@@ -82,14 +126,18 @@ export default function FactorPacks() {
 
         {!decision && (
           <Paper sx={{ p: 2 }}>
-            <Typography>Select a decision before adding factor packs.</Typography>
+            <Typography>
+              {hasDecisions ?
+                "Select a decision before adding factor packs."
+              : "Start a new decision from a factor pack."}
+            </Typography>
           </Paper>
         )}
 
         {decision && (
           <Paper sx={{ p: 2 }}>
             <Typography variant="subtitle1" gutterBottom>
-              Packs in {decision.name}
+              Packs in <i>{decision.name}</i>
             </Typography>
             {activePacks.size === 0 ? (
               <Typography variant="body2" color="text.secondary">
@@ -114,21 +162,43 @@ export default function FactorPacks() {
                   {index > 0 && <Divider component="li" />}
                   <ListItem
                     // alignItems="flex-start"
-                    sx={{ alignItems: "flex-start", py: 2, pr: 18 }}
+                    sx={{
+                      alignItems: "flex-start",
+                      py: 2,
+                      pr: hasDecisions ? 34 : 45,
+                    }}
                     secondaryAction={
-                      <Button
-                        variant={isActive ? "outlined" : "contained"}
-                        color={isActive ? "error" : "primary"}
-                        startIcon={isActive ? <RemoveIcon /> : <AddIcon />}
-                        disabled={!decision}
-                        onClick={() =>
-                          isActive ?
-                            removeFactorPack(pack)
-                          : addFactorPack(pack)
+                      <Stack direction="row" spacing={1}>
+                        {hasDecisions ?
+                          <Button
+                            variant={isActive ? "outlined" : "contained"}
+                            color={isActive ? "error" : "primary"}
+                            startIcon={isActive ? <RemoveIcon /> : <AddIcon />}
+                            disabled={!decision}
+                            onClick={() =>
+                              isActive ?
+                                removeFactorPack(pack)
+                              : addFactorPack(pack)
+                            }
+                          >
+                            {isActive ? "Remove" : "Add"}
+                          </Button>
+                        : <Button
+                            variant="contained"
+                            startIcon={<AddIcon />}
+                            onClick={() => startNewDecisionFromPack(pack)}
+                          >
+                            Start New Decision
+                          </Button>
                         }
-                      >
-                        {isActive ? "Remove" : "Add"}
-                      </Button>
+                        <Button
+                          variant="outlined"
+                          startIcon={<DownloadIcon />}
+                          onClick={() => downloadFactorPackFactors(pack)}
+                        >
+                          Download
+                        </Button>
+                      </Stack>
                     }
                   >
                     <ListItemText

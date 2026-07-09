@@ -143,9 +143,9 @@ export default function Dashboard() {
           />
         </Box>
       </Box>
-      <Typography variant="subtitle1">
+      {(decisions.length || null) && <Typography variant="subtitle1">
         Currently Deciding: {decisions[selectedIndex]?.name}
-      </Typography>
+      </Typography>}
 
       {decisions.length === 0 ? (
         <Typography>No decisions yet — create one to get started.</Typography>

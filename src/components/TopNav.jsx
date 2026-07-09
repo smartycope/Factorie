@@ -8,12 +8,12 @@ import {Stack} from '@mui/material';
 
 const pages = [
   ['Dashboard', 'dashboard', null],
-  ['Options', 'options', 1],
-  ['Factor Packs', 'factor-packs', 2],
+  ['Factor Packs', 'factor-packs', 1],
+  ['Options', 'options', 2],
   ['Factors', 'factors', 3],
   ['Fine Tune Weights', 'weights', 4],
   ['Quiz', 'quiz', 5],
-  ['Decision', 'decisions', 6],
+  ['Overview', 'decisions', 6],
   ['Results', 'results', 7],
 //   ['Import/Export', '/save', null],
   ['Explanation', 'explanation', null],

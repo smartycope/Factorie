@@ -1,5 +1,7 @@
 import Answer from "./Answer.js"
 
+// TODO: some sort of way to indicate that the optimal value is the min or max (even if the min or max is calculated)
+
 export default class Decision {
   static numSamples = 100
 

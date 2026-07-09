@@ -1,17 +1,17 @@
 // TODO: this page is incomplete. Copy texts over manually
 
-import React from 'react'
-import Box from '@mui/material/Box'
-import Typography from '@mui/material/Typography'
+import React from "react"
+import Box from "@mui/material/Box"
+import Typography from "@mui/material/Typography"
 // const Plot = React.lazy(() => import('react-plotly.js'))
-import graph1 from '../assets/graph1.png'
-import graph2 from '../assets/graph2.png'
-import graph3 from '../assets/graph3.png'
-import graph4 from '../assets/graph4.png'
-import graph5 from '../assets/graph5.png'
-import graph6 from '../assets/graph6.png'
-import graph7 from '../assets/graph7.png'
-import graph8 from '../assets/graph8.png'
+import graph1 from "../assets/graph1.png"
+import graph2 from "../assets/graph2.png"
+import graph3 from "../assets/graph3.png"
+import graph4 from "../assets/graph4.png"
+import graph5 from "../assets/graph5.png"
+import graph6 from "../assets/graph6.png"
+import graph7 from "../assets/graph7.png"
+import graph8 from "../assets/graph8.png"
 
 export default function Explanation() {
   return (
@@ -20,19 +20,19 @@ export default function Explanation() {
         On this page
       </Typography>
       {/* TODO: these don't work, and aren't very pretty */}
-      <Typography component="ul" paragraph sx={{  listStylePosition: "inside"}}>
+      <Typography component="ul" paragraph sx={{ listStylePosition: "inside" }}>
         {/* <ul> */}
-          <li>
-            <a href="#how-it-works">How it works</a>
-          </li>
-          <li>
-            <a href="#interpreting-a-single-option">
-              Interpreting a single option
-            </a>
-          </li>
-          <li>
-            <a href="#good-practices">Best Practices</a>
-          </li>
+        <li>
+          <a href="#how-it-works">How it works</a>
+        </li>
+        <li>
+          <a href="#interpreting-a-single-option">
+            Interpreting a single option
+          </a>
+        </li>
+        <li>
+          <a href="#good-practices">Best Practices</a>
+        </li>
         {/* </ul> */}
       </Typography>
 
@@ -46,8 +46,9 @@ export default function Explanation() {
         but its also important that you understand how it works so you can be
         confident in the answer it gives. Accordingly, here's an explanation of
         how it works. In addition, if you want a deeper understanding of how it
-        works, feel free to <a href="https://github.com/smartycope/factorie">read the code</a> and understand how it works on a
-        deeper level.
+        works, feel free to{" "}
+        <a href="https://github.com/smartycope/factorie">read the code</a> and
+        understand how it works on a deeper level.
       </Typography>
 
       <Typography paragraph>
@@ -68,12 +69,16 @@ export default function Explanation() {
 
       <Typography paragraph>
         You sit down and think about it, and you give tacos a 8/10 in taste, and
-        they cost $10. Spaghetti costs $6, and you give it an 4/10 in taste.<br /><br />
+        they cost $10. Spaghetti costs $6, and you give it an 4/10 in taste.
+        <br />
+        <br />
         Which one is better? Spaghetti or Tacos? You like tacos more, but
-        spaghetti is cheaper. <br /><br />Well now you can imagine your "perfect" meal.
-        Everything you want in a single meal, even if it's impossible. You can't
-        make it, but it's the best meal you can think of. Where would it be? The
-        perfect meal would taste 10/10, and cost nothing, right?
+        spaghetti is cheaper. <br />
+        <br />
+        Well now you can imagine your "perfect" meal. Everything you want in a
+        single meal, even if it's impossible. You can't make it, but it's the
+        best meal you can think of. Where would it be? The perfect meal would
+        taste 10/10, and cost nothing, right?
       </Typography>
 
       <img src={graph2} alt="Scatter plot example" />
@@ -86,12 +91,16 @@ export default function Explanation() {
 
       <Typography paragraph>
         Spaghetti is closer to being the perfect meal, so it's better! The cost
-        outweighs the taste. <br /><br />However, there's one thing we're assuming here.
-        We're assuming we care about taste and cost the same amount. What if
-        your paycheck just came in? You might care less about the cost now, but
-        it does still matter. <br /><br />To take this into account, we have a "weight"
-        value, or a "how much do I care?" value for each factor. You can think
-        of this as "squishing" the axis of the graph.
+        outweighs the taste. <br />
+        <br />
+        However, there's one thing we're assuming here. We're assuming we care
+        about taste and cost the same amount. What if your paycheck just came
+        in? In that case you might care less about the cost, but it does still
+        matter. <br />
+        <br />
+        To take this into account, we have a "weight" value, describing "how
+        much do I care?" for each factor. You can think of this as "squishing"
+        the axis of the graph.
       </Typography>
 
       <img src={graph4} alt="Scatter plot example" />
@@ -99,62 +108,74 @@ export default function Explanation() {
       <Typography paragraph>
         And there you have it! The tacos are now closer to the perfect meal.
         This makes sense: if you care less about money, you're more likely to
-        pick the meal that tastes better. <br /><br />That's all there is to it! Of course,
-        this is a very simple example. In real life, you likely have more
-        factors, especially in big decisions. For example, you might care about
-        the healthiness of the meal, or the time it takes to make it, or the
-        amount of leftovers it leaves. <br /><br />To add more factors, you simply add more
-        dimensions:
+        pick the meal that tastes better. <br />
+        <br />
+        That's all there is to it! Of course, this is a very simple example. In
+        real life, you likely have more factors, especially in big decisions.
+        For example, you might care about the healthiness of the meal, or the
+        time it takes to make it, or the amount of leftovers it leaves. <br />
+        <br />
+        To add more factors, you simply add more dimensions:
       </Typography>
 
       <img src={graph5} alt="Scatter plot example" />
       <Typography paragraph>
-        Of course, this gets hard to visualize, but that math still works. You
-        can add as many factors as you want, and the still calculate the
-        distance between the options and the perfect option, even if it's hard
-        to graph.
+        Of course, this gets hard to visualize, but that math still works. It's
+        exactly the same principal. You can add as many factors as you want, and
+        the still calculate the distance between the options and the perfect
+        option, even if it's hard to graph.
       </Typography>
       <Typography variant="h5" paragraph id="interpreting-a-single-option">
         Interpreting a single option
       </Typography>
       <Typography paragraph>
         Now consider the situation where you only have one option, and you're
-        trying to decide if it's good enough. What does "good enough" mean? <br /><br />For
-        example, say you're dating someone, and it's going pretty well, and
+        trying to decide if it's good enough. What does "good enough" mean?{" "}
+        <br />
+        <br />
+        For example, say you're dating someone, and it's going pretty well, and
         you're trying to decide if you should marry them or not. You could put
         in your 2 options, "marry them" and "don't marry them", and then try to
         decide between them. But it can be hard to imagine what your life is
         like without them. So you essentially have 1 option that you're trying
-        to decide if it's good enough. What do you do?<br /><br /> Well, let's adding some
-        factors which relate to relationships, and try plotting it for starters:
+        to decide if it's good enough. What do you do?
+        <br />
+        <br /> Well, let's adding some factors which relate to relationships,
+        and try plotting it for starters:
       </Typography>
       <img src={graph6} alt="Scatter plot example" />
       <Typography paragraph>
         Ya, you enjoy spending time with them, but they also don't love you that
         much. But what if that's the best you could expect? Marrying someone is
         a big decision! We need some way of deciding if an option is "good
-        enough". <br /><br />One way to do that is to calculate what the "worst" option is,
-        and compare your option on a scale from the worst possible option to the
+        enough". <br />
+        <br />
+        One way to do that is to calculate what the "worst" option is, and
+        compare your option on a scale from the worst possible option to the
         best possible option.
       </Typography>
       <img src={graph7} alt="Scatter plot example" />
       <Typography paragraph>
         Yikes! They're not even 50% good! Maybe you shouldn't marry them... they
-        don't seem that great after all. <br /><br />If we establish a threshold, especially
-        before we evaluate a given partner, we can require that they pass that
-        threshold. This could keep us from marrying someone we think we really
-        like, but isn't actually that great.
+        don't seem that great after all. <br />
+        <br />
+        If we establish a threshold, especially before we evaluate a given
+        partner, we can require that they pass that threshold. This could keep
+        us from marrying someone we think we really like, but isn't actually
+        that great.
       </Typography>
       <img src={graph8} alt="Scatter plot example" />
       <Typography paragraph>
         This threshold quantifies how "picky" you are. People tend to start off
-        picky, and then get less picky over time as.
+        picky, and then get less picky over time. If you want a different
+        algorithm for tuning this threshold, check out the first 2 chapters of
+        the book "Algorithms to Live By" by Brian Christian and Tom Griffiths.
       </Typography>
 
       <Typography variant="h5" gutterBottom id="good-practices">
         Best Practices
       </Typography>
-      <ul style={{  listStylePosition: "inside"}}>
+      <ul style={{ listStylePosition: "inside" }}>
         <li>
           If you get an answer, and you go, "what? That's not right!", you're
           probably right. This program generally tells you what you already
@@ -168,8 +189,8 @@ export default function Explanation() {
           lazy.)
         </li>
         <li>
-          Don't forget that you can quantify your emotions here. Emotions tend
-          to be a valid part of any major decision. Try adding factors like
+          Don't forget that you can quantify your emotions here. Emotions are
+          often a valid part of any major decision. Try adding factors like
           "happiness" or "How much I want to"
         </li>
         <li>
@@ -192,8 +213,19 @@ export default function Explanation() {
         <li>
           This is self-reported. For best results, try to set the weights and
           threshold objectively: either before you have to make the decision,
-          going over them with a friend. If you want to tune the weights to get
+          going over them with a friend. If you want to Gerrymander the weights to get
           the decision you want, you probably can. Don't do that.
+        </li>
+        <li>
+          Factors work best when they describe unique concepts. For example, if
+          you're deciding what to eat, and as factors you put both "does it
+          taste good" and "is it flavorful", and weight them the same and give
+          the same answers, it's essentially going to bias the result as if you
+          weighted it double what you actually weighted it as (even if that's
+          more than 10). However, you can get very specific: if you have both
+          "does it have lots of flavor" and "does it have good texture", and you
+          (at least potentially) give different weights and values for those,
+          then those are both valid factors.
         </li>
         <li>
           This app is able to handle as many factors as you can think of. I've
@@ -202,5 +234,5 @@ export default function Explanation() {
         </li>
       </ul>
     </Box>
-  );
+  )
 }

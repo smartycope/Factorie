@@ -55,7 +55,7 @@ function answerCellSx(isActive, text) {
   return {
     cursor: "pointer",
     backgroundColor:
-      isActive ? "#fff9c4"
+      isActive ? "#bcdaf8"
       : text == "" ? "#e02d2d67"
       : "inherit",
   }
@@ -271,6 +271,7 @@ export default function Quiz() {
           There are unfinished factors! We can't decide how good each option is until we know what "good" means.
           <br/>
           Go back to the <Link to="/factors">Factors</Link> page and fill in the red areas first
+          <br/>
           <br/>
           The following factors are unfinished:
           <br/>
