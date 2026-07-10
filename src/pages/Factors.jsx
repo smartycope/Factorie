@@ -7,6 +7,8 @@ import IconButton from "@mui/material/IconButton"
 import Checkbox from "@mui/material/Checkbox"
 import FormControlLabel from "@mui/material/FormControlLabel"
 import Slider from "@mui/material/Slider"
+import Menu from "@mui/material/Menu"
+import MenuItem from "@mui/material/MenuItem"
 import EditIcon from "@mui/icons-material/Edit"
 import DeleteIcon from "@mui/icons-material/Delete"
 // Select/MenuItem not needed anymore
@@ -22,6 +24,8 @@ import { useDecisions } from "../contexts/DecisionsContext"
 import Decision from "../models/Decision"
 import ExplanationSidebar from "../components/ExplanationSidebar"
 import { Tooltip } from "@mui/material"
+import HelpOverlay from "../components/HelpOverlay"
+import { SUGGESTED_UNITS } from "../suggestedUnits"
 // import HelpOutlineOutlinedIcon from '@mui/icons-material/HelpOutlineOutlinedIcon';
 
 import texts from "../assets/texts.json"
@@ -59,6 +63,19 @@ function factorRows(decision) {
       max: decision.factors.maxs[i],
     }
   })
+}
+
+function isFactorRowUnfinished(row, decision) {
+  return (
+    !row.name ||
+    !row.unit ||
+    row.optimal === null ||
+    row.optimal === "" ||
+    row.weight === null ||
+    row.weight === "" ||
+    !Number.isFinite(row.weight) ||
+    Boolean(decision?.isFactorValid(row.index))
+  )
 }
 
 function missingCellSx(value) {
@@ -124,8 +141,11 @@ function FactorsTable({
   onDragStart,
   onDragOver,
   onDropRow,
+  showOnlyUnfinished,
 }) {
-  const rows = factorRows(decision)
+  const rows = factorRows(decision).filter(
+    (row) => !showOnlyUnfinished || isFactorRowUnfinished(row, decision),
+  )
 
   return (
     <Paper sx={{ mt: 1 }}>
@@ -209,8 +229,15 @@ const FactorsDataGrid = React.memo(function FactorsDataGrid({
   editFactorIndex,
   setEditFactorIndex,
   handleRemove,
+  showOnlyUnfinished,
 }) {
-  const rows = useMemo(() => factorRows(decision), [decision])
+  const rows = useMemo(
+    () =>
+      factorRows(decision).filter(
+        (row) => !showOnlyUnfinished || isFactorRowUnfinished(row, decision),
+      ),
+    [decision, showOnlyUnfinished],
+  )
   const handleRowClick = useCallback(
     (params) => setEditFactorIndex(params.row.index),
     [setEditFactorIndex],
@@ -303,7 +330,13 @@ const FactorsDataGrid = React.memo(function FactorsDataGrid({
 
   return (
     // <Paper sx={{ mt: 1, height: 420, minWidth: 0 }}>
-    <Paper sx={{ mt: 1, height: "calc(100vh - 230px)", minHeight: 300, minWidth: 0 }}>
+    <Paper
+      sx={{
+        mt: 1,
+        height: "calc(100vh - 230px)",
+        minHeight: 300,
+        minWidth: 0,
+      }}>
       <DataGrid
         rows={rows}
         columns={columns}
@@ -346,6 +379,9 @@ export default function Factors() {
 
   // Edit state tracks which factor (by index) is being modified. We reuse the add form fields while editing.
   const [editFactorIndex, setEditFactorIndex] = useState(null)
+  const [showOnlyUnfinished, setShowOnlyUnfinished] = useState(false)
+  const [unitMenuAnchorEl, setUnitMenuAnchorEl] = useState(null)
+  const unitMenuOpen = Boolean(unitMenuAnchorEl)
 
   const resetFormFields = useCallback(() => {
     setAddName(DEFAULTS.name)
@@ -393,7 +429,7 @@ export default function Factors() {
     return () => clearTimeout(t)
   }, [editFactorIndex, decision])
 
-  function isFormInvalid(){
+  function isFormInvalid() {
     if (!factorNameText(addName).trim()) {
       return "Factor name is required"
     }
@@ -415,9 +451,7 @@ export default function Factors() {
       addOptimal !== "" &&
       (addOptimal < Number(addMin) || addOptimal > Number(addMax))
     )
-      return (
-        "Optimal must be between Min and Max, or leave blank to finish later"
-    )
+      return "Optimal must be between Min and Max, or leave blank to finish later"
     // Reset error
     return null
   }
@@ -440,8 +474,14 @@ export default function Factors() {
       name: nextName,
       optimal: Number.isFinite(addOptimal) ? Number(addOptimal) : undefined,
       weight: Number(addWeight),
-      min: addMinUnbounded || !Number.isFinite(Number(addMin)) ? null : Number(addMin),
-      max: addMaxUnbounded || !Number.isFinite(Number(addMax)) ? null : Number(addMax),
+      min:
+        addMinUnbounded || !Number.isFinite(Number(addMin)) ?
+          null
+        : Number(addMin),
+      max:
+        addMaxUnbounded || !Number.isFinite(Number(addMax)) ?
+          null
+        : Number(addMax),
       unit: addUnit || undefined,
     }
     console.log(newFactor)
@@ -460,50 +500,58 @@ export default function Factors() {
     }
   }
 
-  const handleRemove = useCallback((factorToRemove) => {
-    removeFactor(factorToRemove)
-    if (editFactorIndex === factorToRemove) {
-      setEditFactorIndex(null)
-      resetFormFields()
-    }
-  }, [editFactorIndex, removeFactor, resetFormFields])
+  const handleRemove = useCallback(
+    (factorToRemove) => {
+      removeFactor(factorToRemove)
+      if (editFactorIndex === factorToRemove) {
+        setEditFactorIndex(null)
+        resetFormFields()
+      }
+    },
+    [editFactorIndex, removeFactor, resetFormFields],
+  )
+
+  function handleSuggestedUnit(unit) {
+    setAddUnit(unit)
+    setUnitMenuAnchorEl(null)
+  }
 
   // Drag and drop the factor rows
-  const onDragStart = (e, idx) => {
-    e.dataTransfer.setData("text/plain", String(idx))
-    e.dataTransfer.effectAllowed = "move"
-  }
+  //   const onDragStart = (e, idx) => {
+  //     e.dataTransfer.setData("text/plain", String(idx))
+  //     e.dataTransfer.effectAllowed = "move"
+  //   }
 
-  const onDragOver = (e) => {
-    e.preventDefault()
-    e.dataTransfer.dropEffect = "move"
-  }
+  //   const onDragOver = (e) => {
+  //     e.preventDefault()
+  //     e.dataTransfer.dropEffect = "move"
+  //   }
 
-  const onDropRow = (e, targetIdx) => {
-    e.preventDefault()
-    const from = Number(e.dataTransfer.getData("text/plain"))
-    const to = targetIdx
-    if (Number.isNaN(from)) return
-    if (from === to) return
+  //   const onDropRow = (e, targetIdx) => {
+  //     e.preventDefault()
+  //     const from = Number(e.dataTransfer.getData("text/plain"))
+  //     const to = targetIdx
+  //     if (Number.isNaN(from)) return
+  //     if (from === to) return
 
-    const move = (arr) => {
-      const item = arr.splice(from, 1)[0]
-      arr.splice(to, 0, item)
-    }
+  //     const move = (arr) => {
+  //       const item = arr.splice(from, 1)[0]
+  //       arr.splice(to, 0, item)
+  //     }
 
-    modifyCurrentDecision((d) => {
-      move(d.factors.names)
-      move(d.factors.units)
-      move(d.factors.optimals)
-      move(d.factors.weights)
-      move(d.factors.mins)
-      move(d.factors.maxs)
-      for (let r = 0; r < d.answers.length; r++) {
-        const col = d.answers[r].splice(from, 1)[0]
-        d.answers[r].splice(to, 0, col)
-      }
-    })
-  }
+  //     modifyCurrentDecision((d) => {
+  //       move(d.factors.names)
+  //       move(d.factors.units)
+  //       move(d.factors.optimals)
+  //       move(d.factors.weights)
+  //       move(d.factors.mins)
+  //       move(d.factors.maxs)
+  //       for (let r = 0; r < d.answers.length; r++) {
+  //         const col = d.answers[r].splice(from, 1)[0]
+  //         d.answers[r].splice(to, 0, col)
+  //       }
+  //     })
+  //   }
 
   return !decision ?
       <Box sx={{ flex: 1 }}>
@@ -513,97 +561,145 @@ export default function Factors() {
     : <Box sx={{ flex: 1 }}>
         <Typography variant="h4">Factors</Typography>
 
-        <Box sx={{ display: "flex", gap: 2, mt: 2 }}>
+        <Box sx={{ display: "flex", justifyContent: "center", gap: 2, mt: 2 }}>
           <Paper sx={{ p: 2, width: 700 }}>
             <Box sx={{ mb: 1 }}></Box>
 
             <Box sx={{ mt: 1 }}>
-              <TextField
-                label="Factor"
-                value={addName}
-                onChange={(e) => setAddName(e.target.value)}
-                onKeyDown={(e) => {
-                  if (e.key === "Enter") handleUpsert()
-                }}
-                fullWidth
-                size="small"
-                sx={{ mb: 1 }}
-              />
-              <TextField
-                label="Unit"
-                placeholder="0-10 scale"
-                value={addUnit}
-                onChange={(e) => setAddUnit(e.target.value)}
-                fullWidth
-                size="small"
-                sx={{ mb: 1 }}
-              />
-              <TextField
-                label="Optimal"
-                type="number"
-                value={addOptimal ?? ""}
-                onChange={(e) => setAddOptimal(Number(e.target.value))}
-                fullWidth
-                size="small"
-                sx={{ mb: 1 }}
-              />
-              <Box sx={{ display: "flex", alignItems: "center", gap: 2 }}>
-                <Typography>How much do you care?</Typography>
-                <Slider
-                  value={Math.round(addWeight * 100)}
-                  onChange={(e, v) => setAddWeight(v / 100)}
-                  valueLabelDisplay="auto"
-                  min={0}
-                  max={100}
+              <HelpOverlay helpText={texts.factors.name}>
+                <TextField
+                  label="Factor"
+                  value={addName}
+                  onChange={(e) => setAddName(e.target.value)}
+                  onKeyDown={(e) => {
+                    if (e.key === "Enter") handleUpsert()
+                  }}
+                  fullWidth
+                  size="small"
+                  sx={{ mb: 1 }}
                 />
-              </Box>
-              <Box sx={{ mt: 1, mb: 1 }}>
-                <Typography variant="subtitle2">Scale</Typography>
-                <Box sx={{ display: "flex", gap: 1, mt: 1 }}>
-                  <Box sx={{ flex: 1 }}>
-                    <TextField
-                      label="Min"
-                      type="number"
-                      value={addMin ?? ""}
-                      onChange={(e) => setAddMin(e.target.value)}
-                      size="small"
-                      disabled={addMinUnbounded}
-                      fullWidth
-                      sx={{ mt: 1 }}
+              </HelpOverlay>
+
+                <Box
+                  sx={{
+                    display: "flex",
+                    gap: 1,
+                    mb: 1,
+                    alignItems: "flex-start",
+                }}
+                >
+                <HelpOverlay helpText={texts.factors.unit}>
+                  <TextField
+                    label="Unit"
+                    // placeholder="0-10 scale"
+                    value={addUnit}
+                    onChange={(e) => setAddUnit(e.target.value)}
+                    fullWidth
+                    size="small"
+                    sx={{ flex: 1 }}
                     />
-                    <FormControlLabel
-                      control={
-                        <Checkbox
-                          checked={addMinUnbounded}
-                          onChange={(e) => setAddMinUnbounded(e.target.checked)}
-                        />
-                      }
-                      label="Calculate the Min from the answers"
-                    />
-                  </Box>
-                  <Box sx={{ flex: 1 }}>
-                    <TextField
-                      label="Max"
-                      type="number"
-                      value={addMax ?? ""}
-                      onChange={(e) => setAddMax(e.target.value)}
-                      size="small"
-                      disabled={addMaxUnbounded}
-                      fullWidth
-                      sx={{ mt: 1 }}
-                    />
-                    <FormControlLabel
-                      control={
-                        <Checkbox
-                          checked={addMaxUnbounded}
-                          onChange={(e) => setAddMaxUnbounded(e.target.checked)}
-                        />
-                      }
-                      label="Calculate the Max from the answers"
-                    />
+                    </HelpOverlay>
+                  <Button
+                    variant="outlined"
+                    onClick={(event) => setUnitMenuAnchorEl(event.currentTarget)}
+                    sx={{ whiteSpace: "nowrap", minHeight: 40 }}
+                  >
+                    Units
+                  </Button>
+                  <Menu
+                    anchorEl={unitMenuAnchorEl}
+                    open={unitMenuOpen}
+                    onClose={() => setUnitMenuAnchorEl(null)}
+                  >
+                    {SUGGESTED_UNITS.map((unit) => (
+                      <MenuItem key={unit} onClick={() => handleSuggestedUnit(unit)}>
+                        {unit}
+                      </MenuItem>
+                    ))}
+                  </Menu>
+                </Box>
+
+              <HelpOverlay helpText={texts.factors.optimal} rightAmt="5%">
+                <TextField
+                  label="Optimal"
+                  type="number"
+                  value={addOptimal ?? ""}
+                  onChange={(e) => setAddOptimal(Number(e.target.value))}
+                  fullWidth
+                  size="small"
+                  sx={{ mb: 1 }}
+                />
+              </HelpOverlay>
+
+              <HelpOverlay helpText={texts.factors.weight} rightAmt="-1.5rem">
+                <Box sx={{ display: "flex", alignItems: "center", gap: 2 }}>
+                  <Typography sx={{ maxWidth: "6rem" }}>
+                    How much do you care?
+                  </Typography>
+                  <Slider
+                    value={Math.round(addWeight * 100)}
+                    onChange={(e, v) => setAddWeight(v / 100)}
+                    valueLabelDisplay="auto"
+                    min={0}
+                    max={100}
+                  />
+                </Box>
+              </HelpOverlay>
+
+              <HelpOverlay helpText={texts.factors.scale}>
+                <Box sx={{ mt: 1, mb: 1 }}>
+                  <Typography variant="subtitle2">Scale</Typography>
+                  <Box sx={{ display: "flex", gap: 1, mt: 1 }}>
+                    <Box sx={{ flex: 1 }}>
+                      <TextField
+                        label="Min"
+                        type="number"
+                        value={addMin ?? ""}
+                        onChange={(e) => setAddMin(e.target.value)}
+                        size="small"
+                        disabled={addMinUnbounded}
+                        fullWidth
+                        sx={{ mt: 1 }}
+                      />
+                      <FormControlLabel
+                        control={
+                          <Checkbox
+                            checked={addMinUnbounded}
+                            onChange={(e) =>
+                              setAddMinUnbounded(e.target.checked)
+                            }
+                          />
+                        }
+                        label="Calculate the Min from the answers"
+                      />
+                    </Box>
+                    <Box sx={{ flex: 1 }}>
+                      <TextField
+                        label="Max"
+                        type="number"
+                        value={addMax ?? ""}
+                        onChange={(e) => setAddMax(e.target.value)}
+                        size="small"
+                        disabled={addMaxUnbounded}
+                        fullWidth
+                        sx={{ mt: 1 }}
+                      />
+                      <FormControlLabel
+                        control={
+                          <Checkbox
+                            checked={addMaxUnbounded}
+                            onChange={(e) =>
+                              setAddMaxUnbounded(e.target.checked)
+                            }
+                          />
+                        }
+                        label="Calculate the Max from the answers"
+                      />
+                    </Box>
                   </Box>
                 </Box>
-              </Box>
+              </HelpOverlay>
+
               {addError && (
                 <Typography color="error" sx={{ mt: 1 }}>
                   {addError}
@@ -644,7 +740,26 @@ export default function Factors() {
         </Box>
 
         <Box sx={{ mt: 3 }}>
-          <Typography variant="h6">Current Factors</Typography>
+          <Box
+            sx={{
+              display: "flex",
+              justifyContent: "space-between",
+              alignItems: "center",
+              mb: 1,
+            }}>
+            <Typography variant="h6">Current Factors</Typography>
+            <FormControlLabel
+              control={
+                <Checkbox
+                  checked={showOnlyUnfinished}
+                  onChange={(event) =>
+                    setShowOnlyUnfinished(event.target.checked)
+                  }
+                />
+              }
+              label="Show only unfinished"
+            />
+          </Box>
           <Box
             sx={{
               display: "flex",
@@ -653,7 +768,7 @@ export default function Factors() {
               minWidth: 0,
               overflow: "hidden",
             }}>
-              {/* <FactorsTable
+            {/* <FactorsTable
                 decision={decision}
                 editFactorIndex={editFactorIndex}
                 setEditFactorIndex={setEditFactorIndex}
@@ -661,14 +776,16 @@ export default function Factors() {
                 onDragStart={onDragStart}
                 onDragOver={onDragOver}
                 onDropRow={onDropRow}
+                showOnlyUnfinished={showOnlyUnfinished}
               /> */}
-            </Box>
-              <FactorsDataGrid
-                decision={decision}
-                editFactorIndex={editFactorIndex}
-                setEditFactorIndex={setEditFactorIndex}
-                handleRemove={handleRemove}
-              />
+          </Box>
+          <FactorsDataGrid
+            decision={decision}
+            editFactorIndex={editFactorIndex}
+            setEditFactorIndex={setEditFactorIndex}
+            handleRemove={handleRemove}
+            showOnlyUnfinished={showOnlyUnfinished}
+          />
         </Box>
       </Box>
 }

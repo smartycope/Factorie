@@ -1,4 +1,4 @@
-import React from "react"
+import React, { useMemo, useState } from "react"
 import Box from "@mui/material/Box"
 import Typography from "@mui/material/Typography"
 import Paper from "@mui/material/Paper"
@@ -9,13 +9,14 @@ import Divider from "@mui/material/Divider"
 import List from "@mui/material/List"
 import ListItem from "@mui/material/ListItem"
 import ListItemText from "@mui/material/ListItemText"
+import TextField from "@mui/material/TextField"
 import AddIcon from "@mui/icons-material/Add"
 import DownloadIcon from "@mui/icons-material/Download"
 import RemoveIcon from "@mui/icons-material/Remove"
+import SearchIcon from "@mui/icons-material/Search"
 import { useDecisions } from "../contexts/DecisionsContext"
 import Decision from "../models/Decision"
 
-// TODO: search bar on this page
 // TODO: the "start new deicision" button is too wide now, it overlaps with the description
 
 const factorPackModules = import.meta.glob("../factor-packs/*.json", {
@@ -91,6 +92,7 @@ function downloadFactorPackFactors(pack) {
 }
 
 export default function FactorPacks() {
+  const [searchQuery, setSearchQuery] = useState("")
   const {
     decisions,
     setDecisions,
@@ -104,6 +106,21 @@ export default function FactorPacks() {
     decision?.factorPacks instanceof Set ?
       decision.factorPacks
     : new Set(decision?.factorPacks ?? [])
+  const visibleFactorPacks = useMemo(() => {
+    const query = searchQuery.trim().toLowerCase()
+    if (!query) return factorPacks
+
+    return factorPacks.filter((pack) =>
+      [
+        pack.name,
+        pack.description,
+        pack.decisionName,
+        ...pack.factors.map((factor) => factor.name),
+      ]
+        .filter(Boolean)
+        .some((value) => value.toLowerCase().includes(query))
+    )
+  }, [searchQuery])
 
   function startNewDecisionFromPack(pack) {
     const newDecision = new Decision(pack.decisionName || pack.name)
@@ -113,6 +130,13 @@ export default function FactorPacks() {
       setSelectedIndex(next.length - 1)
       return next
     })
+  }
+
+  function warnAndRemoveFactorPack(pack) {
+    if (confirm(
+      "Removing a factor pack will clear all answers and configuration for those factors when they are deleted.",
+    ))
+        removeFactorPack(pack)
   }
 
   return (
@@ -155,8 +179,32 @@ export default function FactorPacks() {
         )}
 
         <Paper>
+          <Box sx={{ p: 2, pb: 0 }}>
+            <TextField
+              fullWidth
+              size="small"
+              label="Search factor packs"
+              value={searchQuery}
+              onChange={(event) => setSearchQuery(event.target.value)}
+              slotProps={{
+                input: {
+                  startAdornment: (
+                    <SearchIcon color="action" fontSize="small" sx={{ mr: 1 }} />
+                  ),
+                },
+              }}
+            />
+          </Box>
           <List disablePadding>
-            {factorPacks.map((pack, index) => {
+            {visibleFactorPacks.length === 0 && (
+              <ListItem>
+                <ListItemText
+                  primary="No factor packs found"
+                  secondary="Try a different search term."
+                />
+              </ListItem>
+            )}
+            {visibleFactorPacks.map((pack, index) => {
               const isActive = activePacks.has(pack.id)
               return (
                 <React.Fragment key={pack.id}>
@@ -178,7 +226,7 @@ export default function FactorPacks() {
                             disabled={!decision}
                             onClick={() =>
                               isActive ?
-                                removeFactorPack(pack)
+                                warnAndRemoveFactorPack(pack)
                               : addFactorPack(pack)
                             }
                           >

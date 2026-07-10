@@ -43,18 +43,25 @@ function stdDev(arr) {
 }
 
 function interpolateColor(c1, c2, t) {
-  const toRgb = (hex) => {
-    const h = hex.replace("#", "")
+  const toRgba = (color) => {
+    if (color.startsWith("rgb")) {
+      const values = color.match(/[\d.]+/g)?.map(Number) ?? []
+      return [values[0], values[1], values[2], values[3] ?? 1]
+    }
+
+    const h = color.replace("#", "")
     return [
       parseInt(h.slice(0, 2), 16),
       parseInt(h.slice(2, 4), 16),
       parseInt(h.slice(4, 6), 16),
+      1,
     ]
   }
-  const a = toRgb(c1)
-  const b = toRgb(c2)
+  const a = toRgba(c1)
+  const b = toRgba(c2)
   const c = a.map((v, i) => Math.round(v + (b[i] - v) * t))
-  return `rgb(${c[0]}, ${c[1]}, ${c[2]})`
+  const alpha = a[3] + (b[3] - a[3]) * t
+  return `rgba(${c[0]}, ${c[1]}, ${c[2]}, ${alpha})`
 }
 
 function sampleColorscale(colors, t) {
@@ -248,9 +255,13 @@ function HeatmapPlot({
 }) {
   const theme = useTheme()
   const plot = useMemo(() => {
-    const colorscale = ["#9B1127", "#FFFFBF", "#195695"]
+    const colorscale = ["#9B1127", "rgba(255, 255, 191, 0)", "#195695"]
     const nRows = normalizedAnswers.length
     const nCols = factorNames.length
+    const leftMargin = Math.min(
+      260,
+      Math.max(90, Math.max(...decision.options.map((opt) => opt.length)) * 8),
+    )
     const shapes = []
     const textX = []
     const textY = []
@@ -313,8 +324,9 @@ function HeatmapPlot({
           showgrid: false,
           zeroline: false,
           autorange: "reversed",
+          automargin: true,
         },
-        margin: { t: 60, b: 20, l: 20, r: 20 },
+        margin: { t: 60, b: 20, l: leftMargin, r: 20 },
         title: { text: "How good each option is" },
         title_x: 0.2,
         title_font_size: 20,
@@ -717,12 +729,12 @@ export default function Results() {
   else if (invalid.startsWith("Not all answers are valid"))
     err = (
       <Typography variant="body2">
-        Not all answers are valid! This probably means you have an answer that's
+        Not all answers are valid! Either you haven't answered some questions yet, or you have an answer that's
         out of range of the min/max of it's factor. Head over to the{" "}
-        <Link component={RouterLink} to="/decisions">
-          Overview
+        <Link component={RouterLink} to="/quiz">
+          Quiz
         </Link>{" "}
-        page to fix this.
+        page and fill in any red you see.
       </Typography>
     )
   else if (invalid.startsWith("Not all answers are filled"))
