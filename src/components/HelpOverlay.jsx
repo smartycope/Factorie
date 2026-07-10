@@ -7,28 +7,20 @@ export default function HelpOverlay({ children, helpText }) {
   const [hovered, setHovered] = useState(false);
 
   return (
-    <div
-      position="relative"
-      display="inline-block"
-    //   alignSelf="flex-start"
-    // sx={{alignSelf:"flex-start"}}
+    <Box
+      sx={{ position: "relative", display: "inline-block" }}
       onMouseEnter={() => setHovered(true)}
       onMouseLeave={() => setHovered(false)}
     >
-
-
       {hovered && (
         <Tooltip title={helpText} arrow>
           <IconButton
             size="medium"
             sx={{
               position: "absolute",
-              zIndex: 9999,
-              // TODO: this broke? This is a hack, for now
-              right: '10%',
-              // top: 4,
-              // right: 4,
-            //   color: "grey.400",
+              top: "1rem",
+              right: "1rem",
+              zIndex: 99,
               backgroundColor: "rgba(255,255,255,0.6)",
               "&:hover": {
                 backgroundColor: "rgba(255,255,255,0.95)",
@@ -40,6 +32,6 @@ export default function HelpOverlay({ children, helpText }) {
         </Tooltip>
       )}
       {children}
-    </div>
+    </Box>
   );
 }

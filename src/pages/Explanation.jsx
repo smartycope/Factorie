@@ -1,9 +1,6 @@
-// TODO: this page is incomplete. Copy texts over manually
-
-import React from "react"
+import { useEffect } from "react"
 import Box from "@mui/material/Box"
 import Typography from "@mui/material/Typography"
-// const Plot = React.lazy(() => import('react-plotly.js'))
 import graph1 from "../assets/graph1.png"
 import graph2 from "../assets/graph2.png"
 import graph3 from "../assets/graph3.png"
@@ -13,28 +10,95 @@ import graph6 from "../assets/graph6.png"
 import graph7 from "../assets/graph7.png"
 import graph8 from "../assets/graph8.png"
 
+const sections = [
+  { id: "how-it-works", label: "How it works" },
+  {
+    id: "interpreting-a-single-option",
+    label: "Interpreting a single option",
+  },
+  { id: "good-practices", label: "Best Practices" },
+]
+
+function scrollToSection(id, behavior = "smooth") {
+  const section = document.getElementById(id)
+  if (!section) return
+
+  section.scrollIntoView({ behavior, block: "start" })
+}
+
 export default function Explanation() {
+  useEffect(() => {
+    const hashTarget = window.location.hash.split("#").at(-1)
+    if (sections.some((section) => section.id === hashTarget)) {
+      window.requestAnimationFrame(() => scrollToSection(hashTarget, "auto"))
+    }
+  }, [])
+
+  const handleSectionClick = (event, sectionId) => {
+    event.preventDefault()
+    window.history.replaceState(
+      null,
+      "",
+      `${window.location.pathname}${window.location.search}#/explanation#${sectionId}`,
+    )
+    scrollToSection(sectionId)
+  }
+
   return (
     <Box sx={{ p: 2 }}>
-      <Typography variant="h4" gutterBottom>
-        On this page
-      </Typography>
-      {/* TODO: these don't work, and aren't very pretty */}
-      <Typography component="ul" paragraph sx={{ listStylePosition: "inside" }}>
-        {/* <ul> */}
-        <li>
-          <a href="#how-it-works">How it works</a>
-        </li>
-        <li>
-          <a href="#interpreting-a-single-option">
-            Interpreting a single option
-          </a>
-        </li>
-        <li>
-          <a href="#good-practices">Best Practices</a>
-        </li>
-        {/* </ul> */}
-      </Typography>
+      <Box
+        component="nav"
+        aria-label="On this page"
+        sx={{
+          mb: 4,
+          textAlign: "center",
+        }}>
+        <Typography
+          variant="overline"
+          component="h2"
+          sx={{ color: "text.secondary", letterSpacing: 0, fontWeight: 700 }}>
+          On this page
+        </Typography>
+        <Box
+          component="ul"
+          sx={{
+            display: "flex",
+            flexWrap: "wrap",
+            justifyContent: "center",
+            gap: 2.5,
+            mt: 1,
+            mb: 0,
+            p: 0,
+            listStyle: "none",
+          }}>
+          {sections.map((section) => (
+            <Box component="li" key={section.id}>
+              <Box
+                component="a"
+                href={`#/explanation#${section.id}`}
+                onClick={(event) => handleSectionClick(event, section.id)}
+                sx={{
+                  display: "inline-flex",
+                  alignItems: "center",
+                  color: "primary.main",
+                  fontWeight: 600,
+                  textDecoration: "underline",
+                  textDecorationColor: "transparent",
+                  textUnderlineOffset: "0.25em",
+                  transition:
+                    "color 120ms ease, text-decoration-color 120ms ease",
+                  "&:hover, &:focus-visible": {
+                    outline: "none",
+                    color: "primary.dark",
+                    textDecorationColor: "currentColor",
+                  },
+                }}>
+                {section.label}
+              </Box>
+            </Box>
+          ))}
+        </Box>
+      </Box>
 
       <Typography variant="h5" gutterBottom id="how-it-works">
         How it works
@@ -125,6 +189,9 @@ export default function Explanation() {
         the still calculate the distance between the options and the perfect
         option, even if it's hard to graph.
       </Typography>
+      <br />
+      <hr />
+      <br />
       <Typography variant="h5" paragraph id="interpreting-a-single-option">
         Interpreting a single option
       </Typography>
@@ -171,11 +238,24 @@ export default function Explanation() {
         algorithm for tuning this threshold, check out the first 2 chapters of
         the book "Algorithms to Live By" by Brian Christian and Tom Griffiths.
       </Typography>
-
+      <br />
+      <hr />
+      <br />
       <Typography variant="h5" gutterBottom id="good-practices">
         Best Practices
       </Typography>
-      <ul style={{ listStylePosition: "inside" }}>
+      <Box
+        component="ul"
+        sx={{
+          maxWidth: 760,
+          mx: "auto",
+          px: 2,
+          listStylePosition: "inside",
+          textAlign: "center",
+          "& li": {
+            mb: 1.5,
+          },
+        }}>
         <li>
           If you get an answer, and you go, "what? That's not right!", you're
           probably right. This program generally tells you what you already
@@ -213,8 +293,8 @@ export default function Explanation() {
         <li>
           This is self-reported. For best results, try to set the weights and
           threshold objectively: either before you have to make the decision,
-          going over them with a friend. If you want to Gerrymander the weights to get
-          the decision you want, you probably can. Don't do that.
+          going over them with a friend. If you want to Gerrymander the weights
+          to get the decision you want, you probably can. Don't do that.
         </li>
         <li>
           Factors work best when they describe unique concepts. For example, if
@@ -232,7 +312,7 @@ export default function Explanation() {
           tested it up to 200 so far. However it may not handle as many options
           as well.
         </li>
-      </ul>
+      </Box>
     </Box>
   )
 }

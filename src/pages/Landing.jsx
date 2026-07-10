@@ -11,7 +11,7 @@ export default function Landing() {
 
   return (
     <Box sx={{ maxWidth: 600, mx: "auto", mt: 5 }}>
-      <Typography variant="h3" component="h1" gutterBottom>
+      <Typography variant="h 3" component="h1" gutterBottom>
         Welcome to Factorie!
       </Typography>
       {/* <Typography variant="caption" gutterBottom>Make better decisions with factors and weights.</Typography> */}

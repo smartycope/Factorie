@@ -11,6 +11,17 @@ npm install
 ```bash
 npm run dev
 ```
+## To Publish
+Just pushing to the repo should work, it's hosted on github pages.
+
+
+
+
+
+
+
+
+
 
 
 This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.

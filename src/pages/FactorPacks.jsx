@@ -16,6 +16,7 @@ import { useDecisions } from "../contexts/DecisionsContext"
 import Decision from "../models/Decision"
 
 // TODO: search bar on this page
+// TODO: the "start new deicision" button is too wide now, it overlaps with the description
 
 const factorPackModules = import.meta.glob("../factor-packs/*.json", {
   eager: true,
@@ -115,7 +116,7 @@ export default function FactorPacks() {
   }
 
   return (
-    <Box sx={{ flex: 1, width: "100%", maxWidth: 960 }}>
+    <Box sx={{ flex: 1, minWidth: 0, width: "100%" }}>
       <Stack spacing={2}>
         <Box>
           <Typography variant="h4">Factor Packs</Typography>

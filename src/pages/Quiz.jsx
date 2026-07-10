@@ -265,7 +265,7 @@ export default function Quiz() {
 //   if (!decision.isInvalid(true)) {
   const unfinishedFactors = decision.factors.names.filter((_, i) => decision.isFactorValid(decision.factors.names[i]))
     if (unfinishedFactors.length > 0){
-      return <Box sx={{ p: 2 }}>
+      return <Box sx={{ flex: 1, minWidth: 0, p: 2 }}>
         <Typography variant="h4">Quiz</Typography>
         <Typography>
           There are unfinished factors! We can't decide how good each option is until we know what "good" means.
@@ -281,11 +281,11 @@ export default function Quiz() {
   }
 
   return !decision ?
-      <Box sx={{ p: 2 }}>
+      <Box sx={{ flex: 1, minWidth: 0, p: 2 }}>
         <Typography variant="h4">Quiz</Typography>
         <Typography>Select a decision to take the quiz.</Typography>
       </Box>
-    : <Box sx={{ p: 2, minWidth: "60%" }}>
+    : <Box sx={{ flex: 1, minWidth: 0, p: 2 }}>
         {/* Top stuff */}
         <Box
           sx={{

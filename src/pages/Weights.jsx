@@ -357,23 +357,23 @@ export default function Weights() {
         <Typography variant="h4">Fine Tune Weights</Typography>
         <Typography>Please select or create a decision first.</Typography>
       </Box>
-    : <Box sx={{ flex: 1, maxWidth: "65%" }}>
+    : <Box sx={{ flex: 1, minWidth: 0 }}>
         <Typography variant="h4">Fine Tune Weights</Typography>
         <Paper sx={{ p: 2, mb: 2 }} elevation={2}>
           <Typography variant="h6">Sort Factors</Typography>
           {!sortStarted ?
             <Typography variant="body2">
               Press the button below to compare factors in order to sort
-              them from least important to most important. This uses an
-              algorithm (a modified version of Timsort) to make it much faster
-              than doing it by hand.
+              them from least important to most important.<br/>This uses an
+              algorithm (a modified version of Timsort) which makes it much faster
+              than sorting by hand.
               <br />
-              It will ask {decision.factors.names.length} -{" "}
+              It will ask for {decision.factors.names.length} -{" "}
               {Math.ceil(
                 decision.factors.names.length *
                   Math.log(decision.factors.names.length),
               )}{" "}
-              questions
+              comparisons, then the answers will appear in the slider below once finished.
             </Typography>
           : quizFinished ?
             <Typography variant="body1">

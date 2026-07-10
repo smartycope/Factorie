@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useState } from "react"
+import { useEffect, useMemo, useState } from "react"
 import { useDecisions } from "../contexts/DecisionsContext"
 import Box from "@mui/material/Box"
 import Typography from "@mui/material/Typography"
@@ -13,7 +13,8 @@ import Plot from "react-plotly.js"
 import * as PCAImport from "pca-js"
 import texts from "../assets/texts.json"
 import HelpOverlay from "../components/HelpOverlay"
-import Link from "@mui/material/Link";
+import Link from "@mui/material/Link"
+import { Link as RouterLink } from "react-router-dom"
 
 const PCA = PCAImport.default ?? PCAImport
 
@@ -26,6 +27,7 @@ function joinAnd(items, { oxford = false, ampersand = false } = {}) {
   return `${items.slice(0, -1).join(", ")}${sep}${items[items.length - 1]}`
 }
 
+// TODO: Weights.jsx also uses this, move it into a utils file or something
 function linspace(start, stop, n) {
   if (n <= 1) return [start]
   const step = (stop - start) / (n - 1)
@@ -62,6 +64,43 @@ function sampleColorscale(colors, t) {
   const i = Math.floor(seg)
   const local = seg - i
   return interpolateColor(colors[i], colors[i + 1], local)
+}
+
+function radarColorForLabel(label) {
+  // LLM generated
+  // Reserve green/red for the theoretical bounds so they are always unique.
+  if (label === "Theoretical Best") {
+    return {
+      line: "rgb(46, 125, 50)",
+      fill: "rgba(46, 125, 50, 0.32)",
+    }
+  }
+
+  if (label === "Theoretical Worst") {
+    return {
+      line: "rgb(198, 40, 40)",
+      fill: "rgba(198, 40, 40, 0.32)",
+    }
+  }
+
+  // Hash labels into deterministic pseudo-random hues, skipping red and green.
+  let hash = 0
+  for (let i = 0; i < label.length; i++) {
+    hash = (hash ^ label.charCodeAt(i)) >>> 0
+    hash = Math.imul(hash, 2654435761) >>> 0
+  }
+  const hueBands = [
+    [25, 90],
+    [170, 335],
+  ]
+  const band = hueBands[hash % hueBands.length]
+  const hue = Math.round(
+    band[0] + ((hash * 0.618033988749895) % 1) * (band[1] - band[0]),
+  )
+  return {
+    line: `hsl(${hue}, 78%, 42%)`,
+    fill: `hsla(${hue}, 78%, 42%, 0.32)`,
+  }
 }
 
 function computePca2D(X) {
@@ -383,7 +422,7 @@ function SingleLinePlot({ results }) {
       <Typography variant="h6" align="center">
         Relative Distance of Each Option
       </Typography>
-      <HelpOverlay helpText={texts.results.heatmap1d}>
+      <HelpOverlay helpText={texts.results.line1d}>
         <Paper sx={{ p: 2, width: "100%" }}>
           <Plot
             data={plot.data}
@@ -500,14 +539,18 @@ function RadarPlot({
     const sortedData = data.map((row) => sortedIndices.map((i) => row[i]))
     const traces = []
     for (let i = 0; i < sortedData.length; i++) {
-      if (!includedRadar.includes(labels[i])) continue
+      const label = labels[i]
+      if (!includedRadar.includes(label)) continue
       const r = sortedData[i]
+      const color = radarColorForLabel(label)
       traces.push({
         type: "scatterpolar",
         r: [...r, r[0]],
         theta: [...sortedDimLabels, sortedDimLabels[0]],
         fill: "toself",
-        name: labels[i],
+        fillcolor: color.fill,
+        line: { color: color.line },
+        name: label,
       })
     }
     return {
@@ -642,20 +685,70 @@ export default function Results() {
     )
   }
 
-  const invalid = decision.isInvalid()
+  const invalid = decision.isInvalid() || ""
   let err
-    if (invalid === "No factors added")
-        err = <Typography variant="body2">No factors added! Head over to the <Link to="/factors">Factors</Link> page to add some.</Typography>
-    else if (invalid === "No options added")
-        err = <Typography variant="body2">No options added! Head over to the <Link to="/options">Options</Link> page to add some.</Typography>
-    else if (invalid.startsWith("Answers length"))
-        err = <Typography variant="body2">Internal Error! Let Cope know about this. <br />{invalid}</Typography>
-    else if (invalid.startsWith("Not all answers are valid"))
-      err = <Typography variant="body2">Not all answers are valid! This probably means you have an answer that's out of range of the min/max of it's factor. Head over to the <Link to="/Decision">Decision</Link> page to fix this.</Typography>
-    else if (invalid.startsWith("Not all answers are filled"))
-      err = <Typography variant="body2">Not all answers are filled! Head over to the <Link to="/decisions">Decision</Link> page or the <Link to="/quiz">Quiz</Link> page to add them.</Typography>
-    else if (invalid.startsWith("Invalid factors:"))
-      err = <Typography variant="body2">Some factors are invalid. Head over to the <Link to="/factors">Factors</Link> page to fix them. {invalid}</Typography>
+  if (invalid === "No factors added")
+    err = (
+      <Typography variant="body2">
+        No factors added! Head over to the{" "}
+        <Link component={RouterLink} to="/factors">
+          Factors
+        </Link>{" "}
+        page to add some.
+      </Typography>
+    )
+  else if (invalid === "No options added")
+    err = (
+      <Typography variant="body2">
+        No options added! Head over to the{" "}
+        <Link component={RouterLink} to="/options">
+          Options
+        </Link>{" "}
+        page to add some.
+      </Typography>
+    )
+  else if (invalid.startsWith("Answers length"))
+    err = (
+      <Typography variant="body2">
+        Internal Error! Let Cope know about this. <br />
+        {invalid}
+      </Typography>
+    )
+  else if (invalid.startsWith("Not all answers are valid"))
+    err = (
+      <Typography variant="body2">
+        Not all answers are valid! This probably means you have an answer that's
+        out of range of the min/max of it's factor. Head over to the{" "}
+        <Link component={RouterLink} to="/decisions">
+          Overview
+        </Link>{" "}
+        page to fix this.
+      </Typography>
+    )
+  else if (invalid.startsWith("Not all answers are filled"))
+    err = (
+      <Typography variant="body2">
+        Not all answers are filled! Head over to the{" "}
+        <Link component={RouterLink} to="/decisions">
+          Overview
+        </Link>{" "}
+        page or the{" "}
+        <Link component={RouterLink} to="/quiz">
+          Quiz
+        </Link>{" "}
+        page to add them.
+      </Typography>
+    )
+  else if (invalid.startsWith("Invalid factors:"))
+    err = (
+      <Typography variant="body2">
+        Some factors are invalid. Head over to the{" "}
+        <Link component={RouterLink} to="/factors">
+          Factors
+        </Link>{" "}
+        page to fix them. {invalid}
+      </Typography>
+    )
 
   if (invalid) {
     return (
@@ -664,7 +757,9 @@ export default function Results() {
       <Box sx={{ flex: 1, p: 3 }}>
         <Typography variant="h6">Results unavailable</Typography>
         {/* <Typography variant="body2" sx={{ mt: 1 }}> */}
-          {err}
+        {err}
+        <br />
+        <Box sx={{ color: "#00000010" }}>{invalid}</Box>
         {/* </Typography> */}
       </Box>
       //   <ExplanationSidebar />
