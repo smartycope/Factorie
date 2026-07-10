@@ -1,4 +1,3 @@
-import './App.css'
 import './index.css'
 import { Routes, Route, Navigate } from 'react-router-dom'
 import Layout from './components/Layout'
@@ -11,7 +10,6 @@ import FactorPacks from './pages/FactorPacks'
 import Weights from './pages/Weights'
 import Quiz from './pages/Quiz'
 import ViewResults from './pages/Results'
-import Save from './pages/Save'
 import Explanation from './pages/Explanation'
 
 export default function App() {
@@ -27,7 +25,6 @@ export default function App() {
         <Route path="weights" element={<Weights />} />
         <Route path="quiz" element={<Quiz />} />
         <Route path="results" element={<ViewResults />} />
-        <Route path="save" element={<Save />} />
         <Route path="explanation" element={<Explanation />} />
         <Route path="*" element={<Navigate to="/" replace />} />
       </Route>

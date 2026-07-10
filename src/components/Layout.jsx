@@ -1,15 +1,13 @@
 import { Outlet, useLocation } from "react-router-dom";
 import TopNav from "./TopNav";
 import Container from "@mui/material/Container";
-import DecisionList from "./DecisionList";
 import ExplanationSidebar from "./ExplanationSidebar";
 import {Box, Snackbar} from "@mui/material";
-import {useToast} from "../contexts/ToastContext";
+import {useToast} from "../contexts/UseToast";
 
 export default function Layout() {
     const location = useLocation();
     const {toastText, toast, toastDuration} = useToast();
-    const excludeDecisionList = ["/dashboard", "/explanation", "/"];
     const excludeExplanation = ["/explanation", "/", "/results"];
 
   return (
@@ -20,7 +18,6 @@ export default function Layout() {
       <TopNav />
       <Container component="main" sx={{ flex: 1, py: 3, maxWidth: 1200 }}>
         <Box sx={{ display: "flex", gap: 3 }}>
-          {/* {!excludeDecisionList.includes(location.pathname) && <DecisionList />} */}
           <Outlet />
           {!excludeExplanation.includes(location.pathname) && <ExplanationSidebar />}
         </Box>

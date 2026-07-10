@@ -1,6 +1,5 @@
-import React, { useState } from "react";
-import { Box, Tooltip, IconButton, Icon } from "@mui/material";
-// import HelpOutlineIcon from "@mui/icons-material/HelpOutline";
+import { useState } from "react";
+import { Box, Tooltip, Icon } from "@mui/material";
 import HelpOutlineOutlinedIcon from '@mui/icons-material/HelpOutlineOutlined';
 
 export default function HelpOverlay({ children, helpText, left, rightAmt}) {
@@ -19,9 +18,7 @@ export default function HelpOverlay({ children, helpText, left, rightAmt}) {
             sx={{
                 color: '#0f0f0f66',
               position: "absolute",
-            //   top: "1rem",
-              top: "5%",
-            //   right: "1rem",
+              top: "min(2%, 1rem)",
               right: rightAmt ? rightAmt : (left ? "98%" : "min(2%, 1rem)"),
               zIndex: 99,
               backgroundColor: "rgba(255,255,255,0.6)",

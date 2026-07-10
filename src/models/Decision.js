@@ -203,13 +203,6 @@ export default class Decision {
 
   // Throws an error if it fails
   getAnswer(option, factor) {
-    // try {
-    //   option = this._parseOptionParam(option)
-    //   factor = this._parseFactorParam(factor)
-    // } catch (e) {
-    //   return null
-    // }
-    // return this.answers[option][factor]
     return this.answers[this._parseOptionParam(option)][
       this._parseFactorParam(factor)
     ]
@@ -223,18 +216,13 @@ export default class Decision {
 
   addFactorPack(pack) {
     this.factorPacks.add(pack.name)
-    // console.log('added factor pack', pack)
     for (const factor of pack.factors) {
-      // if (this.factors.names.includes(factor.name))
-      // throw new Error(`Factor ${factor.name} already exists`)
-      // console.log(factor)
       this.addFactor(factor)
     }
   }
 
   removeFactorPack(pack) {
     if (this.factorPacks.delete(pack.name))
-      // console.log('removed factor pack', pack)
       for (const factor of pack.factors) this.removeFactor(factor.name)
   }
 
@@ -270,7 +258,6 @@ export default class Decision {
   }
 
   weightedAnswers(optimism = 0.5) {
-    // returns [numOptions][numFactors]
     const mins = this.minAnswers()
     const maxs = this.maxAnswers()
     const res = mins.map((row, i) =>

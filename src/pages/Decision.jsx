@@ -1,18 +1,11 @@
-import React, { useState, useEffect } from "react"
+import React, { useEffect } from "react"
 import { useSearchParams } from "react-router-dom"
-import { useDecisions } from "../contexts/DecisionsContext"
-import Decision from "../models/Decision"
+import { useDecisions } from "../contexts/UseDecisions"
 import Box from "@mui/material/Box"
 import Typography from "@mui/material/Typography"
 import TextField from "@mui/material/TextField"
 import Button from "@mui/material/Button"
 import ListItemText from "@mui/material/ListItemText"
-import Table from "@mui/material/Table"
-import TableBody from "@mui/material/TableBody"
-import TableCell from "@mui/material/TableCell"
-import TableContainer from "@mui/material/TableContainer"
-import TableHead from "@mui/material/TableHead"
-import TableRow from "@mui/material/TableRow"
 import IconButton from "@mui/material/IconButton"
 import DeleteIcon from "@mui/icons-material/Delete"
 import AddIcon from "@mui/icons-material/Add"
@@ -21,7 +14,7 @@ import Paper from "@mui/material/Paper"
 import MenuItem from "@mui/material/MenuItem"
 import ListItemIcon from "@mui/material/ListItemIcon"
 import Popper from "@mui/material/Popper"
-import { useToast } from "../contexts/ToastContext"
+import { useToast } from "../contexts/UseToast"
 import { createTheme, Stack, ThemeProvider } from "@mui/material"
 
 const getTheme = (mode) =>
@@ -37,29 +30,6 @@ const getTheme = (mode) =>
     },
   })
 
-function ResetToExamplesButton() {
-  const {
-    decisions,
-    setDecisions,
-    setSelectedIndex,
-    selectedIndex,
-    createDecision,
-    removeDecision,
-    setAnswer,
-  } = useDecisions()
-
-  function reset() {
-    const ex1 = JSON.parse(
-      `{"name":"What to eat","factors":{"names":["Taste","Cost","Healthiness","Time to Make","Leftovers","Test"],"units":["0-10","$","0-10","minutes","portions","na"],"optimals":[10,0,10,0,5,10],"weights":[0.9,1,1,0.6,0.2,0.5],"mins":[0,0,0,null,0,0],"maxs":[10, null,10,null,null,10]},"options":["Taco Bell","Spaghetti","Tacos","Leftovers","Chicken noodle soup"],"answers":[[[8,8],[15,15],[6,6],[15,30],[1,1],[9.3,9.3]],[[3,3],[5,6],[8,8],[20,20],[1,1],[0.7,0.7]],[[10,10],[8,8],[9,9],[10,10],[1,1],[2,8]],[[5,5],[1,1],[9,9],[5,5],[1,1],[3,4]],[[9,9],[4,4],[10,10],[10,10],[5,5],[2,4]]],"threshold":0,"factor_packs":[]} `,
-    )
-    const ex2 = JSON.parse(
-      `{"name":"What to do","factors":{"names":["Fun","Time","Cost","Test"],"units":["0-10","minutes","$","na"],"optimals":[10,0,0,10],"weights":[1,0.6,1,0.5],"mins":[0,null,0,0],"maxs":[10,null,null,10]},"options":["Watch Netflix","Play video games","Watch a movie"],"answers":[[[8,8],[2,2],[1,1],[10,10]],[[10,10],[2,2],[1,1],[10,10]],[[8,8],[2,2],[1,1],[10,10]]],"threshold":0,"factor_packs":[]} `,
-    )
-    setDecisions(() => [Decision.deserialize(ex1), Decision.deserialize(ex2)])
-    // setAnswer(0, 0, '2')
-  }
-  return <Button onClick={reset}>Reset to Examples</Button>
-}
 
 // Source: https://mui.com/x/react-data-grid/column-definition/#expand-cell-renderer
 const GridCellExpand = React.memo(function GridCellExpand(props) {
@@ -158,17 +128,10 @@ const GridCellExpand = React.memo(function GridCellExpand(props) {
 // Up to date, currently used
 function DecisionEditTableTransposed_MuiTable() {
   const {
-    decisions,
-    setDecisions,
-    selectedIndex,
-    setSelectedIndex,
     decision,
-    addFactor,
-    editFactor,
     renameOption,
     removeFactor,
     renameFactor,
-    addOption,
     removeOption,
     setAnswer,
   } = useDecisions()
@@ -425,15 +388,10 @@ export default function Decisions() {
   const {
     decisions,
     renameDecision,
-    setDecisions,
-    selectedIndex,
     setSelectedIndex,
     decision,
     addFactor,
-    editFactor,
-    removeFactor,
     addOption,
-    removeOption,
   } = useDecisions()
 
   const [searchParams] = useSearchParams()
@@ -459,13 +417,11 @@ export default function Decisions() {
   else
     content = (
       <>
-        {/* <ResetToExamplesButton /> */}
         <Stack direction="row">
         <Typography variant="h4" sx={{ mr: 2}}>Deciding: </Typography>
         <TextField
           defaultValue={decision?.name || ""}
           size="large"
-          // sx={{scale: 1.5}}
           variant="standard"
           onBlur={(e) => {
             if (!renameDecision(e.target.value)) e.target.value = decision.name
@@ -480,7 +436,6 @@ export default function Decisions() {
         />
         </Stack>
         <br />
-        {/* <br /> */}
         <Stack direction="row">
         <Button
           sx={{ display: "flex" }}
@@ -513,6 +468,5 @@ export default function Decisions() {
       }}>
       {content}
     </Box>
-    // content
   )
 }

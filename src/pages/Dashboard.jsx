@@ -1,6 +1,6 @@
 import React from "react";
 import Decision from "../models/Decision";
-import { useDecisions } from "../contexts/DecisionsContext";
+import { useDecisions } from "../contexts/UseDecisions";
 import { useNavigate } from "react-router-dom";
 import Box from "@mui/material/Box";
 import Typography from "@mui/material/Typography";
@@ -16,12 +16,6 @@ import DeleteIcon from "@mui/icons-material/Delete";
 import UploadFileIcon from "@mui/icons-material/UploadFile";
 import DownloadIcon from "@mui/icons-material/Download";
 import LaunchIcon from '@mui/icons-material/Launch';
-import Dialog from "@mui/material/Dialog";
-import DialogTitle from "@mui/material/DialogTitle";
-import DialogContent from "@mui/material/DialogContent";
-import DialogContentText from "@mui/material/DialogContentText";
-import DialogActions from "@mui/material/DialogActions";
-import ExplanationSidebar from "../components/ExplanationSidebar";
 import examplePack from "../factor-packs/example.json"
 
 export default function Dashboard() {
@@ -55,7 +49,6 @@ export default function Dashboard() {
 
   function goToDecision(i) {
     setSelectedIndex(i);
-    // navigate(`/decisions?selected=${i}`);
     navigate(`/decisions`);
   }
 
@@ -116,7 +109,6 @@ export default function Dashboard() {
   }
 
   return (
-    // <Box sx={{ display: "flex", gap: 3 }}>
     <Box sx={{ width: "100%" }}>
       <Box
         sx={{
@@ -219,14 +211,11 @@ export default function Dashboard() {
           </CardContent>
         </Card>
       )}
-      {/* {decisions.length === 0 && ( */}
       {(
         <Button variant="outlined" sx={{ mt: 2 }} onClick={addExamples}>
           Load example
         </Button>
       )}
     </Box>
-    //   <ExplanationSidebar page="Dashboard" />
-    // </Box>
   );
 }

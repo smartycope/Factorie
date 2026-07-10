@@ -14,7 +14,7 @@ import AddIcon from "@mui/icons-material/Add"
 import DownloadIcon from "@mui/icons-material/Download"
 import RemoveIcon from "@mui/icons-material/Remove"
 import SearchIcon from "@mui/icons-material/Search"
-import { useDecisions } from "../contexts/DecisionsContext"
+import { useDecisions } from "../contexts/UseDecisions"
 import Decision from "../models/Decision"
 
 // TODO: the "start new deicision" button is too wide now, it overlaps with the description
@@ -210,7 +210,6 @@ export default function FactorPacks() {
                 <React.Fragment key={pack.id}>
                   {index > 0 && <Divider component="li" />}
                   <ListItem
-                    // alignItems="flex-start"
                     sx={{
                       alignItems: "flex-start",
                       py: 2,
@@ -282,16 +281,6 @@ export default function FactorPacks() {
                           >
                             {pack.description}
                           </Typography>
-                          {/* {pack.decisionName && (
-                            <Typography
-                              component="span"
-                              variant="caption"
-                              color="text.secondary"
-                              sx={{ display: "block", mt: 0.75 }}
-                            >
-                              Suggested decision: {pack.decisionName}
-                            </Typography>
-                          )} */}
                           <FactorSummary factors={pack.factors} />
                         </Box>
                       }

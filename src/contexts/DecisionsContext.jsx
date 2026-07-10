@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useEffect, useState } from "react"
+import { createContext, useEffect, useState } from "react"
 import Decision from "../models/Decision"
 
 const STORAGE_KEY = "factorie.decisions"
@@ -9,10 +9,6 @@ const DecisionsContext = createContext(null)
 function loadFromStorage() {
   try {
     const raw = localStorage.getItem(STORAGE_KEY)
-    // if (!raw) {
-    // Seed with example decisions for debugging
-
-    // }
     const arr = JSON.parse(raw)
     return arr.map((d) => Decision.deserialize(d))
   } catch (e) {
@@ -24,8 +20,6 @@ function loadFromStorage() {
 export function DecisionsProvider({ children }) {
   const [decisions, setDecisions] = useState(() => loadFromStorage())
   const [selectedIndex, setSelectedIndex] = useState(0)
-  //   const { decisions, setDecisions, selectedIndex, setSelectedIndex } =
-  // useDecisions();
   const decision = selectedIndex != null ? decisions[selectedIndex] : null
 
   useEffect(() => {
@@ -131,51 +125,10 @@ export function DecisionsProvider({ children }) {
   }
 
   function renameOption(optionIndex, name) {
-    // if (!decision) return
-    // const nextName = name.trim()
-    // const currentName = decision.options[optionIndex]
-    // if (nextName === currentName) return true
-    // if (!nextName) return false
-    // if (
-    //   decision.options.some(
-    //     (opt, idx) =>
-    //       idx !== optionIndex && opt.toLowerCase() === nextName.toLowerCase(),
-    //   )
-    // ) {
-    //   alert("Another option already uses that name; choose a unique name.")
-    //   return false
-    // }
-    // const copy = [...decisions]
-    // const d = Decision.deserialize(JSON.parse(decision.serialize()))
-    // d.options[optionIndex] = nextName
-    // copy[selectedIndex] = d
-    // setDecisions(copy)
-    // return true
     modifyCurrentDecision((d) => d.renameOption(optionIndex, name))
   }
 
   function renameFactor(factorIndex, name) {
-    // if (!decision) return false
-    // const nextName = name.trim()
-    // const currentName = decision.factors.names[factorIndex]
-    // if (nextName === currentName) return true
-    // if (!nextName) return false
-    // if (
-    //   decision.factors.names.some(
-    //     (factor, idx) =>
-    //       idx !== factorIndex &&
-    //       factor.toLowerCase() === nextName.toLowerCase(),
-    //   )
-    // ) {
-    //   alert("Another factor already uses that name; choose a unique name.")
-    //   return false
-    // }
-    // const copy = [...decisions]
-    // const d = Decision.deserialize(JSON.parse(decision.serialize()))
-    // d.factors.names[factorIndex] = nextName
-    // copy[selectedIndex] = d
-    // setDecisions(copy)
-    // return true
     return editFactor(factorIndex, { name })
   }
 
@@ -217,13 +170,6 @@ export function DecisionsProvider({ children }) {
       {children}
     </DecisionsContext.Provider>
   )
-}
-
-export function useDecisions() {
-  const ctx = useContext(DecisionsContext)
-  if (!ctx)
-    throw new Error("useDecisions must be used within DecisionsProvider")
-  return ctx
 }
 
 export default DecisionsContext

@@ -31,8 +31,6 @@ function getColorFromGradient(gradient, t) {
 
 // Overlap can be "free" (handles can cross freely), "block" (handles can't cross), or "push" (handles push each other but can't cross)
 export default function MultiHandledSlider({
-  // values = [],
-  // names = [],
   handles = {},
   gradient = ["#C1CBD6", "#002463"],
   overlap = "block",

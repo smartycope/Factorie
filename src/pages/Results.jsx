@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from "react"
-import { useDecisions } from "../contexts/DecisionsContext"
+import { useDecisions } from "../contexts/UseDecisions"
 import Box from "@mui/material/Box"
 import Typography from "@mui/material/Typography"
 import Divider from "@mui/material/Divider"
@@ -625,7 +625,6 @@ function RadarPlot({
 
 export default function Results() {
   const { decision } = useDecisions()
-  //   const decision = selectedIndex != null ? decisions[selectedIndex] : null;
 
   const [includedRadar, setIncludedRadar] = useState([])
 
@@ -764,24 +763,16 @@ export default function Results() {
 
   if (invalid) {
     return (
-      // <Box sx={{ display: "flex", gap: 3, flex: 1 }}>
-      //   <DecisionList />
       <Box sx={{ flex: 1, p: 3 }}>
         <Typography variant="h6">Results unavailable</Typography>
-        {/* <Typography variant="body2" sx={{ mt: 1 }}> */}
         {err}
         <br />
         <Box sx={{ color: "#00000010" }}>{invalid}</Box>
-        {/* </Typography> */}
       </Box>
-      //   <ExplanationSidebar />
-      // </Box>
     )
   }
 
   return (
-    // <Box sx={{ display: "flex", gap: 3, flex: 1 }}>
-    //   <DecisionList />
     <Box sx={{ flex: 1, p: 3, minWidth: 0 }}>
       <Stack spacing={3}>
         <Box>
@@ -841,7 +832,5 @@ export default function Results() {
         />
       </Stack>
     </Box>
-    // {/* <ExplanationSidebar /> */}
-    // </Box>
   )
 }

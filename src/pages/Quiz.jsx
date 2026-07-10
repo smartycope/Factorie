@@ -1,5 +1,5 @@
-import React, { useEffect, useRef, useState } from "react"
-import { useDecisions } from "../contexts/DecisionsContext"
+import { useEffect, useRef, useState } from "react"
+import { useDecisions } from "../contexts/UseDecisions"
 import Decision from "../models/Decision"
 import Box from "@mui/material/Box"
 import Typography from "@mui/material/Typography"
@@ -137,9 +137,6 @@ function AnswersTable({
 
   return (
     <>
-      {/* <Typography variant="h6" gutterBottom>
-        Answers - options on rows
-      </Typography> */}
       <Paper sx={{ mb: 2 }}>
         <Table>
           <TableHead>
@@ -226,9 +223,6 @@ function TransposedAnswersTable({
 
   return (
     <>
-      {/* <Typography variant="h6" gutterBottom>
-        Answers - factors on rows
-      </Typography> */}
       <Paper>
         <Table>
           <TableHead>
@@ -533,7 +527,6 @@ export default function Quiz() {
     Boolean(value.isInvalid(decision, factor, true))
   : false
 
-//   if (!decision.isInvalid(true)) {
   const unfinishedFactors = decision.factors.names.filter((_, i) => decision.isFactorValid(decision.factors.names[i]))
     if (unfinishedFactors.length > 0){
       return <Box sx={{ flex: 1, minWidth: 0, p: 2 }}>

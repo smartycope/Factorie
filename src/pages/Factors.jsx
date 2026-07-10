@@ -9,7 +9,6 @@ import FormControlLabel from "@mui/material/FormControlLabel"
 import Slider from "@mui/material/Slider"
 import Menu from "@mui/material/Menu"
 import MenuItem from "@mui/material/MenuItem"
-import EditIcon from "@mui/icons-material/Edit"
 import DeleteIcon from "@mui/icons-material/Delete"
 // Select/MenuItem not needed anymore
 import Paper from "@mui/material/Paper"
@@ -19,11 +18,7 @@ import TableCell from "@mui/material/TableCell"
 import TableHead from "@mui/material/TableHead"
 import TableRow from "@mui/material/TableRow"
 import { DataGrid } from "@mui/x-data-grid"
-import DecisionList from "../components/DecisionList"
-import { useDecisions } from "../contexts/DecisionsContext"
-import Decision from "../models/Decision"
-import ExplanationSidebar from "../components/ExplanationSidebar"
-import { Tooltip } from "@mui/material"
+import { useDecisions } from "../contexts/UseDecisions"
 import HelpOverlay from "../components/HelpOverlay"
 import { SUGGESTED_UNITS } from "../suggestedUnits"
 // import HelpOutlineOutlinedIcon from '@mui/icons-material/HelpOutlineOutlinedIcon';
@@ -329,7 +324,6 @@ const FactorsDataGrid = React.memo(function FactorsDataGrid({
   )
 
   return (
-    // <Paper sx={{ mt: 1, height: 420, minWidth: 0 }}>
     <Paper
       sx={{
         mt: 1,
@@ -356,13 +350,10 @@ const FactorsDataGrid = React.memo(function FactorsDataGrid({
 export default function Factors() {
   const {
     decisions,
-    setDecisions,
     selectedIndex,
-    renameFactor,
     editFactor,
     addFactor,
     removeFactor,
-    modifyCurrentDecision,
   } = useDecisions()
   const decision = selectedIndex != null ? decisions[selectedIndex] : null
   const [addError, setAddError] = useState("")
@@ -591,7 +582,6 @@ export default function Factors() {
                 <HelpOverlay helpText={texts.factors.unit}>
                   <TextField
                     label="Unit"
-                    // placeholder="0-10 scale"
                     value={addUnit}
                     onChange={(e) => setAddUnit(e.target.value)}
                     fullWidth
@@ -768,16 +758,6 @@ export default function Factors() {
               minWidth: 0,
               overflow: "hidden",
             }}>
-            {/* <FactorsTable
-                decision={decision}
-                editFactorIndex={editFactorIndex}
-                setEditFactorIndex={setEditFactorIndex}
-                handleRemove={handleRemove}
-                onDragStart={onDragStart}
-                onDragOver={onDragOver}
-                onDropRow={onDropRow}
-                showOnlyUnfinished={showOnlyUnfinished}
-              /> */}
           </Box>
           <FactorsDataGrid
             decision={decision}

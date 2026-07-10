@@ -1,15 +1,13 @@
-import React, { useEffect, useState, useRef } from "react"
+import { useEffect, useState, useRef } from "react"
 import Box from "@mui/material/Box"
 import Typography from "@mui/material/Typography"
 import Button from "@mui/material/Button"
 import Plot from "react-plotly.js"
-import { useDecisions } from "../contexts/DecisionsContext"
-import DecisionList from "../components/DecisionList"
+import { useDecisions } from "../contexts/UseDecisions"
 import Decision from "../models/Decision"
 import Paper from "@mui/material/Paper"
 import MultiHandledSlider from "../components/MultiHandledSlider"
 import { Checkbox, FormControlLabel, TextField } from "@mui/material"
-import ExplanationSidebar from "../components/ExplanationSidebar"
 
 // TODO: add a "back" button to change your previous answer in the quiz without resetting everything (difficult, possibly impossible)
 // TODO: let factors that were answered as "about the same" have the same weight and be grouped together in the sorting
@@ -38,9 +36,6 @@ function* mergeSortCoroutine(arr) {
       const comparison = yield [left[i], right[j]]
       if (comparison === null) {
         merged.push(left[i++])
-        // merged.push(left[i])
-        // i++
-        // j++
       } else if (comparison) {
         merged.push(left[i])
         i++
@@ -317,8 +312,6 @@ export default function Weights() {
   const radarData = [
     {
       type: "barpolar",
-      //   r: positions,
-      //   theta: labels,
       r: barY,
       theta: barX,
       width: 0.8,
@@ -329,7 +322,6 @@ export default function Weights() {
     width: "100%",
     height: "100%",
     polar: {
-      //   bgcolor: "rgba(68, 25, 25, 0)",
       radialaxis: {
         range: [0, 1],
         showticklabels: false,
@@ -342,7 +334,6 @@ export default function Weights() {
       },
     },
     margin: { t: 80, b: 80, l: 80, r: 80 },
-    // paper_bgcolor: "rgba(0,0,0,0)",
   }
 
   function handlePlotFactorLimitChange(e) {
@@ -404,7 +395,6 @@ export default function Weights() {
                     sx={{ width: "30%" }}
                     variant="contained"
                     onClick={() => {
-                      //   setChoice();
                       handleNextComparison(pendingPair[0])
                     }}>
                     {pendingPair[0]}
@@ -413,7 +403,6 @@ export default function Weights() {
                     sx={{ width: "30%" }}
                     variant="outlined"
                     onClick={() => {
-                      //   setChoice();
                       handleNextComparison("About the same")
                     }}>
                     About the same
@@ -422,7 +411,6 @@ export default function Weights() {
                     sx={{ width: "30%" }}
                     variant="contained"
                     onClick={() => {
-                      //   setChoice();
                       handleNextComparison(pendingPair[1])
                     }}>
                     {pendingPair[1]}
@@ -430,16 +418,6 @@ export default function Weights() {
                 </>
               )}
             </Box>
-            {/* {sortedResult && (
-              <Box sx={{ display: "flex", gap: 2, alignItems: "center", width: "100%", justifyContent: "center" }}>
-                <Button
-                  variant="contained"
-                  onClick={applySortedWeightsToPositions}
-                >
-                  Set as new weights
-                </Button>
-              </Box>
-            )} */}
           </Box>
           <br />
           {sortStarted && (
