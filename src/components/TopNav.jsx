@@ -1,94 +1,186 @@
-import { NavLink } from 'react-router-dom'
-import AppBar from '@mui/material/AppBar'
-import Toolbar from '@mui/material/Toolbar'
-import Typography from '@mui/material/Typography'
-import Button from '@mui/material/Button'
-import Box from '@mui/material/Box'
-import {Stack} from '@mui/material';
+import { useState } from "react"
+import { NavLink } from "react-router-dom"
+import AppBar from "@mui/material/AppBar"
+import Toolbar from "@mui/material/Toolbar"
+import Button from "@mui/material/Button"
+import Box from "@mui/material/Box"
+import IconButton from "@mui/material/IconButton"
+import Menu from "@mui/material/Menu"
+import MenuItem from "@mui/material/MenuItem"
+import MenuIcon from "@mui/icons-material/Menu"
+import icon from "../assets/icon_large.png"
 
 const pages = [
-  ['Dashboard', 'dashboard', null],
-  ['Factor Packs', 'factor-packs', 1],
-  ['Options', 'options', 2],
-  ['Factors', 'factors', 3],
-  ['Fine Tune Weights', 'weights', 4],
-  ['Quiz', 'quiz', 5],
-  ['Overview', 'decisions', 6],
-  ['Results', 'results', 7],
+  ["Dashboard", "dashboard", null],
+  ["Factor Packs", "factor-packs", 1],
+  ["Options", "options", 2],
+  ["Factors", "factors", 3],
+  ["Fine Tune Weights", "weights", 4],
+  ["Quiz", "quiz", 5],
+  ["Overview", "decisions", 6],
+  ["Results", "results", 7],
 //   ['Import/Export', '/save', null],
-  ['Explanation', 'explanation', null],
+  ["Explanation", "explanation", null],
 ]
 
+const splitIndex = Math.ceil(pages.length / 2)
+const pageRows = [pages.slice(0, splitIndex), pages.slice(splitIndex)]
+
 export default function TopNav() {
+  const [menuAnchor, setMenuAnchor] = useState(null)
+  const menuOpen = Boolean(menuAnchor)
+
+  const openMenu = (event) => {
+    setMenuAnchor(event.currentTarget)
+  }
+
+  const closeMenu = () => {
+    setMenuAnchor(null)
+  }
+
   return (
-    <AppBar position="static" color="transparent" elevation={1}>
-      <Toolbar sx={{ maxWidth: 1200, margin: "0 auto", width: "100%"}}>
-        {/* Keep it vertical */}
-        <Button
+    <AppBar
+      position="static"
+      color="transparent"
+      elevation={1}
+      sx={{
+        bgcolor: "background.paper",
+        width: { xs: "100%", md: "fit-content" },
+        maxWidth: "100%",
+        mx: "auto",
+      }}
+    >
+      <Toolbar
+        sx={{
+          width: { xs: "100%", md: "auto" },
+          minHeight: { xs: 72, md: 80 },
+          alignItems: "center",
+          justifyContent: "center",
+          gap: { xs: 1, md: 2 },
+          py: 1,
+        }}
+      >
+        <IconButton
           component={NavLink}
           to="/"
+          end
+          aria-label="Factorie home"
           sx={{
-            display: "flex",
-            alignItems: "center",
-            gap: 1,
-            flexDirection: "column",
-            maxWidth: 150,
-            // padding: 0,
-            // fontSize: ".75rem",
+            flex: "0 0 auto",
+            width: { xs: 48, md: 56 },
+            height: { xs: 48, md: 56 },
+            borderRadius: 2,
+            backgroundColor: "transparent",
+            transition: "background-color 120ms ease",
+            "&.active": {
+              backgroundColor: "transparent",
+            },
+            "&:hover, &.active:hover": {
+              backgroundColor: "action.hover",
+            },
           }}
         >
-          <Typography variant="h5" component="div">
-            Factorie
-          </Typography>
-          <Typography
-            variant="caption"
-            color="text.secondary"
-            sx={{ lineHeight: 1, fontSize: "0.625rem" }}
-          >
-            Helping you live a more examined life
-          </Typography>
-        </Button>
+          <Box
+            component="img"
+            src={icon}
+            alt=""
+            sx={{
+              display: "block",
+              width: { xs: 36, md: 42 },
+              height: { xs: 36, md: 42 },
+              objectFit: "contain",
+            }}
+          />
+        </IconButton>
 
         <Box
           component="nav"
-          sx={{ ml: 3, display: { xs: "none", md: "flex" }, gap: { xs: 0, md: 2 } }}
+          aria-label="Primary navigation"
+          sx={{
+            display: { xs: "none", md: "flex" },
+            flexDirection: "column",
+            flex: "0 0 auto",
+            alignItems: "center",
+            gap: 0.75,
+            minWidth: 0,
+          }}
         >
-          {pages.map(([label, path, order]) => (
-            // <Stack key={path+"label"} direction="column" spacing={0}>
-            // {order && <Typography
-            //   key={path + "order"}
-            // //   component={NavLink}
-            //   to={path}
-            //   color="inherit"
-            //   size="small"
-            // >
-            //   {order}.
-            // </Typography>}
-            <Button
-              key={path}
-              component={NavLink}
-              to={path}
-              color="inherit"
-              size="small"
+          {pageRows.map((row, index) => (
+            <Box
+              key={index === 0 ? "primary-row" : "secondary-row"}
               sx={{
-                "&.active": {
-                  backgroundColor: "action.hover",
-                },
-                // Keep it on one line
-                whiteSpace: "nowrap",
+                display: "flex",
+                justifyContent: "center",
+                gap: 0.75,
+                minWidth: 0,
               }}
             >
-              {order}{order && ". "}{label}
-              {/* {label} */}
-            </Button>
-            // </Stack>
+              {row.map(([label, path, order]) => (
+                <Button
+                  key={path}
+                  component={NavLink}
+                  to={`/${path}`}
+                  color="inherit"
+                  size="small"
+                  sx={{
+                    minWidth: 0,
+                    px: { md: 0.9, lg: 1.15 },
+                    fontSize: { md: "0.75rem", lg: "0.8rem" },
+                    lineHeight: 1.2,
+                    "&.active": {
+                      backgroundColor: "action.hover",
+                      fontWeight: 700,
+                    },
+                    whiteSpace: "nowrap",
+                  }}
+                >
+                  {order}{order && ". "}{label}
+                </Button>
+              ))}
+            </Box>
           ))}
         </Box>
 
-        {/* <Box sx={{ ml: 'auto' }}>
-          <Button component={NavLink} to="/" color="primary" variant="outlined" size="small">Home</Button>
-        </Box> */}
+        <Box sx={{ display: { xs: "flex", md: "none" }, ml: "auto" }}>
+          <IconButton
+            aria-label="Open navigation menu"
+            aria-controls={menuOpen ? "top-nav-menu" : undefined}
+            aria-haspopup="true"
+            aria-expanded={menuOpen ? "true" : undefined}
+            onClick={openMenu}
+            color="inherit"
+            edge="end"
+          >
+            <MenuIcon />
+          </IconButton>
+          <Menu
+            id="top-nav-menu"
+            anchorEl={menuAnchor}
+            open={menuOpen}
+            onClose={closeMenu}
+            anchorOrigin={{ vertical: "bottom", horizontal: "right" }}
+            transformOrigin={{ vertical: "top", horizontal: "right" }}
+          >
+            {pages.map(([label, path, order]) => (
+              <MenuItem
+                key={path}
+                component={NavLink}
+                to={`/${path}`}
+                onClick={closeMenu}
+                sx={{
+                  minWidth: 220,
+                  "&.active": {
+                    backgroundColor: "action.hover",
+                    fontWeight: 700,
+                  },
+                }}
+              >
+                {order ? `${order}. ${label}` : label}
+              </MenuItem>
+            ))}
+          </Menu>
+        </Box>
       </Toolbar>
     </AppBar>
-  );
+  )
 }
