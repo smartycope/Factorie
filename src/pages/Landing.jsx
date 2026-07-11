@@ -34,9 +34,10 @@ export default function Landing() {
           list all the factors that might affect your decision. Then you specify
           how much each those factors actually matters to you, and rate each
           option according to each factor. Factorie then combines all that
-          information (using complicated, but not mysterious, math) to help
-          inform you objectively on each option about each option, and explain
-          how it came to that answer based on the information you gave.
+          information (using complicated, but not mysterious, math) to sort each options on an objective
+          scale, and explain how it came to that conclusion based on the information you gave.
+          <br/>
+          TL;DR: You give it a bunch of information about a big life decision and it tells you what to do.
         </Typography>
       ),
     },
