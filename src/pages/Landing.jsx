@@ -150,6 +150,14 @@ export default function Landing() {
         </Typography>
       ),
     },
+    {
+      question: "I found a thing that doesn't work!",
+      answer: (
+        <Typography variant="body2" paragraph>
+          Awesome! Please either let Cope know, or submit an issue yourself <a href="https://github.com/smartycope/factorie/issues">here</a>.
+        </Typography>
+      ),
+    },
   ]
 
   return (
