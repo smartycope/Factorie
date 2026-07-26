@@ -28,6 +28,7 @@ import DialogContent from "@mui/material/DialogContent"
 import DialogContentText from "@mui/material/DialogContentText"
 import DialogTitle from "@mui/material/DialogTitle"
 import {downloadedFilename} from "../utils/misc";
+import xlsxTemplate from "../assets/Decision template.xlsx"
 
 export default function Dashboard() {
   const {
@@ -203,6 +204,10 @@ export default function Dashboard() {
           >
             Import
           </Button>
+          {/* <Button onClick={downloadTemplate}>
+            Download Template
+          </Button> */}
+          <a href={xlsxTemplate} download="Decision template.xlsx" target="_blank" rel="noreferrer"><Button variant="outlined" startIcon={<DownloadIcon />}>Download Template</Button></a>
           <input
             ref={decFileInputRef}
             type="file"
@@ -236,7 +241,6 @@ export default function Dashboard() {
                   disablePadding
                   secondaryAction={
                     <>
-                      {/* We want to keep this as a download button, not an import button */}
                       <IconButton
                         edge="start"
                         onClick={(e) => {

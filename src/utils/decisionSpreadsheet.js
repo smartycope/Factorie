@@ -245,10 +245,11 @@ export function parseDecisionSpreadsheet(arrayBuffer) {
 
   const name = cellText(sheet, "B1")
   if (!name) spreadsheetError("Could not parse decision name: B1 must contain a non-empty name.")
-  if (cellText(sheet, "B4").toLowerCase() !== "options")
-    spreadsheetError('Could not parse spreadsheet: B4 must say "Options".')
-  if (cellText(sheet, "A5").toLowerCase() !== "factors")
-    spreadsheetError('Could not parse spreadsheet: A5 must say "Factors".')
+	// We don't need to be this pedantic
+  // if (cellText(sheet, "B4").toLowerCase() !== "options")
+  //   spreadsheetError('Could not parse spreadsheet: B4 must say "Options".')
+  // if (cellText(sheet, "A5").toLowerCase() !== "factors")
+  //   spreadsheetError('Could not parse spreadsheet: A5 must say "Factors".')
 
   const factorPackNames = parseFactorPackNames(sheet)
   const factorNames = parseFactorNames(sheet)

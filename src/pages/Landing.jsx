@@ -153,6 +153,24 @@ export default function Landing() {
       ),
     },
     {
+      question: "Your website is dumb. Can't I just use a spreadsheet?",
+      answer: (
+        <Typography variant="body2" paragraph>
+          Yes, actually. On the{" "}
+          <Link component={RouterLink} to="/dashboard">
+            dashboard
+          </Link>{" "}
+          page, you'll find a button that lets you download a .xlsx template
+          that you can fill out yourself using your favorite spreadsheet
+          program. Fill out either fully or partially, and then upload it using
+          the import button to continue from there to see the results.
+          <br />
+          You can also download a current decision in the same spreadsheet
+          format.
+        </Typography>
+      ),
+    },
+    {
       question: "What are you doing with my data?",
       answer: (
         <Typography variant="body2" paragraph>
