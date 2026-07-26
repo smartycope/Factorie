@@ -260,7 +260,7 @@ function HeatmapPlot({
     const nCols = factorNames.length
     const leftMargin = Math.min(
       260,
-      Math.max(90, Math.max(...decision.options.map((opt) => opt.length)) * 8),
+      Math.max(90, Math.max(...factorNames.map((factor) => factor.length)) * 8),
     )
     const shapes = []
     const textX = []
@@ -276,10 +276,10 @@ function HeatmapPlot({
         const halfH = (1 * weight) / 2
         shapes.push({
           type: "rect",
-          x0: j - halfW,
-          y0: i - halfH,
-          x1: j + halfW,
-          y1: i + halfH,
+          x0: i - halfW,
+          y0: j - halfH,
+          x1: i + halfW,
+          y1: j + halfH,
           line: { width: 0 },
           fillcolor: color,
           layer: "below",
@@ -287,8 +287,8 @@ function HeatmapPlot({
         const maxs = decision.maxs()
         const answer = answers[i][j]
         const maxVal = maxs[j]
-        textX.push(j)
-        textY.push(i)
+        textX.push(i)
+        textY.push(j)
         textLabels.push(
           `${Math.round(value * 100)}%<br>(${Math.round(answer)}/${Math.round(
             maxVal,
@@ -312,19 +312,20 @@ function HeatmapPlot({
       ],
       layout: {
         xaxis: {
-          tickvals: Array.from({ length: nCols }, (_, i) => i),
-          ticktext: factorNames,
+          tickvals: Array.from({ length: nRows }, (_, i) => i),
+          ticktext: decision?.options,
           showgrid: false,
           zeroline: false,
           scaleanchor: "y",
         },
         yaxis: {
-          tickvals: Array.from({ length: nRows }, (_, i) => i),
-          ticktext: decision?.options,
+          tickvals: Array.from({ length: nCols }, (_, i) => i),
+          ticktext: factorNames,
           showgrid: false,
           zeroline: false,
           autorange: "reversed",
           automargin: true,
+          scaleanchor: "x",
         },
         margin: { t: 60, b: 20, l: leftMargin, r: 20 },
         title: { text: "How good each option is" },
