@@ -34,10 +34,12 @@ export default function Landing() {
           list all the factors that might affect your decision. Then you specify
           how much each those factors actually matters to you, and rate each
           option according to each factor. Factorie then combines all that
-          information (using complicated, but not mysterious, math) to sort each options on an objective
-          scale, and explain how it came to that conclusion based on the information you gave.
-          <br/>
-          TL;DR: You give it a bunch of information about a big life decision and it tells you what to do.
+          information (using complicated, but not mysterious, math) to sort each
+          options on an objective scale, and explain how it came to that
+          conclusion based on the information you gave.
+          <br />
+          TL;DR: You give it a bunch of information about a big life decision
+          and it tells you what to do.
         </Typography>
       ),
     },
@@ -89,13 +91,13 @@ export default function Landing() {
         'I\'m not totally sold... why would I let a "computer" make major life decisions for me?',
       answer: (
         <Typography variant="body2" paragraph>
-          You're not! Think of this as a calculator, or a structured
-          pro-con list. You're the one inputting all the information, and you
-          can change it at any time. The computer is just doing some math to
-          combine all the information you gave it in a way that's more accurate
-          than your brain can do on its own. It's not making the decision for
-          you, it's just giving you a recommendation based on the information
-          you provided.
+          You're not! Think of this as a calculator, or a structured pro-con
+          list. You're the one inputting all the information, and you can change
+          it at any time. The computer is just doing some math to combine all
+          the information you gave it in a way that's more accurate than your
+          brain can do on its own. It's not making the decision for you, it's
+          just giving you a recommendation based on the information you
+          provided.
         </Typography>
       ),
     },
@@ -144,10 +146,20 @@ export default function Landing() {
           <br />
           <br />* The only part that isn't deterministic is the simulation of
           the uncertain values (ranges). It calculates the best answer using
-          random values within each range{' '}
-          {/* Validate this number */}
+          random values within each range {/* Validate this number */}
           ~1000x, and then averages the results. So it's not technically
           deterministic, but it shouldn't impact the decision too much.
+        </Typography>
+      ),
+    },
+    {
+      question: "What are you doing with my data?",
+      answer: (
+        <Typography variant="body2" paragraph>
+          Not only is this an open source project, it also runs entirely in the
+          browser. There's no server, no analytics, and no tracking. I{" "}
+          <i>can't</i> see your data. Your data is stored in the browser: if you
+          delete a decision, it's gone forever unless you've downloaded it.
         </Typography>
       ),
     },
@@ -155,7 +167,8 @@ export default function Landing() {
       question: "I found a thing that doesn't work!",
       answer: (
         <Typography variant="body2" paragraph>
-          Awesome! Please either let Cope know, or submit an issue yourself <a href="https://github.com/smartycope/factorie/issues">here</a>.
+          Awesome! Please either let Cope know, or submit an issue yourself{" "}
+          <a href="https://github.com/smartycope/factorie/issues">here</a>.
         </Typography>
       ),
     },
