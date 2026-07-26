@@ -58,7 +58,7 @@ export default function Landing() {
           <Link component={RouterLink} to="/options">
             options
           </Link>
-          . Once done that, head over to the{" "}
+          . Once you've done that, head over to the{" "}
           <Link component={RouterLink} to="/quiz">
             quiz
           </Link>{" "}
