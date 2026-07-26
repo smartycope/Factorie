@@ -15,8 +15,19 @@ import CardContent from "@mui/material/CardContent";
 import DeleteIcon from "@mui/icons-material/Delete";
 import UploadFileIcon from "@mui/icons-material/UploadFile";
 import DownloadIcon from "@mui/icons-material/Download";
+import TableViewIcon from "@mui/icons-material/TableView";
 import LaunchIcon from '@mui/icons-material/Launch';
 import examplePack from "../factor-packs/example.json"
+import {
+  createDecisionSpreadsheet,
+  parseDecisionSpreadsheet,
+} from "../utils/decisionSpreadsheet"
+import Dialog from "@mui/material/Dialog"
+import DialogActions from "@mui/material/DialogActions"
+import DialogContent from "@mui/material/DialogContent"
+import DialogContentText from "@mui/material/DialogContentText"
+import DialogTitle from "@mui/material/DialogTitle"
+import {downloadedFilename} from "../utils/misc";
 
 export default function Dashboard() {
   const {
@@ -28,7 +39,9 @@ export default function Dashboard() {
     removeDecision,
   } = useDecisions();
   const navigate = useNavigate();
-  const fileInputRef = React.useRef(null);
+  const decFileInputRef = React.useRef(null);
+  const spreadsheetFileInputRef = React.useRef(null);
+  const [isImportDialogOpen, setImportDialogOpen] = React.useState(false);
 
   function addExamples() {
     const ex1 = JSON.parse(
@@ -52,30 +65,43 @@ export default function Dashboard() {
     navigate(`/decisions`);
   }
 
-  function downloadDecision(d) {
+  function downloadFile({ createData, type, filename, failureMessage }) {
     try {
-      const data = d.serialize();
-      const blob = new Blob([data], { type: "application/json" });
+      const blob = new Blob([createData()], { type });
       const url = URL.createObjectURL(blob);
-      const a = document.createElement("a");
-      const safe = (d.name || "decision").replace(/[^a-z0-9_.-]/gi, "_");
-      a.href = url;
-      a.download = `${safe}.dec`;
-      document.body.appendChild(a);
-      a.click();
-      a.remove();
+      const link = document.createElement("a");
+      link.href = url;
+      link.download = filename;
+      document.body.appendChild(link);
+      link.click();
+      link.remove();
       URL.revokeObjectURL(url);
-    } catch (e) {
-      console.error("Download failed", e);
-      alert("Failed to download decision");
+    } catch (error) {
+      console.error("Download failed", error);
+      alert(failureMessage);
     }
   }
 
-  function triggerImport() {
-    fileInputRef.current?.click();
+  function downloadDecision(decision) {
+    downloadFile({
+      createData: () => decision.serialize(),
+      type: "application/json",
+      filename: downloadedFilename(decision.name, "dec"),
+      failureMessage: "Failed to download decision",
+    })
   }
 
-  async function handleImportFile(e) {
+  function triggerImport() {
+    setImportDialogOpen(true);
+  }
+
+  function chooseImport(type) {
+    setImportDialogOpen(false)
+    if (type === "dec") decFileInputRef.current?.click()
+    else spreadsheetFileInputRef.current?.click()
+  }
+
+  async function handleDecImportFile(e) {
     const f = e.target.files && e.target.files[0];
     if (!f) return;
     try {
@@ -108,6 +134,53 @@ export default function Dashboard() {
     }
   }
 
+  async function handleSpreadsheetImportFile(e) {
+    const file = e.target.files && e.target.files[0]
+    if (!file) return
+    try {
+      const importedDecision = parseDecisionSpreadsheet(await file.arrayBuffer())
+      const existingIndex = decisions.findIndex(
+        (decision) => decision.name.toLowerCase() === importedDecision.name.toLowerCase(),
+      )
+      if (
+        existingIndex !== -1 &&
+        !window.confirm(
+          `A decision named "${importedDecision.name}" already exists. Do you want to overwrite it?`,
+        )
+      )
+        return
+
+      setDecisions((previous) => {
+        const next = [...previous]
+        const index = next.findIndex(
+          (decision) => decision.name.toLowerCase() === importedDecision.name.toLowerCase(),
+        )
+        if (index === -1) {
+          next.push(importedDecision)
+          setSelectedIndex(next.length - 1)
+        } else {
+          next[index] = importedDecision
+          setSelectedIndex(index)
+        }
+        return next
+      })
+    } catch (error) {
+      console.error("Spreadsheet import failed", error)
+      alert(`Unable to import spreadsheet:\n${error.message}`)
+    } finally {
+      e.target.value = null
+    }
+  }
+
+  function downloadSpreadsheet(decision) {
+    downloadFile({
+      createData: () => createDecisionSpreadsheet(decision),
+      type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+      filename: downloadedFilename(decision.name, "xlsx"),
+      failureMessage: "Failed to download spreadsheet",
+    })
+  }
+
   return (
     <Box sx={{ width: "100%" }}>
       <Box
@@ -131,10 +204,17 @@ export default function Dashboard() {
             Import
           </Button>
           <input
-            ref={fileInputRef}
+            ref={decFileInputRef}
             type="file"
             accept=".dec,application/json"
-            onChange={handleImportFile}
+            onChange={handleDecImportFile}
+            style={{ display: "none" }}
+          />
+          <input
+            ref={spreadsheetFileInputRef}
+            type="file"
+            accept=".xlsx,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+            onChange={handleSpreadsheetImportFile}
             style={{ display: "none" }}
           />
         </Box>
@@ -173,9 +253,19 @@ export default function Dashboard() {
                           e.stopPropagation();
                           downloadDecision(d);
                         }}
-                        title="Download"
+                        title="Download as a JSON file (.dec)"
                       >
                         <DownloadIcon />
+                      </IconButton>
+                      <IconButton
+                        edge="end"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          downloadSpreadsheet(d);
+                        }}
+                        title="Download as a spreadsheet (.xlsx)"
+                      >
+                        <TableViewIcon />
                       </IconButton>
                       <IconButton
                         edge="end"
@@ -216,6 +306,24 @@ export default function Dashboard() {
           Load example
         </Button>
       )}
+      <Dialog
+        open={isImportDialogOpen}
+        onClose={() => setImportDialogOpen(false)}
+      >
+        <DialogTitle>Import decision</DialogTitle>
+        <DialogContent>
+          <DialogContentText>
+            Choose the kind of decision file you want to import.
+          </DialogContentText>
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={() => setImportDialogOpen(false)}>Cancel</Button>
+          <Button onClick={() => chooseImport("dec")}>Decision file (.dec)</Button>
+          <Button variant="contained" onClick={() => chooseImport("xlsx")}>
+            Spreadsheet (.xlsx)
+          </Button>
+        </DialogActions>
+      </Dialog>
     </Box>
   );
 }
