@@ -22,10 +22,22 @@ const SUGGESTED_UNIT_ANSWER_OPTIONS = {
   ],
 }
 
+const SUGGESTED_UNIT_MIN_MAX = {
+  "0-10 scale": [0, 10],
+  "0: no, 1: yes": [0, 1],
+  "0: small, 1: medium, 2: large": [0, 2],
+  "-1: disagree, 0: neutral, 1: agree": [-1, 1],
+}
+
 function normalizeSuggestedUnit(unit) {
   return (unit ?? "").trim().replace(/\s+/g, " ").toLowerCase()
 }
 
 export function getSuggestedUnitAnswerOptions(unit) {
   return SUGGESTED_UNIT_ANSWER_OPTIONS[normalizeSuggestedUnit(unit)] ?? null
+}
+
+export function getSuggestedUnitMinMax(unit){
+  console.log(unit)
+  return SUGGESTED_UNIT_MIN_MAX[normalizeSuggestedUnit(unit)] ?? null
 }

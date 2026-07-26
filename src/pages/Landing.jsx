@@ -47,7 +47,13 @@ export default function Landing() {
       question: "Where do I start?",
       answer: (
         <Typography variant="body2" paragraph>
-          First, go to the{" "}
+          I find it's helpful to start with an example. If you go to the{" "}
+          <Link component={RouterLink} to="/dashboard">
+            dashboard
+          </Link>{" "} page, there's a "Load Example" button. You can click that and poke around to see how things work.
+
+          <br />
+          Once you're ready to start, go back to the{" "}
           <Link component={RouterLink} to="/dashboard">
             dashboard
           </Link>{" "}
@@ -69,7 +75,7 @@ export default function Landing() {
           <Link component={RouterLink} to="/weights">
             fine tune weights
           </Link>{" "}
-          page, and it will help you break it down.
+          page, and it will help you break it down. If you have the "Show explanations" box above checked, there will be explanations to guide you through the process the whole way.
         </Typography>
       ),
     },
@@ -82,7 +88,7 @@ export default function Landing() {
           <Link component={RouterLink} to="/explanation">
             explanation
           </Link>{" "}
-          page (with pictures and without equations).
+          page (with pictures, and without equations).
         </Typography>
       ),
     },

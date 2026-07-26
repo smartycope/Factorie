@@ -20,7 +20,7 @@ import TableRow from "@mui/material/TableRow"
 import { DataGrid } from "@mui/x-data-grid"
 import { useDecisions } from "../contexts/UseDecisions"
 import HelpOverlay from "../components/HelpOverlay"
-import { SUGGESTED_UNITS } from "../suggestedUnits"
+import { getSuggestedUnitMinMax, SUGGESTED_UNITS } from "../suggestedUnits"
 // import HelpOutlineOutlinedIcon from '@mui/icons-material/HelpOutlineOutlinedIcon';
 
 import texts from "../assets/texts.json"
@@ -504,6 +504,9 @@ export default function Factors() {
 
   function handleSuggestedUnit(unit) {
     setAddUnit(unit)
+    const [min, max] = getSuggestedUnitMinMax(unit)
+    setAddMin(min)
+    setAddMax(max)
     setUnitMenuAnchorEl(null)
   }
 
