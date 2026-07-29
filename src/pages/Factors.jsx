@@ -44,6 +44,11 @@ function factorNameText(value) {
   return value ?? ""
 }
 
+function factorMatchesSearch(name, searchQuery = "") {
+  const query = searchQuery.trim().toLowerCase()
+  return !query || factorNameText(name).toLowerCase().includes(query)
+}
+
 function factorRows(decision) {
   return decision.factors.names.map((name, i) => {
     const factorName = factorNameText(name)
@@ -137,9 +142,12 @@ function FactorsTable({
   onDragOver,
   onDropRow,
   showOnlyUnfinished,
+  factorSearch,
 }) {
   const rows = factorRows(decision).filter(
-    (row) => !showOnlyUnfinished || isFactorRowUnfinished(row, decision),
+    (row) =>
+      factorMatchesSearch(row.name, factorSearch) &&
+      (!showOnlyUnfinished || isFactorRowUnfinished(row, decision)),
   )
 
   return (
@@ -225,13 +233,16 @@ const FactorsDataGrid = React.memo(function FactorsDataGrid({
   setEditFactorIndex,
   handleRemove,
   showOnlyUnfinished,
+  factorSearch,
 }) {
   const rows = useMemo(
     () =>
       factorRows(decision).filter(
-        (row) => !showOnlyUnfinished || isFactorRowUnfinished(row, decision),
+        (row) =>
+          factorMatchesSearch(row.name, factorSearch) &&
+          (!showOnlyUnfinished || isFactorRowUnfinished(row, decision)),
       ),
-    [decision, showOnlyUnfinished],
+    [decision, factorSearch, showOnlyUnfinished],
   )
   const handleRowClick = useCallback(
     (params) => setEditFactorIndex(params.row.index),
@@ -371,6 +382,7 @@ export default function Factors() {
   // Edit state tracks which factor (by index) is being modified. We reuse the add form fields while editing.
   const [editFactorIndex, setEditFactorIndex] = useState(null)
   const [showOnlyUnfinished, setShowOnlyUnfinished] = useState(false)
+  const [factorSearch, setFactorSearch] = useState("")
   const [unitMenuAnchorEl, setUnitMenuAnchorEl] = useState(null)
   const unitMenuOpen = Boolean(unitMenuAnchorEl)
 
@@ -741,6 +753,13 @@ export default function Factors() {
               mb: 1,
             }}>
             <Typography variant="h6">Current Factors</Typography>
+            <TextField
+              label="Search factors"
+              size="small"
+              value={factorSearch}
+              onChange={(event) => setFactorSearch(event.target.value)}
+              sx={{ flex: 1, maxWidth: 400, mx: 2 }}
+            />
             <FormControlLabel
               control={
                 <Checkbox
@@ -768,6 +787,7 @@ export default function Factors() {
             setEditFactorIndex={setEditFactorIndex}
             handleRemove={handleRemove}
             showOnlyUnfinished={showOnlyUnfinished}
+            factorSearch={factorSearch}
           />
         </Box>
       </Box>

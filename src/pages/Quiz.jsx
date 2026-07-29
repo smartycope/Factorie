@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from "react"
+import DeleteIcon from "@mui/icons-material/Delete"
 import { useDecisions } from "../contexts/UseDecisions"
 import Decision from "../models/Decision"
 import Box from "@mui/material/Box"
@@ -16,9 +17,9 @@ import TableRow from "@mui/material/TableRow"
 import Paper from "@mui/material/Paper"
 import Card from "@mui/material/Card"
 import CardContent from "@mui/material/CardContent"
-import { TextField } from "@mui/material"
+import { IconButton, TextField } from "@mui/material"
 import Answer from "../models/Answer"
-import {Link} from "react-router-dom";
+import { Link } from "react-router-dom"
 import { getSuggestedUnitAnswerOptions } from "../suggestedUnits"
 
 const TRANSPOSED = true
@@ -54,8 +55,10 @@ function updateAnswerMax(answer, max) {
 
 function SuggestedUnitAnswerButtons({ options, value, onAnswer }) {
   const selectedValue =
-    value.min === value.max &&
-    options.some((option) => option.value === value.min) ?
+    (
+      value.min === value.max &&
+      options.some((option) => option.value === value.min)
+    ) ?
       value.min
     : null
 
@@ -84,20 +87,30 @@ function SuggestedUnitAnswerButtons({ options, value, onAnswer }) {
 function answerHasProblem(decision, optionIndex, factorIndex) {
   const answer = Answer.parse(decision.answers[optionIndex]?.[factorIndex])
   const factor = decision.factors.names[factorIndex]
-  return !answer?.isAnswered() || Boolean(answer.isInvalid(decision, factor, true))
+  return (
+    !answer?.isAnswered() || Boolean(answer.isInvalid(decision, factor, true))
+  )
 }
 
 function factorHasProblem(decision, factorIndex) {
   return decision.options.some((_, optionIndex) =>
-    answerHasProblem(decision, optionIndex, factorIndex)
+    answerHasProblem(decision, optionIndex, factorIndex),
   )
 }
 
-function factorIndexesForMode(decision, onlyShowUnanswered) {
+function factorIndexesForMode(decision, onlyShowUnanswered, factorSearch = "") {
   if (!decision) return []
+  const query = factorSearch.trim().toLowerCase()
   return decision.factors.names
     .map((_, index) => index)
-    .filter((index) => !onlyShowUnanswered || factorHasProblem(decision, index))
+    .filter(
+      (index) =>
+        (!query ||
+          String(decision.factors.names[index])
+            .toLowerCase()
+            .includes(query)) &&
+        (!onlyShowUnanswered || factorHasProblem(decision, index)),
+    )
 }
 
 function answerCellSx(isActive, hasProblem) {
@@ -117,17 +130,25 @@ function AnswersTable({
   changeCell,
   indexToIdx,
   onlyShowUnanswered,
+  factorSearch,
 }) {
   const [page, setPage] = useState(0)
   const [rowsPerPage, setRowsPerPage] = useState(10)
   const selectedPage = Math.floor(optionIdx / rowsPerPage)
   const selectedPageKey = `${optionIdx}-${rowsPerPage}`
   const previousSelectedPageKey = useRef(null)
-  const maxPage = Math.max(0, Math.ceil(decision.options.length / rowsPerPage) - 1)
+  const maxPage = Math.max(
+    0,
+    Math.ceil(decision.options.length / rowsPerPage) - 1,
+  )
   const safePage = Math.min(page, maxPage)
   const start = safePage * rowsPerPage
   const visibleOptions = decision.options.slice(start, start + rowsPerPage)
-  const visibleFactorIndexes = factorIndexesForMode(decision, onlyShowUnanswered)
+  const visibleFactorIndexes = factorIndexesForMode(
+    decision,
+    onlyShowUnanswered,
+    factorSearch,
+  )
 
   useEffect(() => {
     if (previousSelectedPageKey.current === selectedPageKey) return
@@ -198,15 +219,20 @@ function TransposedAnswersTable({
   changeCell,
   indexToIdx,
   onlyShowUnanswered,
+  factorSearch,
 }) {
   const [page, setPage] = useState(0)
   const [rowsPerPage, setRowsPerPage] = useState(10)
-  const factorIndexes = factorIndexesForMode(decision, onlyShowUnanswered)
+  const factorIndexes = factorIndexesForMode(
+    decision,
+    onlyShowUnanswered,
+    factorSearch,
+  )
   const selectedFactorPosition = factorIndexes.indexOf(factorIdx)
   const selectedPage =
-    selectedFactorPosition === -1 ?
-      page
-    : Math.floor(selectedFactorPosition / rowsPerPage)
+    selectedFactorPosition === -1 ? page : (
+      Math.floor(selectedFactorPosition / rowsPerPage)
+    )
   const selectedPageKey = `${selectedFactorPosition}-${rowsPerPage}`
   const previousSelectedPageKey = useRef(null)
   const maxPage = Math.max(0, Math.ceil(factorIndexes.length / rowsPerPage) - 1)
@@ -282,6 +308,7 @@ export default function Quiz() {
   const [precise, setPrecise] = useState(false)
   const [unsure, setUnsure] = useState(false)
   const [onlyShowUnanswered, setOnlyShowUnanswered] = useState(false)
+  const [factorSearch, setFactorSearch] = useState("")
   // The value of the response given by the user
   const [resp, setResp] = useState(null)
   // cur is only null if decision is not yet specified
@@ -294,8 +321,10 @@ export default function Quiz() {
   const traversalFactorIndexes = factorIndexesForMode(
     decision,
     onlyShowUnanswered,
+    factorSearch,
   )
   const numFactors = traversalFactorIndexes.length
+  const hasVisibleQuizCells = numOptions > 0 && numFactors > 0
 
   // After we select a decision, initialize cur to the first cell if it's not already set
   if (hasQuizCells && cur == null)
@@ -312,11 +341,13 @@ export default function Quiz() {
     localIdx,
     sourceDecision = decision,
     useOnlyShowUnanswered = onlyShowUnanswered,
+    sourceFactorSearch = factorSearch,
   ) {
     const sourceNumOptions = sourceDecision?.options.length ?? 0
     const sourceNumFactors = factorIndexesForMode(
       sourceDecision,
       useOnlyShowUnanswered,
+      sourceFactorSearch,
     ).length
     const total = sourceNumOptions * sourceNumFactors
     if (!total) return 0
@@ -327,11 +358,13 @@ export default function Quiz() {
     localIdx = idx,
     sourceDecision = decision,
     useOnlyShowUnanswered = onlyShowUnanswered,
+    sourceFactorSearch = factorSearch,
   ) {
     const sourceNumOptions = sourceDecision?.options.length ?? 0
     const sourceFactorIndexes = factorIndexesForMode(
       sourceDecision,
       useOnlyShowUnanswered,
+      sourceFactorSearch,
     )
     const sourceNumFactors = sourceFactorIndexes.length
     if (!sourceNumOptions || !sourceNumFactors) return [0, 0]
@@ -340,6 +373,7 @@ export default function Quiz() {
       localIdx,
       sourceDecision,
       useOnlyShowUnanswered,
+      sourceFactorSearch,
     )
     if (TRANSPOSED ? anticolumnar : !anticolumnar) {
       const optionIdx = normalizedIdx % sourceNumOptions
@@ -356,11 +390,13 @@ export default function Quiz() {
     factorIdx,
     sourceDecision = decision,
     useOnlyShowUnanswered = onlyShowUnanswered,
+    sourceFactorSearch = factorSearch,
   ) {
     const sourceNumOptions = sourceDecision?.options.length ?? 0
     const sourceFactorIndexes = factorIndexesForMode(
       sourceDecision,
       useOnlyShowUnanswered,
+      sourceFactorSearch,
     )
     const sourceNumFactors = sourceFactorIndexes.length
     if (!sourceNumOptions || !sourceNumFactors) return 0
@@ -377,6 +413,7 @@ export default function Quiz() {
     const sourceFactorIndexes = factorIndexesForMode(
       sourceDecision,
       onlyShowUnanswered,
+      factorSearch,
     )
     const sourceNumFactors = sourceFactorIndexes.length
     if (!sourceNumOptions || !sourceNumFactors) return 0
@@ -386,6 +423,8 @@ export default function Quiz() {
       return normalizeIdx(
         indexToIdx(optionIdx, factorIdx, sourceDecision) + delta,
         sourceDecision,
+        onlyShowUnanswered,
+        factorSearch,
       )
     }
 
@@ -404,13 +443,17 @@ export default function Quiz() {
     return normalizeIdx(
       nextOptionIdx * sourceNumFactors + nextFactorPosition,
       sourceDecision,
+      onlyShowUnanswered,
+      factorSearch,
     )
   }
 
   const [optionIdx, factorIdx] = computeIndex()
-  const option = decision?.options[optionIdx] || ""
-  const factor = decision?.factors.names[factorIdx] || ""
-  const unit = decision?.factors.units[factorIdx] || ""
+  const option = hasVisibleQuizCells ? decision?.options[optionIdx] || "" : ""
+  const factor =
+    hasVisibleQuizCells ? decision?.factors.names[factorIdx] || "" : ""
+  const unit =
+    hasVisibleQuizCells ? decision?.factors.units[factorIdx] || "" : ""
   const valueLabel = unit || "Value"
   const minLabel = unit ? `Min: ${unit}` : "Min"
   const maxLabel = unit ? `Max: ${unit}` : "Max"
@@ -422,10 +465,15 @@ export default function Quiz() {
     newIdx,
     sourceDecision = decision,
     useOnlyShowUnanswered = onlyShowUnanswered,
+    sourceFactorSearch = factorSearch,
   ) {
     if (
       !sourceDecision?.options.length ||
-      !factorIndexesForMode(sourceDecision, useOnlyShowUnanswered).length
+      !factorIndexesForMode(
+        sourceDecision,
+        useOnlyShowUnanswered,
+        sourceFactorSearch,
+      ).length
     )
       return
 
@@ -436,11 +484,13 @@ export default function Quiz() {
       newIdxValue,
       sourceDecision,
       useOnlyShowUnanswered,
+      sourceFactorSearch,
     )
     const [newOptionIdx, newFactorIdx] = computeIndex(
       normalizedIdx,
       sourceDecision,
       useOnlyShowUnanswered,
+      sourceFactorSearch,
     )
     const newValue = copyAnswer(
       sourceDecision?.getAnswer(newOptionIdx, newFactorIdx),
@@ -495,16 +545,19 @@ export default function Quiz() {
     { value: scale[0], label: decision?.factors.mins[factorIdx] },
     { value: scale[1], label: decision?.factors.maxs[factorIdx] },
   ]
-  const rangedSliderMarks = [sliderMin, sliderMax].reduce((marks, markValue) => {
-    if (!Number.isFinite(markValue)) return marks
-    const existingIndex = marks.findIndex((mark) => mark.value === markValue)
-    if (existingIndex === -1)
-      return [...marks, { value: markValue, label: markValue }]
+  const rangedSliderMarks = [sliderMin, sliderMax].reduce(
+    (marks, markValue) => {
+      if (!Number.isFinite(markValue)) return marks
+      const existingIndex = marks.findIndex((mark) => mark.value === markValue)
+      if (existingIndex === -1)
+        return [...marks, { value: markValue, label: markValue }]
 
-    return marks.map((mark, index) =>
-      index === existingIndex ? { ...mark, label: markValue } : mark,
-    )
-  }, sliderMarks)
+      return marks.map((mark, index) =>
+        index === existingIndex ? { ...mark, label: markValue } : mark,
+      )
+    },
+    sliderMarks,
+  )
 
   function handleUnsureChange(event) {
     const isChecked = event.target.checked
@@ -512,10 +565,12 @@ export default function Quiz() {
     if (isChecked && !value.isRanged()) setResp(new Answer(scale[0], scale[1]))
   }
 
-  function handleOnlyShowUnansweredChange(event) {
-    const isChecked = event.target.checked
-    const nextFactorIndexes = factorIndexesForMode(decision, isChecked)
-    setOnlyShowUnanswered(isChecked)
+  function changeFactorFilters(nextOnlyShowUnanswered, nextFactorSearch) {
+    const nextFactorIndexes = factorIndexesForMode(
+      decision,
+      nextOnlyShowUnanswered,
+      nextFactorSearch,
+    )
 
     if (!nextFactorIndexes.length) {
       setIdx(0)
@@ -525,15 +580,35 @@ export default function Quiz() {
     const nextFactorIdx =
       nextFactorIndexes.includes(factorIdx) ? factorIdx : nextFactorIndexes[0]
     changeCell(
-      indexToIdx(optionIdx, nextFactorIdx, decision, isChecked),
+      indexToIdx(
+        optionIdx,
+        nextFactorIdx,
+        decision,
+        nextOnlyShowUnanswered,
+        nextFactorSearch,
+      ),
       decision,
-      isChecked,
+      nextOnlyShowUnanswered,
+      nextFactorSearch,
     )
   }
 
-  const isRespInValid = hasQuizCells ?
-    Boolean(value.isInvalid(decision, factor, true))
-  : false
+  function handleOnlyShowUnansweredChange(event) {
+    const isChecked = event.target.checked
+    setOnlyShowUnanswered(isChecked)
+    changeFactorFilters(isChecked, factorSearch)
+  }
+
+  function handleFactorSearchChange(event) {
+    const nextFactorSearch = event.target.value
+    setFactorSearch(nextFactorSearch)
+    changeFactorFilters(onlyShowUnanswered, nextFactorSearch)
+  }
+
+  const isRespInValid =
+    hasVisibleQuizCells ?
+      Boolean(value.isInvalid(decision, factor, true))
+    : false
 
   const unfinishedFactors =
     decision?.factors.names.filter((_, i) =>
@@ -574,60 +649,66 @@ export default function Quiz() {
   }
 
   if (unfinishedFactors.length > 0) {
-      return <Box sx={{ flex: 1, minWidth: 0, p: 2 }}>
+    return (
+      <Box sx={{ flex: 1, minWidth: 0, p: 2 }}>
         <Typography variant="h4">Quiz</Typography>
         <Typography>
-          There are unfinished factors! We can't decide how good each option is until we know what "good" means.
-          <br/>
-          Go back to the <Link to="/factors">Factors</Link> page and fill in the red areas first
-          <br/>
-          <br/>
+          There are unfinished factors! We can't decide how good each option is
+          until we know what "good" means.
+          <br />
+          Go back to the <Link to="/factors">Factors</Link> page and fill in the
+          red areas first
+          <br />
+          <br />
           The following factors are unfinished:
-          <br/>
-          {unfinishedFactors.map((n) => <>"{n}"<br/></>)}
-          </Typography>
+          <br />
+          {unfinishedFactors.map((n) => (
+            <>
+              "{n}"<br />
+            </>
+          ))}
+        </Typography>
       </Box>
+    )
   }
 
-  return <Box sx={{ flex: 1, minWidth: 0, p: 2 }}>
-        {/* Top stuff */}
-        <Box
-          sx={{
-            display: "flex",
-            justifyContent: "space-between",
-            alignItems: "center",
-            mb: 2,
-          }}>
-          <Typography variant="h4">Quiz</Typography>
-          <Box>
-            {/* <Button onClick={() => setIdx(0)}>Go to beginning</Button> */}
-            <Button onClick={handleDeleteAll}>Delete all</Button>
-          </Box>
-        </Box>
+  return (
+    <Box sx={{ flex: 1, minWidth: 0, p: 2 }}>
+      {/* Top stuff */}
+      <Box
+        sx={{
+          display: "flex",
+          justifyContent: "space-between",
+          alignItems: "center",
+          mb: 2,
+        }}>
+        <Typography variant="h4">Quiz</Typography>
+      </Box>
 
-        {/* Top Checkboxes */}
-        <Box sx={{ display: "flex", gap: 2, mb: 2, alignItems: "center" }}>
-          <FormControlLabel
-            control={
-              <Checkbox
-                checked={anticolumnar}
-                onChange={(e) => setAnticolumnar(e.target.checked)}
-              />
-            }
-            label="Left to Right"
-          />
-          <FormControlLabel
-            control={
-              <Checkbox
-                checked={precise}
-                onChange={(e) => setPrecise(e.target.checked)}
-              />
-            }
-            label="Precise"
-          />
-        </Box>
+      {/* Top Checkboxes */}
+      <Box sx={{ display: "flex", gap: 2, mb: 2, alignItems: "center" }}>
+        <FormControlLabel
+          control={
+            <Checkbox
+              checked={anticolumnar}
+              onChange={(e) => setAnticolumnar(e.target.checked)}
+            />
+          }
+          label="Left to Right"
+        />
+        <FormControlLabel
+          control={
+            <Checkbox
+              checked={precise}
+              onChange={(e) => setPrecise(e.target.checked)}
+            />
+          }
+          label="Precise"
+        />
+      </Box>
 
-        {/* Slider box */}
+      {/* Slider box */}
+      {hasVisibleQuizCells ?
         <Card sx={{ mb: 2 }}>
           <CardContent>
             <Typography variant="h6">
@@ -676,7 +757,7 @@ export default function Quiz() {
                   />
                 </Box>
               : <Box sx={{ px: 2 }}>
-                {/* Still use the slider if we're unsure */}
+                  {/* Still use the slider if we're unsure */}
                   {/* {hasSuggestedUnitButtons ?
                     <SuggestedUnitAnswerButtons
                       options={suggestedUnitAnswerOptions}
@@ -684,14 +765,14 @@ export default function Quiz() {
                       onAnswer={handleSuggestedUnitAnswer}
                     /> */}
                   <Slider
-                      key={`r-${optionIdx}-${factorIdx}`}
-                      value={sliderValue}
-                      min={scale[0]}
-                      max={scale[1]}
-                      step={step}
-                      onChange={(e, v) => setResp(new Answer(v[0], v[1]))}
-                      marks={rangedSliderMarks}
-                    />
+                    key={`r-${optionIdx}-${factorIdx}`}
+                    value={sliderValue}
+                    min={scale[0]}
+                    max={scale[1]}
+                    step={step}
+                    onChange={(e, v) => setResp(new Answer(v[0], v[1]))}
+                    marks={rangedSliderMarks}
+                  />
                   {/* } */}
                   <span>
                     <TextField
@@ -739,7 +820,10 @@ export default function Quiz() {
                 Back
               </Button>
               {!hasSuggestedUnitButtons && (
-                <Button variant="contained" onClick={() => handleSubmit()} sx={{ mr: 1 }}>
+                <Button
+                  variant="contained"
+                  onClick={() => handleSubmit()}
+                  sx={{ mr: 1 }}>
                   Submit
                 </Button>
               )}
@@ -747,42 +831,69 @@ export default function Quiz() {
             </Box>
           </CardContent>
         </Card>
+      : <Paper sx={{ p: 2, mb: 2 }}>
+          <Typography>No factors match the current filters.</Typography>
+        </Paper>
+      }
 
-        <Box
-          sx={{
-            display: "flex",
-            justifyContent: "space-between",
-            alignItems: "center",
-            mb: 1,
-          }}>
-          <Typography variant="h6">
-            Answers - click to jump to an answer
-          </Typography>
-          <FormControlLabel
-            control={
-              <Checkbox
-                checked={onlyShowUnanswered}
-                onChange={handleOnlyShowUnansweredChange}
-              />
-            }
-            label="Only Show Unanswered"
-          />
-        </Box>
-        {!TRANSPOSED && <AnswersTable
-          decision={decision}
-          optionIdx={optionIdx}
-          factorIdx={factorIdx}
-          changeCell={changeCell}
-          indexToIdx={indexToIdx}
-          onlyShowUnanswered={onlyShowUnanswered}
-        />}
-        {TRANSPOSED && <TransposedAnswersTable
-          decision={decision}
-          optionIdx={optionIdx}
-          factorIdx={factorIdx}
-          changeCell={changeCell}
-          indexToIdx={indexToIdx}
-          onlyShowUnanswered={onlyShowUnanswered}
-        />}
+      <Box
+        sx={{
+          display: "flex",
+          justifyContent: "space-between",
+          alignItems: "center",
+          mb: 1,
+        }}>
+        <Typography variant="h6">
+          Answers
+        </Typography>
+        <TextField
+          label="Search by factor"
+          size="small"
+          value={factorSearch}
+          onChange={handleFactorSearchChange}
+          sx={{ flex: 1, maxWidth: 400, mx: 2 }}
+        />
+        <FormControlLabel
+          control={
+            <Checkbox
+              checked={onlyShowUnanswered}
+              onChange={handleOnlyShowUnansweredChange}
+            />
+          }
+          label="Only Show Unanswered"
+        />
       </Box>
+      {!TRANSPOSED && (
+        <AnswersTable
+          decision={decision}
+          optionIdx={optionIdx}
+          factorIdx={factorIdx}
+          changeCell={changeCell}
+          indexToIdx={indexToIdx}
+          onlyShowUnanswered={onlyShowUnanswered}
+          factorSearch={factorSearch}
+        />
+      )}
+      {TRANSPOSED && (
+        <TransposedAnswersTable
+          decision={decision}
+          optionIdx={optionIdx}
+          factorIdx={factorIdx}
+          changeCell={changeCell}
+          indexToIdx={indexToIdx}
+          onlyShowUnanswered={onlyShowUnanswered}
+          factorSearch={factorSearch}
+        />
+      )}
+      <Box alignItems="center" sx={{ mt: 2, display: "flex" }}>
+        <Button
+          variant="text"
+          color="error"
+          onClick={handleDeleteAll}
+          startIcon={<DeleteIcon />}>
+          Clear All Answers
+        </Button>
+      </Box>
+    </Box>
+  )
 }
