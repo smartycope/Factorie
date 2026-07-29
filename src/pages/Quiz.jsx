@@ -289,6 +289,8 @@ export default function Quiz() {
   const value = resp ?? cur ?? new Answer()
 
   const numOptions = decision?.options.length ?? 0
+  const decisionFactorCount = decision?.factors.names.length ?? 0
+  const hasQuizCells = numOptions > 0 && decisionFactorCount > 0
   const traversalFactorIndexes = factorIndexesForMode(
     decision,
     onlyShowUnanswered,
@@ -296,7 +298,7 @@ export default function Quiz() {
   const numFactors = traversalFactorIndexes.length
 
   // After we select a decision, initialize cur to the first cell if it's not already set
-  if (decision && cur == null)
+  if (hasQuizCells && cur == null)
     setCur(() => {
       return copyAnswer(decision.getAnswer(0, 0))
     })
@@ -421,6 +423,12 @@ export default function Quiz() {
     sourceDecision = decision,
     useOnlyShowUnanswered = onlyShowUnanswered,
   ) {
+    if (
+      !sourceDecision?.options.length ||
+      !factorIndexesForMode(sourceDecision, useOnlyShowUnanswered).length
+    )
+      return
+
     let newIdxValue
     if (typeof newIdx === "function") newIdxValue = newIdx(idx)
     else newIdxValue = newIdx
@@ -523,12 +531,49 @@ export default function Quiz() {
     )
   }
 
-  const isRespInValid = decision ?
+  const isRespInValid = hasQuizCells ?
     Boolean(value.isInvalid(decision, factor, true))
   : false
 
-  const unfinishedFactors = decision.factors.names.filter((_, i) => decision.isFactorValid(decision.factors.names[i]))
-    if (unfinishedFactors.length > 0){
+  const unfinishedFactors =
+    decision?.factors.names.filter((_, i) =>
+      decision.isFactorValid(decision.factors.names[i]),
+    ) ?? []
+
+  if (!decision) {
+    return (
+      <Box sx={{ flex: 1, minWidth: 0, p: 2 }}>
+        <Typography variant="h4">Quiz</Typography>
+        <Typography>Select a decision to take the quiz.</Typography>
+      </Box>
+    )
+  }
+
+  if (!numOptions) {
+    return (
+      <Box sx={{ flex: 1, minWidth: 0, p: 2 }}>
+        <Typography variant="h4">Quiz</Typography>
+        <Typography>
+          Add an option on the <Link to="/options">Options</Link> page to take
+          the quiz.
+        </Typography>
+      </Box>
+    )
+  }
+
+  if (!decisionFactorCount) {
+    return (
+      <Box sx={{ flex: 1, minWidth: 0, p: 2 }}>
+        <Typography variant="h4">Quiz</Typography>
+        <Typography>
+          Add a factor on the <Link to="/factors">Factors</Link> page to take
+          the quiz.
+        </Typography>
+      </Box>
+    )
+  }
+
+  if (unfinishedFactors.length > 0) {
       return <Box sx={{ flex: 1, minWidth: 0, p: 2 }}>
         <Typography variant="h4">Quiz</Typography>
         <Typography>
@@ -544,12 +589,7 @@ export default function Quiz() {
       </Box>
   }
 
-  return !decision ?
-      <Box sx={{ flex: 1, minWidth: 0, p: 2 }}>
-        <Typography variant="h4">Quiz</Typography>
-        <Typography>Select a decision to take the quiz.</Typography>
-      </Box>
-    : <Box sx={{ flex: 1, minWidth: 0, p: 2 }}>
+  return <Box sx={{ flex: 1, minWidth: 0, p: 2 }}>
         {/* Top stuff */}
         <Box
           sx={{

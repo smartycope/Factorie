@@ -422,6 +422,7 @@ export default function Decisions() {
         <TextField
           defaultValue={decision?.name || ""}
           size="large"
+          sx={{ flex: 1 }}
           variant="standard"
           onBlur={(e) => {
             if (!renameDecision(e.target.value)) e.target.value = decision.name

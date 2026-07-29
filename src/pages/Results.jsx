@@ -628,11 +628,12 @@ export default function Results() {
   const { decision } = useDecisions()
 
   const [includedRadar, setIncludedRadar] = useState([])
+  const invalid = decision?.isInvalid() || ""
 
   const calc = useMemo(() => {
-    if (!decision) return null
+    if (!decision || invalid) return null
     return decision.calculateAll({ method: "threshold" })
-  }, [decision])
+  }, [decision, invalid])
 
   const labels = useMemo(() => {
     if (!decision) return []
@@ -697,7 +698,6 @@ export default function Results() {
     )
   }
 
-  const invalid = decision.isInvalid() || ""
   let err
   if (invalid === "No factors added")
     err = (
