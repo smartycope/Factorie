@@ -28,7 +28,7 @@ export default function Landing() {
     {
       question: "Cool, I'm here. What is this?",
       answer: (
-        <Typography variant="body2" paragraph>
+        <Typography variant="body2">
           Factorie is a tool for helping you make big life decisions. You use it
           kinda like a pro-con list: you specify what options you have, then
           list all the factors that might affect your decision. Then you specify
@@ -46,7 +46,7 @@ export default function Landing() {
     {
       question: "Where do I start?",
       answer: (
-        <Typography variant="body2" paragraph>
+        <Typography variant="body2">
           I find it's helpful to start with an example. If you go to the{" "}
           <Link component={RouterLink} to="/dashboard">
             dashboard
@@ -82,7 +82,7 @@ export default function Landing() {
     {
       question: "This seems mysterious and hand wavy. How does it work?",
       answer: (
-        <Typography variant="body2" paragraph>
+        <Typography variant="body2">
           I'm glad you asked! The concept is actually pretty simple, and it's
           all explained in the{" "}
           <Link component={RouterLink} to="/explanation">
@@ -96,7 +96,7 @@ export default function Landing() {
       question:
         'I\'m not totally sold... why would I let a "computer" make major life decisions for me?',
       answer: (
-        <Typography variant="body2" paragraph>
+        <Typography variant="body2">
           You're not! Think of this as a calculator, or a structured pro-con
           list. You're the one inputting all the information, and you can change
           it at any time. The computer is just doing some math to combine all
@@ -110,7 +110,7 @@ export default function Landing() {
     {
       question: "How long does it take?",
       answer: (
-        <Typography variant="body2" paragraph>
+        <Typography variant="body2">
           As you might expect, it depends on how big the decision is. For a big
           decision like buying a house or deciding who to marry, there's a lot
           of factors that go into that decision so it could take up to several
@@ -126,7 +126,7 @@ export default function Landing() {
         </>
       ),
       answer: (
-        <Typography variant="body2" paragraph>
+        <Typography variant="body2">
           That's fine! Decisions will be saved in this browser, and you can also
           download your progress and import it again later. If you're thinking
           lots about a particular life decision, it's helpful to lay out all the
@@ -144,7 +144,7 @@ export default function Landing() {
     {
       question: "Does it use AI?",
       answer: (
-        <Typography variant="body2" paragraph>
+        <Typography variant="body2">
           Nope! And that's a good thing. It's entirely* deterministic, so the
           answers are consistent and based only on the information you give it.
           It will explain why it gave you the answer it did, and it won't
@@ -161,7 +161,7 @@ export default function Landing() {
     {
       question: "Your website is dumb. Can't I just use a spreadsheet?",
       answer: (
-        <Typography variant="body2" paragraph>
+        <Typography variant="body2">
           Yes, actually. On the{" "}
           <Link component={RouterLink} to="/dashboard">
             dashboard
@@ -179,7 +179,7 @@ export default function Landing() {
     {
       question: "What are you doing with my data?",
       answer: (
-        <Typography variant="body2" paragraph>
+        <Typography variant="body2">
           Not only is this an open source project, it also runs entirely in the
           browser. There's no server, no analytics, and no tracking. I{" "}
           <i>can't</i> see your data. Your data is stored in the browser: if you
@@ -190,7 +190,7 @@ export default function Landing() {
     {
       question: "I found a thing that doesn't work!",
       answer: (
-        <Typography variant="body2" paragraph>
+        <Typography variant="body2">
           Awesome! Please either let Cope know, or submit an issue yourself{" "}
           <a href="https://github.com/smartycope/factorie/issues">here</a>.
         </Typography>
@@ -205,7 +205,7 @@ export default function Landing() {
       </Typography>
       <Typography
         variant="caption"
-        paragraph
+
         sx={{ fontStyle: "italic", mb: 1, color: "text.secondary" }}>
         {/* A tool to help you decide what to do when it's complicated */}
         Helping you live a more examined life

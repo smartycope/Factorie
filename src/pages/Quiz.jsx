@@ -885,7 +885,7 @@ export default function Quiz() {
           factorSearch={factorSearch}
         />
       )}
-      <Box alignItems="center" sx={{ mt: 2, display: "flex" }}>
+      <Box sx={{ mt: 2, display: "flex" }}>
         <Button
           variant="text"
           color="error"
