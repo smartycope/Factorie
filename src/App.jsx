@@ -12,6 +12,11 @@ import Quiz from './pages/Quiz'
 import ViewResults from './pages/Results'
 import Explanation from './pages/Explanation'
 
+// Show once per reload
+if (window.visualViewport.width < 900){
+    alert("Factorie works best on desktop. I recommend using a larger screen, or if you're on mobile, turning your phone sideways.")
+}
+
 export default function App() {
   return (
     <Routes>
