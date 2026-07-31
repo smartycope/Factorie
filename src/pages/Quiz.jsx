@@ -86,7 +86,7 @@ function SuggestedUnitAnswerButtons({ options, value, onAnswer }) {
 
 function answerHasProblem(decision, optionIndex, factorIndex) {
   const answer = Answer.parse(decision.answers[optionIndex]?.[factorIndex])
-  const factor = decision.factors.names[factorIndex]
+  const factor = decision.factors[factorIndex].name
   return (
     !answer?.isAnswered() || Boolean(answer.isInvalid(decision, factor, true))
   )
@@ -101,12 +101,12 @@ function factorHasProblem(decision, factorIndex) {
 function factorIndexesForMode(decision, onlyShowUnanswered, factorSearch = "") {
   if (!decision) return []
   const query = factorSearch.trim().toLowerCase()
-  return decision.factors.names
+  return decision.factors
     .map((_, index) => index)
     .filter(
       (index) =>
         (!query ||
-          String(decision.factors.names[index])
+          String(decision.factors[index].name)
             .toLowerCase()
             .includes(query)) &&
         (!onlyShowUnanswered || factorHasProblem(decision, index)),
@@ -165,7 +165,7 @@ function AnswersTable({
               <TableCell></TableCell>
               {visibleFactorIndexes.map((factorIndex) => (
                 <TableCell key={factorIndex}>
-                  {decision.factors.names[factorIndex]}
+                  {decision.factors[factorIndex].name}
                 </TableCell>
               ))}
             </TableRow>
@@ -263,7 +263,7 @@ function TransposedAnswersTable({
             {visibleFactorIndexes.map((c) => {
               return (
                 <TableRow key={c}>
-                  <TableCell>{decision.factors.names[c]}</TableCell>
+                  <TableCell>{decision.factors[c].name}</TableCell>
                   {decision.options.map((opt, r) => {
                     const text = formatAnswer(decision.answers[r]?.[c])
                     const isActive = r === optionIdx && c === factorIdx
@@ -316,7 +316,7 @@ export default function Quiz() {
   const value = resp ?? cur ?? new Answer()
 
   const numOptions = decision?.options.length ?? 0
-  const decisionFactorCount = decision?.factors.names.length ?? 0
+  const decisionFactorCount = decision?.factors.length ?? 0
   const hasQuizCells = numOptions > 0 && decisionFactorCount > 0
   const traversalFactorIndexes = factorIndexesForMode(
     decision,
@@ -451,9 +451,9 @@ export default function Quiz() {
   const [optionIdx, factorIdx] = computeIndex()
   const option = hasVisibleQuizCells ? decision?.options[optionIdx] || "" : ""
   const factor =
-    hasVisibleQuizCells ? decision?.factors.names[factorIdx] || "" : ""
+    hasVisibleQuizCells ? decision?.factors[factorIdx]?.name || "" : ""
   const unit =
-    hasVisibleQuizCells ? decision?.factors.units[factorIdx] || "" : ""
+    hasVisibleQuizCells ? decision?.factors[factorIdx]?.unit || "" : ""
   const valueLabel = unit || "Value"
   const minLabel = unit ? `Min: ${unit}` : "Min"
   const maxLabel = unit ? `Max: ${unit}` : "Max"
@@ -542,8 +542,8 @@ export default function Quiz() {
   const sliderValue = unsure ? [sliderMin, sliderMax] : sliderMin
   const sliderMarks = [
     // The scale is calculated to be non-null
-    { value: scale[0], label: decision?.factors.mins[factorIdx] },
-    { value: scale[1], label: decision?.factors.maxs[factorIdx] },
+    { value: scale[0], label: decision?.factors[factorIdx]?.min },
+    { value: scale[1], label: decision?.factors[factorIdx]?.max },
   ]
   const rangedSliderMarks = [sliderMin, sliderMax].reduce(
     (marks, markValue) => {
@@ -611,9 +611,9 @@ export default function Quiz() {
     : false
 
   const unfinishedFactors =
-    decision?.factors.names.filter((_, i) =>
-      decision.isFactorValid(decision.factors.names[i]),
-    ) ?? []
+    decision?.factors
+      .filter((_, i) => decision.isFactorValid(i))
+      .map((factor) => factor.name) ?? []
 
   if (!decision) {
     return (

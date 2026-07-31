@@ -189,8 +189,8 @@ export default function Weights() {
     if (!decision) return
     const t = setTimeout(() => {
       setHandles(
-        decision.factors.names.reduce((acc, label, i) => {
-          acc[label] = decision.factors.weights[i] ?? 0
+        decision.factors.reduce((acc, factor) => {
+          acc[factor.name] = factor.weight ?? 0
           return acc
         }, {}),
       )
@@ -209,7 +209,9 @@ export default function Weights() {
     setQuizFinished(false)
     setSortStarted(true)
     if (!decision) return
-    const g = modifiedTimSortCoroutine(decision.factors.names.slice())
+    const g = modifiedTimSortCoroutine(
+      decision.factors.map((factor) => factor.name),
+    )
     sortGenRef.current = g
     const first = g.next()
     if (first.done) applySortedWeightsToPositions(first.value)
@@ -237,7 +239,7 @@ export default function Weights() {
     const n = sortedResult.length
 
     const newWeightsSeq = linspace(1, 1 / n, n)
-    const orderedLabels = decision.factors.names.slice()
+    const orderedLabels = decision.factors.map((factor) => factor.name)
     const orderedWeights = Array(orderedLabels.length).fill(0)
     for (let i = 0; i < sortedResult.length; i++) {
       const label = sortedResult[i]
@@ -256,8 +258,8 @@ export default function Weights() {
   function handleCancel() {
     if (!decision) return
     setHandles(
-      decision.factors.names.reduce((acc, label, i) => {
-        acc[label] = decision.factors.weights[i] ?? 0
+      decision.factors.reduce((acc, factor) => {
+        acc[factor.name] = factor.weight ?? 0
         return acc
       }, {}),
     )
@@ -266,9 +268,9 @@ export default function Weights() {
   function applyPositionsToWeights() {
     const copy = [...decisions]
     const d = Decision.deserialize(JSON.parse(decision.serialize()))
-    d.factors.weights = Object.values(handles).sort(
-      (a, b) => d.factors.names.indexOf(a) - d.factors.names.indexOf(b),
-    ) // sort the weights so they stay in sync with the labels
+    d.factors.forEach((factor) => {
+      factor.weight = handles[factor.name]
+    })
     copy[selectedIndex] = d
     setDecisions(copy)
   }
@@ -278,7 +280,7 @@ export default function Weights() {
 
   let unsaved
   if (decision != null)
-    unsaved = positions.some((p, i) => p !== decision.factors.weights[i])
+    unsaved = positions.some((p, i) => p !== decision.factors[i].weight)
 
   // Plotly visuals
   // sort bars by value (ascending)
@@ -359,10 +361,9 @@ export default function Weights() {
               algorithm (a modified version of Timsort) which makes it much faster
               than sorting by hand.
               <br />
-              It will ask for {decision.factors.names.length} -{" "}
+              It will ask for {decision.factors.length} -{" "}
               {Math.ceil(
-                decision.factors.names.length *
-                  Math.log(decision.factors.names.length),
+                decision.factors.length * Math.log(decision.factors.length),
               )}{" "}
               comparisons, then the answers will appear in the slider below once finished.
             </Typography>

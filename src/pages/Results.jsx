@@ -686,8 +686,8 @@ export default function Results() {
       goodnessConf: calc.std.goodness || [],
       best: calc.best || null,
       worst: calc.worst || null,
-      weights: decision.factors.weights || [],
-      factorNames: decision.factors.names || [],
+      weights: decision.factors.map((factor) => factor.weight),
+      factorNames: decision.factors.map((factor) => factor.name),
       answers: decision.weightedAnswers(0.5) || [],
     }
   }, [decision, calc])

@@ -272,8 +272,8 @@ export function createDecisionSpreadsheet(decision) {
     [],
     [undefined, "Options"],
     ["Factors", ...decision.options],
-    ...decision.factors.names.map((factor, factorIndex) => [
-      factor,
+    ...decision.factors.map((factor, factorIndex) => [
+      factor.name,
       ...decision.options.map((_, optionIndex) =>
         decision.answers[optionIndex][factorIndex].toString(),
       ),
@@ -281,7 +281,7 @@ export function createDecisionSpreadsheet(decision) {
   ]
   const sheet = XLSX.utils.aoa_to_sheet(rows)
   sheet["!cols"] = [
-    { wch: Math.max(12, ...decision.factors.names.map((name) => name.length + 2)) },
+    { wch: Math.max(12, ...decision.factors.map(({ name }) => name.length + 2)) },
     ...decision.options.map((option) => ({ wch: Math.max(12, option.length + 2) })),
   ]
 
@@ -302,18 +302,18 @@ export function createDecisionSpreadsheet(decision) {
   XLSX.utils.book_append_sheet(workbook, sheet, "Decision")
   const factorSheet = XLSX.utils.aoa_to_sheet([
     ["Factor", "Unit", "Optimal", "Weight", "Min", "Max"],
-    ...decision.factors.names.map((name, index) => [
-      name,
-      decision.factors.units[index] ?? "",
-      decision.factors.optimals[index] ?? "",
-      decision.factors.weights[index] ?? "",
-      decision.factors.mins[index] ?? "",
-      decision.factors.maxs[index] ?? "",
+    ...decision.factors.map((factor) => [
+      factor.name,
+      factor.unit ?? "",
+      factor.optimal ?? "",
+      factor.weight ?? "",
+      factor.min ?? "",
+      factor.max ?? "",
     ]),
   ])
   factorSheet["!cols"] = [
-    { wch: Math.max(12, ...decision.factors.names.map((name) => name.length + 2)) },
-    { wch: Math.max(12, ...decision.factors.units.map((unit) => String(unit ?? "").length + 2)) },
+    { wch: Math.max(12, ...decision.factors.map(({ name }) => name.length + 2)) },
+    { wch: Math.max(12, ...decision.factors.map(({ unit }) => String(unit ?? "").length + 2)) },
     { wch: 12 },
     { wch: 12 },
     { wch: 12 },

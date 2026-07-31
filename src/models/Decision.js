@@ -1,4 +1,5 @@
 import Answer from "./Answer.js"
+import Factor from "./Factor.js"
 
 // TODO: some sort of way to indicate that the optimal value is the min or max (even if the min or max is calculated)
 // TODO: remove the threshold member (it doesn't do anything anymore)
@@ -8,14 +9,7 @@ export default class Decision {
 
   constructor(name) {
     this.name = name
-    this.factors = {
-      names: [],
-      units: [],
-      optimals: [],
-      weights: [],
-      mins: [],
-      maxs: [],
-    }
+    this.factors = []
     this.options = []
     // answers: array of shape [numOptions][numFactors] initialized as empty, filled with Answers
     this.answers = []
@@ -45,31 +39,32 @@ export default class Decision {
 
   // Returns an index is index=true, otherwise returns the name
   _parseFactorParam(name_or_index, index = true) {
+    const factorNames = this.factors.map((factor) => factor.name)
     let rtn
     if (typeof name_or_index === "string") {
-      rtn = index ? this.factors.names.indexOf(name_or_index) : name_or_index
+      rtn = index ? factorNames.indexOf(name_or_index) : name_or_index
     } else if (typeof name_or_index === "number") {
-      rtn = index ? name_or_index : this.factors.names[name_or_index]
+      rtn = index ? name_or_index : this.factors[name_or_index]?.name
     } else throw new Error(`Invalid factor type: ${typeof name_or_index}`)
     // Verify the factor is valid
-    if (index == false && !this.factors.names.includes(name_or_index))
+    if (index == false && !factorNames.includes(name_or_index))
       throw new Error(
-        `Factor not found: "${name_or_index}". Valid factors are: "${this.factors.names.join('", "')}"`,
+        `Factor not found: "${name_or_index}". Valid factors are: "${factorNames.join('", "')}"`,
       )
-    if (index == true && (rtn < 0 || rtn >= this.factors.names.length))
+    if (index == true && (rtn < 0 || rtn >= this.factors.length))
       throw new Error(
-        `Factor not found: "${name_or_index}". Valid factors are: "${this.factors.names.join('", "')}"`,
+        `Factor not found: "${name_or_index}". Valid factors are: "${factorNames.join('", "')}"`,
       )
     return rtn
   }
 
   isInvalid(allowUnanswered = false) {
-    if (this.factors.names.length === 0) return "No factors added"
+    if (this.factors.length === 0) return "No factors added"
     if (this.options.length === 0) return "No options added"
     if (this.answers.length !== this.options.length)
       return `Answers length (${this.answers.length}) does not match options length (${this.options.length})`
-    if (this.answers.some((row) => row.length !== this.factors.names.length))
-      return `Answers length (likely ${this.answers[0].length}) does not match factors length (${this.factors.names.length})`
+    if (this.answers.some((row) => row.length !== this.factors.length))
+      return `Answers length (likely ${this.answers[0].length}) does not match factors length (${this.factors.length})`
     if (
       this.answers.some((row) =>
         row.some((ans, i) => ans.isInvalid(this, i, true)),
@@ -83,49 +78,38 @@ export default class Decision {
     )
       return `Not all answers are filled: ${this.answers.filter((row) => row.some((ans) => !ans.isAnswered())).length} answers are not filled`
 
-    if (this.factors.names.some((_, i) => !!this.isFactorValid(i)))
+    if (this.factors.some((_, i) => !!this.isFactorValid(i)))
       return (
         "Invalid factors: " +
-        this.factors.names.filter((_, i) => this.isFactorValid(i)).join(", ")
+        this.factors
+          .filter((_, i) => this.isFactorValid(i))
+          .map((factor) => factor.name)
+          .join(", ")
       )
     return null
   }
 
   isFactorValid(factor) {
     const idx = this._parseFactorParam(factor)
-    if (
-      this.factors.optimals[idx] === null ||
-      this.factors.weights[idx] === null
-    )
-      return `Factor ${this.factors.names[idx]} must have an optimal and weight`
+    const currentFactor = this.factors[idx]
+    if (currentFactor.optimal === null || currentFactor.weight === null)
+      return `Factor ${currentFactor.name} must have an optimal and weight`
     // check mins < maxs when both present
-    const mn = this.factors.mins[idx]
-    const mx = this.factors.maxs[idx]
+    const mn = currentFactor.min
+    const mx = currentFactor.max
     if (mn != null && mx != null && mn >= mx)
-      return `Factor ${this.factors.names[idx]} must have a min less than their max`
-    const w = this.factors.weights[idx]
+      return `Factor ${currentFactor.name} must have a min less than their max`
+    const w = currentFactor.weight
     if (w < 0 || w > 1)
-      return `Factor ${this.factors.names[idx]} must have a weight between 0 and 1`
+      return `Factor ${currentFactor.name} must have a weight between 0 and 1`
     return null
   }
 
-  addFactor({
-    name,
-    unit = null,
-    optimal = null,
-    weight = null,
-    min = null,
-    max = null,
-  }) {
+  addFactor(factor) {
     // hopefully removing this doesn't mess things up...
-    // if (this.factors.names.includes(name))
-    //   throw new Error(`Factor ${name} already exists`);
-    this.factors.names.push(name)
-    this.factors.units.push(unit)
-    this.factors.optimals.push(optimal)
-    this.factors.weights.push(weight)
-    this.factors.mins.push(min)
-    this.factors.maxs.push(max)
+    // if (this.factors.some(({ name }) => name === factor.name))
+    //   throw new Error(`Factor ${factor.name} already exists`);
+    this.factors.push(Factor.deserialize(factor))
     for (let i = 0; i < this.answers.length; i++) {
       this.answers[i].push(new Answer())
     }
@@ -144,12 +128,13 @@ export default class Decision {
   ) {
     const idx = this._parseFactorParam(factor)
     if (idx === -1) throw new Error("Factor not found")
-    if (name !== undefined) this.factors.names[idx] = name
-    if (unit !== undefined) this.factors.units[idx] = unit
-    if (optimal !== undefined) this.factors.optimals[idx] = optimal
-    if (weight !== undefined) this.factors.weights[idx] = weight
-    if (min !== undefined) this.factors.mins[idx] = min
-    if (max !== undefined) this.factors.maxs[idx] = max
+    const currentFactor = this.factors[idx]
+    if (name !== undefined) currentFactor.name = name
+    if (unit !== undefined) currentFactor.unit = unit
+    if (optimal !== undefined) currentFactor.optimal = optimal
+    if (weight !== undefined) currentFactor.weight = weight
+    if (min !== undefined) currentFactor.min = min
+    if (max !== undefined) currentFactor.max = max
   }
 
   removeFactor(factor) {
@@ -160,12 +145,7 @@ export default class Decision {
       // If it's not a valid factor, good, we don't need to do anything
       return
     }
-    this.factors.names.splice(idx, 1)
-    this.factors.units.splice(idx, 1)
-    this.factors.optimals.splice(idx, 1)
-    this.factors.weights.splice(idx, 1)
-    this.factors.mins.splice(idx, 1)
-    this.factors.maxs.splice(idx, 1)
+    this.factors.splice(idx, 1)
     for (const row of this.answers) {
       row.splice(idx, 1)
     }
@@ -174,7 +154,7 @@ export default class Decision {
   addOption(name) {
     this.options.push(name)
     const row = []
-    for (let i = 0; i < this.factors.names.length; i++) row.push(new Answer())
+    for (let i = 0; i < this.factors.length; i++) row.push(new Answer())
     this.answers.push(row)
   }
 
@@ -230,7 +210,7 @@ export default class Decision {
   serialize() {
     return JSON.stringify({
       name: this.name,
-      factors: this.factors,
+      factors: this.factors.map((factor) => factor.serialize()),
       options: this.options,
       answers: this.answers.map((row) => row.map((ans) => ans.serialize())),
       threshold: this.threshold,
@@ -241,7 +221,22 @@ export default class Decision {
   static deserialize(data) {
     const obj = typeof data === "string" ? JSON.parse(data) : data
     const d = new Decision(obj.name)
-    d.factors = obj.factors
+    if (Array.isArray(obj.factors)) {
+      d.factors = obj.factors.map((factor) => Factor.deserialize(factor))
+    } else {
+      const legacyFactors = obj.factors ?? {}
+      d.factors = (legacyFactors.names ?? []).map(
+        (name, index) =>
+          new Factor({
+            name,
+            unit: legacyFactors.units?.[index] ?? null,
+            optimal: legacyFactors.optimals?.[index] ?? null,
+            weight: legacyFactors.weights?.[index] ?? null,
+            min: legacyFactors.mins?.[index] ?? null,
+            max: legacyFactors.maxs?.[index] ?? null,
+          }),
+      )
+    }
     d.options = obj.options
     d.answers = obj.answers.map((row) => row.map((ans) => new Answer(...ans)))
     d.threshold = obj.threshold
@@ -282,8 +277,8 @@ export default class Decision {
 
   mins() {
     const res = []
-    for (let i = 0; i < this.factors.names.length; i++) {
-      const specified = this.factors.mins[i]
+    for (let i = 0; i < this.factors.length; i++) {
+      const specified = this.factors[i].min
       if (specified != null) {
         res.push(specified)
         continue
@@ -294,7 +289,7 @@ export default class Decision {
         const v = this.answers[r][i].min
         if (!Number.isNaN(v)) minVal = Math.min(minVal, v)
       }
-      const opt = this.factors.optimals[i]
+      const opt = this.factors[i].optimal
       res.push(Math.min(minVal === Infinity ? opt : minVal, opt))
     }
     return res
@@ -302,8 +297,8 @@ export default class Decision {
 
   maxs() {
     const res = []
-    for (let i = 0; i < this.factors.names.length; i++) {
-      const specified = this.factors.maxs[i]
+    for (let i = 0; i < this.factors.length; i++) {
+      const specified = this.factors[i].max
       if (specified != null) {
         res.push(specified)
         continue
@@ -313,7 +308,7 @@ export default class Decision {
         const v = this.answers[r][i].max
         if (!Number.isNaN(v)) maxVal = Math.max(maxVal, v)
       }
-      const opt = this.factors.optimals[i]
+      const opt = this.factors[i].optimal
       res.push(Math.max(maxVal === -Infinity ? opt : maxVal, opt))
     }
     return res
@@ -322,8 +317,9 @@ export default class Decision {
   optimalNormalized() {
     const mins = this.mins()
     const maxs = this.maxs()
-    return this.factors.optimals.map(
-      (opt, i) => (opt - mins[i]) / (maxs[i] - mins[i] + Number.EPSILON),
+    return this.factors.map(
+      (factor, i) =>
+        (factor.optimal - mins[i]) / (maxs[i] - mins[i] + Number.EPSILON),
     )
   }
 
@@ -340,8 +336,8 @@ export default class Decision {
   _calculate(answers) {
     // answers: [numOptions][numFactors]
     const numOptions = answers.length
-    const numFactors = this.factors.names.length
-    const weights = this.factors.weights.slice()
+    const numFactors = this.factors.length
+    const weights = this.factors.map((factor) => factor.weight)
     const tiledWeights = Array.from({ length: numOptions }, () =>
       weights.slice(),
     )
@@ -535,7 +531,7 @@ export default class Decision {
     if (min_thresh == null) min_thresh = percentile(contrib.flat(), 20)
     if (max_thresh == null) max_thresh = percentile(contrib.flat(), 80)
     const tiledWeights = Array.from({ length: options.length }, () =>
-      this.factors.weights.slice(),
+      this.factors.map((factor) => factor.weight),
     )
     const badnessVectors = contrib.map((row, i) =>
       row.map((v, j) => v * tiledWeights[i][j]),
@@ -544,11 +540,11 @@ export default class Decision {
       row.map((v, j) => (1 - v) * tiledWeights[i][j]),
     )
     const argmax = (arr) => arr.reduce((m, v, i) => (v > arr[m] ? i : m), 0)
-    const best_because = [this.factors.names[argmax(goodnessVectors[bestIdx])]]
-    const best_despite = [this.factors.names[argmax(badnessVectors[bestIdx])]]
-    const worst_because = [this.factors.names[argmax(badnessVectors[worstIdx])]]
+    const best_because = [this.factors[argmax(goodnessVectors[bestIdx])].name]
+    const best_despite = [this.factors[argmax(badnessVectors[bestIdx])].name]
+    const worst_because = [this.factors[argmax(badnessVectors[worstIdx])].name]
     const worst_despite = [
-      this.factors.names[argmax(goodnessVectors[worstIdx])],
+      this.factors[argmax(goodnessVectors[worstIdx])].name,
     ]
     const best = {
       is: options[bestIdx],

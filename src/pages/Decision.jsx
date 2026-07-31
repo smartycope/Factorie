@@ -227,13 +227,13 @@ function DecisionEditTableTransposed_MuiTable() {
     })),
   ]
 
-  const rows = decision.factors.names.map((fac, fi) => ({
-    id: fac + "__" + fi,
-    factor: fac,
+  const rows = decision.factors.map((factor, fi) => ({
+    id: factor.name + "__" + fi,
+    factor: factor.name,
     ...Object.fromEntries(
       decision.options.map((opt, oi) => [
         opt + "__" + oi,
-        decision.getAnswer(opt, fac).toString(),
+        decision.getAnswer(opt, factor.name).toString(),
       ]),
     ),
   }))

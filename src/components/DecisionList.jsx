@@ -15,7 +15,7 @@ export default function DecisionList({ sx }) {
       <List>
         {decisions.map((d, i) => (
           <ListItem key={i} button selected={i === selectedIndex} onClick={() => setSelectedIndex(i)}>
-            <ListItemText primary={d.name} secondary={`${d.options.length} options\n${d.factors.names.length} factors`} />
+            <ListItemText primary={d.name} secondary={`${d.options.length} options\n${d.factors.length} factors`} />
           </ListItem>
         ))}
       </List>

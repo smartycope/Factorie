@@ -90,8 +90,8 @@ export default class Answer {
 
     const factorIdx = decision._parseFactorParam(factor)
 
-    const factorMin = decision.factors.mins[factorIdx]
-    const factorMax = decision.factors.maxs[factorIdx]
+    const factorMin = decision.factors[factorIdx].min
+    const factorMax = decision.factors[factorIdx].max
 
     if (this.min > this.max) return `Answer min is greater than max: ${this}`
     if (

@@ -50,17 +50,17 @@ function factorMatchesSearch(name, searchQuery = "") {
 }
 
 function factorRows(decision) {
-  return decision.factors.names.map((name, i) => {
-    const factorName = factorNameText(name)
+  return decision.factors.map((factor, i) => {
+    const factorName = factorNameText(factor.name)
     return {
       id: i,
       index: i,
       name: factorName,
-      unit: decision.factors.units[i] ?? "",
-      optimal: decision.factors.optimals[i],
-      weight: decision.factors.weights[i],
-      min: decision.factors.mins[i],
-      max: decision.factors.maxs[i],
+      unit: factor.unit ?? "",
+      optimal: factor.optimal,
+      weight: factor.weight,
+      min: factor.min,
+      max: factor.max,
     }
   })
 }
@@ -412,22 +412,23 @@ export default function Factors() {
   useEffect(() => {
     if (editFactorIndex == null || !decision) return
     const idx = editFactorIndex
-    if (idx < 0 || idx >= decision.factors.names.length) return
+    if (idx < 0 || idx >= decision.factors.length) return
+    const factor = decision.factors[idx]
     const t = setTimeout(() => {
       // fill the add form with the selected factor's values
-      setAddName(factorNameText(decision.factors.names[idx]) || DEFAULTS.name)
-      setAddUnit(decision.factors.units[idx] ?? DEFAULTS.unit)
-      setAddOptimal(decision.factors.optimals[idx] ?? DEFAULTS.optimal)
+      setAddName(factorNameText(factor.name) || DEFAULTS.name)
+      setAddUnit(factor.unit ?? DEFAULTS.unit)
+      setAddOptimal(factor.optimal ?? DEFAULTS.optimal)
       setAddWeight(
-        Number.isFinite(decision.factors.weights[idx]) ?
-          decision.factors.weights[idx]
+        Number.isFinite(factor.weight) ?
+          factor.weight
         : DEFAULTS.weight,
       )
       // TODO: should this use !! instead?
-      setAddMinUnbounded(decision.factors.mins[idx] == null)
-      setAddMaxUnbounded(decision.factors.maxs[idx] == null)
-      setAddMin(decision.factors.mins[idx] ?? DEFAULTS.min)
-      setAddMax(decision.factors.maxs[idx] ?? DEFAULTS.max)
+      setAddMinUnbounded(factor.min == null)
+      setAddMaxUnbounded(factor.max == null)
+      setAddMin(factor.min ?? DEFAULTS.min)
+      setAddMax(factor.max ?? DEFAULTS.max)
     }, 0)
     return () => clearTimeout(t)
   }, [editFactorIndex, decision])
@@ -546,12 +547,7 @@ export default function Factors() {
   //     }
 
   //     modifyCurrentDecision((d) => {
-  //       move(d.factors.names)
-  //       move(d.factors.units)
-  //       move(d.factors.optimals)
-  //       move(d.factors.weights)
-  //       move(d.factors.mins)
-  //       move(d.factors.maxs)
+  //       move(d.factors)
   //       for (let r = 0; r < d.answers.length; r++) {
   //         const col = d.answers[r].splice(from, 1)[0]
   //         d.answers[r].splice(to, 0, col)
