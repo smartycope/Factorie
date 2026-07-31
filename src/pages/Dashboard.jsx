@@ -46,7 +46,7 @@ export default function Dashboard() {
 
   function addExamples() {
     const ex1 = JSON.parse(
-      `{"name":"What should I eat for dinner?","factors":[{"name":"Taste","unit":"0-10","optimal":10,"weight":0.9,"min":0,"max":10},{"name":"Cost","unit":"$","optimal":0,"weight":1,"min":0,"max":null},{"name":"Healthiness","unit":"0-10","optimal":10,"weight":0.85,"min":0,"max":10},{"name":"Time to Make","unit":"minutes","optimal":0,"weight":0.6,"min":null,"max":null},{"name":"Leftovers","unit":"portions","optimal":5,"weight":0.2,"min":0,"max":null}],"options":["Taco Bell","Spaghetti","Tacos","Leftovers","Chicken noodle soup"],"answers":[[[8,8],[15,15],[6,6],[15,30],[1,1]],[[3,3],[5,6],[8,8],[20,20],[1,1]],[[10,10],[8,8],[9,9],[10,10],[1,1]],[[5,5],[1,1],[9,9],[5,5],[1,1]],[[9,9],[4,4],[10,10],[10,10],[5,5]]],"threshold":0,"factorPacks":["Choosing Dinner"]}`,
+      `{"name":"What should I eat for dinner?","factors":[{"name":"Taste","unit":"0-10","optimal":10,"weight":0.9,"min":0,"max":10},{"name":"Cost","unit":"$","optimal":0,"weight":1,"min":0,"max":null},{"name":"Healthiness","unit":"0-10","optimal":10,"weight":0.85,"min":0,"max":10},{"name":"Time to Make","unit":"minutes","optimal":0,"weight":0.6,"min":null,"max":null},{"name":"Leftovers","unit":"portions","optimal":"Infinity","weight":0.2,"min":0,"max":null}],"options":["Taco Bell","Spaghetti","Tacos","Leftovers","Chicken noodle soup"],"answers":[[[8,8],[15,15],[6,6],[15,30],[1,1]],[[3,3],[5,6],[8,8],[20,20],[1,1]],[[10,10],[8,8],[9,9],[10,10],[1,1]],[[5,5],[1,1],[9,9],[5,5],[1,1]],[[9,9],[4,4],[10,10],[10,10],[5,5]]],"threshold":0,"factorPacks":["Choosing Dinner"]}`,
     );
     ex1.factorPacks = [examplePack.name];
     const exampleDecision = Decision.deserialize(ex1);

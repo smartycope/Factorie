@@ -197,9 +197,9 @@ function FactorsTable({
               <TableCell sx={missingCellSx(row.unit)}>{row.unit}</TableCell>
               <TableCell sx={missingCellSx(row.optimal !== null)}>
                 {row.optimal === -Infinity ?
-                  "Min"
+                  "min"
                 : row.optimal === Infinity ?
-                  "Max"
+                  "max"
                 : (row.optimal ?? "")}
               </TableCell>
               <TableCell>
@@ -306,8 +306,8 @@ const FactorsDataGrid = React.memo(function FactorsDataGrid({
         cellClassName: (params) =>
           params.value !== null && params.value !== "" ? "" : "invalid-cell",
         renderCell: (params) =>
-          params.value === -Infinity ? "Min"
-          : params.value === Infinity ? "Max"
+          params.value === -Infinity ? "min"
+          : params.value === Infinity ? "max"
           : (params.value ?? ""),
       },
       {
