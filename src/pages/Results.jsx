@@ -325,7 +325,7 @@ function HeatmapPlot({
           zeroline: false,
           autorange: "reversed",
           automargin: true,
-          scaleanchor: "x",
+        //   scaleanchor: "x",
         },
         margin: { t: 60, b: 20, l: leftMargin, r: 20 },
         title: { text: "How good each option is" },
@@ -593,7 +593,7 @@ function RadarPlot({
             options={labels}
             value={includedRadar}
             onChange={(e, value) => setIncludedRadar(value)}
-            renderTags={(value, getTagProps) =>
+            renderValue={(value, getTagProps) =>
               value.map((option, index) => {
                 let props = getTagProps({ index })
                 delete props.key

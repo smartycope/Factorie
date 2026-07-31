@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from "react"
+import { useEffect, useRef, useState, Fragment } from "react"
 import DeleteIcon from "@mui/icons-material/Delete"
 import { useDecisions } from "../contexts/UseDecisions"
 import Decision from "../models/Decision"
@@ -663,9 +663,9 @@ export default function Quiz() {
           The following factors are unfinished:
           <br />
           {unfinishedFactors.map((n) => (
-            <>
+            <Fragment key={n}>
               "{n}"<br />
-            </>
+            </Fragment>
           ))}
         </Typography>
       </Box>
