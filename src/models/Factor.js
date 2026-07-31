@@ -19,7 +19,10 @@ export default class Factor {
     return {
       name: this.name,
       unit: this.unit,
-      optimal: this.optimal,
+      optimal:
+        this.optimal === Infinity ? "Infinity"
+        : this.optimal === -Infinity ? "-Infinity"
+        : this.optimal,
       weight: this.weight,
       min: this.min,
       max: this.max,
@@ -28,6 +31,10 @@ export default class Factor {
 
   static deserialize(data) {
     const factor = typeof data === "string" ? JSON.parse(data) : data
-    return new Factor(factor)
+    const optimal =
+      factor.optimal === "Infinity" ? Infinity
+      : factor.optimal === "-Infinity" ? -Infinity
+      : factor.optimal
+    return new Factor({ ...factor, optimal })
   }
 }

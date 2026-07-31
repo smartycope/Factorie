@@ -24,6 +24,7 @@ import { getSuggestedUnitMinMax, SUGGESTED_UNITS } from "../suggestedUnits"
 // import HelpOutlineOutlinedIcon from '@mui/icons-material/HelpOutlineOutlinedIcon';
 
 import texts from "../assets/texts.json"
+import Stack from "@mui/material/Stack"
 
 // TODO: a place (on this page? New page?) that asks the user what the optimal value is for each factor that doesn't have one set yet
 
@@ -195,7 +196,11 @@ function FactorsTable({
               </TableCell>
               <TableCell sx={missingCellSx(row.unit)}>{row.unit}</TableCell>
               <TableCell sx={missingCellSx(row.optimal !== null)}>
-                {row.optimal ?? ""}
+                {row.optimal === -Infinity ?
+                  "Min"
+                : row.optimal === Infinity ?
+                  "Max"
+                : (row.optimal ?? "")}
               </TableCell>
               <TableCell>
                 {Number.isFinite(row.weight) ?
@@ -296,11 +301,14 @@ const FactorsDataGrid = React.memo(function FactorsDataGrid({
       {
         field: "optimal",
         headerName: "Optimal",
-        width: 80,
+        width: 90,
         sortable: false,
         cellClassName: (params) =>
           params.value !== null && params.value !== "" ? "" : "invalid-cell",
-        renderCell: (params) => params.value ?? "",
+        renderCell: (params) =>
+          params.value === -Infinity ? "Min"
+          : params.value === Infinity ? "Max"
+          : (params.value ?? ""),
       },
       {
         field: "weight",
@@ -359,13 +367,8 @@ const FactorsDataGrid = React.memo(function FactorsDataGrid({
 })
 
 export default function Factors() {
-  const {
-    decisions,
-    selectedIndex,
-    editFactor,
-    addFactor,
-    removeFactor,
-  } = useDecisions()
+  const { decisions, selectedIndex, editFactor, addFactor, removeFactor } =
+    useDecisions()
   const decision = selectedIndex != null ? decisions[selectedIndex] : null
   const [addError, setAddError] = useState("")
 
@@ -420,9 +423,7 @@ export default function Factors() {
       setAddUnit(factor.unit ?? DEFAULTS.unit)
       setAddOptimal(factor.optimal ?? DEFAULTS.optimal)
       setAddWeight(
-        Number.isFinite(factor.weight) ?
-          factor.weight
-        : DEFAULTS.weight,
+        Number.isFinite(factor.weight) ? factor.weight : DEFAULTS.weight,
       )
       // TODO: should this use !! instead?
       setAddMinUnbounded(factor.min == null)
@@ -451,6 +452,8 @@ export default function Factors() {
     if (
       !addMinUnbounded &&
       !addMaxUnbounded &&
+      addOptimal !== Infinity &&
+      addOptimal !== -Infinity &&
       addOptimal !== null &&
       addOptimal !== "" &&
       (addOptimal < Number(addMin) || addOptimal > Number(addMax))
@@ -476,7 +479,10 @@ export default function Factors() {
 
     const newFactor = {
       name: nextName,
-      optimal: Number.isFinite(addOptimal) ? Number(addOptimal) : undefined,
+      optimal:
+        addOptimal === Infinity || addOptimal === -Infinity ? addOptimal
+        : Number.isFinite(addOptimal) ? Number(addOptimal)
+        : undefined,
       weight: Number(addWeight),
       min:
         addMinUnbounded || !Number.isFinite(Number(addMin)) ?
@@ -582,14 +588,13 @@ export default function Factors() {
                 />
               </HelpOverlay>
 
-                <Box
-                  sx={{
-                    display: "flex",
-                    gap: 1,
-                    mb: 1,
-                    alignItems: "flex-start",
-                }}
-                >
+              <Box
+                sx={{
+                  display: "flex",
+                  gap: 1,
+                  mb: 1,
+                  alignItems: "flex-start",
+                }}>
                 <HelpOverlay helpText={texts.factors.unit}>
                   <TextField
                     label="Unit"
@@ -598,39 +603,76 @@ export default function Factors() {
                     fullWidth
                     size="small"
                     sx={{ flex: 1 }}
-                    />
-                    </HelpOverlay>
-                  <Button
-                    variant="outlined"
-                    onClick={(event) => setUnitMenuAnchorEl(event.currentTarget)}
-                    sx={{ whiteSpace: "nowrap", minHeight: 40 }}
-                  >
-                    Units
-                  </Button>
-                  <Menu
-                    anchorEl={unitMenuAnchorEl}
-                    open={unitMenuOpen}
-                    onClose={() => setUnitMenuAnchorEl(null)}
-                  >
-                    {SUGGESTED_UNITS.map((unit) => (
-                      <MenuItem key={unit} onClick={() => handleSuggestedUnit(unit)}>
-                        {unit}
-                      </MenuItem>
-                    ))}
-                  </Menu>
-                </Box>
+                  />
+                </HelpOverlay>
+                <Button
+                  variant="outlined"
+                  onClick={(event) => setUnitMenuAnchorEl(event.currentTarget)}
+                  sx={{ whiteSpace: "nowrap", minHeight: 40 }}>
+                  Units
+                </Button>
+                <Menu
+                  anchorEl={unitMenuAnchorEl}
+                  open={unitMenuOpen}
+                  onClose={() => setUnitMenuAnchorEl(null)}>
+                  {SUGGESTED_UNITS.map((unit) => (
+                    <MenuItem
+                      key={unit}
+                      onClick={() => handleSuggestedUnit(unit)}>
+                      {unit}
+                    </MenuItem>
+                  ))}
+                </Menu>
+              </Box>
 
-              <HelpOverlay helpText={texts.factors.optimal} rightAmt="5%">
-                <TextField
-                  label="Optimal"
-                  type="number"
-                  value={addOptimal ?? ""}
-                  onChange={(e) => setAddOptimal(Number(e.target.value))}
-                  fullWidth
-                  size="small"
-                  sx={{ mb: 1 }}
+              <Stack direction="row" spacing={1}>
+                <FormControlLabel
+                  control={
+                    <Checkbox
+                      checked={addOptimal === -Infinity}
+                      onChange={(e) =>
+                        setAddOptimal(e.target.checked ? -Infinity : undefined)
+                      }
+                    />
+                  }
+                  label="Min"
+                  labelPlacement="start"
                 />
-              </HelpOverlay>
+                <HelpOverlay helpText={texts.factors.optimal} rightAmt="7%">
+                  <TextField
+                    label="Optimal"
+                    type="number"
+                    value={
+                      addOptimal === -Infinity || addOptimal === Infinity ?
+                        ""
+                      : (addOptimal ?? "")
+                    }
+                    onChange={(e) =>
+                      setAddOptimal(
+                        e.target.value === "" ? null : Number(e.target.value),
+                      )
+                    }
+                    fullWidth
+                    size="small"
+                    sx={{ mb: 1 }}
+                    disabled={
+                      addOptimal === -Infinity || addOptimal === Infinity
+                    }
+                  />
+                </HelpOverlay>
+                <FormControlLabel
+                  control={
+                    <Checkbox
+                      checked={addOptimal === Infinity}
+                      onChange={(e) =>
+                        setAddOptimal(e.target.checked ? Infinity : undefined)
+                      }
+                    />
+                  }
+                  label="Max"
+                  labelPlacement="end"
+                />
+              </Stack>
 
               <HelpOverlay helpText={texts.factors.weight} rightAmt="-1.5rem">
                 <Box sx={{ display: "flex", alignItems: "center", gap: 2 }}>
@@ -775,8 +817,7 @@ export default function Factors() {
               alignItems: "stretch",
               minWidth: 0,
               overflow: "hidden",
-            }}>
-          </Box>
+            }}></Box>
           <FactorsDataGrid
             decision={decision}
             editFactorIndex={editFactorIndex}

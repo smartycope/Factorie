@@ -26,7 +26,7 @@ const TRANSPOSED = true
 
 // TODO: negative values don't work well with this right now
 function cloneDecision(decision) {
-  return Decision.deserialize(JSON.parse(decision.serialize()))
+  return Decision.deserialize(decision.serialize())
 }
 
 function formatAnswer(cell) {
@@ -459,7 +459,14 @@ export default function Quiz() {
   const maxLabel = unit ? `Max: ${unit}` : "Max"
   const suggestedUnitAnswerOptions = getSuggestedUnitAnswerOptions(unit)
   const hasSuggestedUnitButtons = Boolean(suggestedUnitAnswerOptions)
-  const scale = [decision?.mins()[factorIdx], decision?.maxs()[factorIdx]]
+  const scale =
+    hasVisibleQuizCells ?
+      [decision.mins()[factorIdx], decision.maxs()[factorIdx]]
+    : [null, null]
+  const hasSliderScale =
+    Number.isFinite(scale[0]) &&
+    Number.isFinite(scale[1]) &&
+    scale[0] < scale[1]
 
   function changeCell(
     newIdx,
@@ -541,9 +548,8 @@ export default function Quiz() {
   const sliderMax = Number.isFinite(value.max) ? value.max : sliderMin
   const sliderValue = unsure ? [sliderMin, sliderMax] : sliderMin
   const sliderMarks = [
-    // The scale is calculated to be non-null
-    { value: scale[0], label: decision?.factors[factorIdx]?.min },
-    { value: scale[1], label: decision?.factors[factorIdx]?.max },
+    { value: scale[0], label: scale[0] },
+    { value: scale[1], label: scale[1] },
   ]
   const rangedSliderMarks = [sliderMin, sliderMax].reduce(
     (marks, markValue) => {
@@ -562,7 +568,8 @@ export default function Quiz() {
   function handleUnsureChange(event) {
     const isChecked = event.target.checked
     setUnsure(isChecked)
-    if (isChecked && !value.isRanged()) setResp(new Answer(scale[0], scale[1]))
+    if (isChecked && !value.isRanged() && hasSliderScale)
+      setResp(new Answer(scale[0], scale[1]))
   }
 
   function changeFactorFilters(nextOnlyShowUnanswered, nextFactorSearch) {
@@ -734,7 +741,8 @@ export default function Quiz() {
                       value={value}
                       onAnswer={handleSuggestedUnitAnswer}
                     />
-                  : <Slider
+                  : hasSliderScale ?
+                    <Slider
                       key={`s-${optionIdx}-${factorIdx}`}
                       value={sliderValue}
                       min={scale[0]}
@@ -743,6 +751,10 @@ export default function Quiz() {
                       onChange={(e, v) => setResp(new Answer(v, v))}
                       marks={sliderMarks}
                     />
+                  : <Typography variant="body2" sx={{ mb: 2 }}>
+                      Enter a value below. A slider is available once this
+                      factor has a finite range.
+                    </Typography>
                   }
                   <TextField
                     onChange={(e) => {
@@ -764,15 +776,21 @@ export default function Quiz() {
                       value={value}
                       onAnswer={handleSuggestedUnitAnswer}
                     /> */}
-                  <Slider
-                    key={`r-${optionIdx}-${factorIdx}`}
-                    value={sliderValue}
-                    min={scale[0]}
-                    max={scale[1]}
-                    step={step}
-                    onChange={(e, v) => setResp(new Answer(v[0], v[1]))}
-                    marks={rangedSliderMarks}
-                  />
+                  {hasSliderScale ?
+                    <Slider
+                      key={`r-${optionIdx}-${factorIdx}`}
+                      value={sliderValue}
+                      min={scale[0]}
+                      max={scale[1]}
+                      step={step}
+                      onChange={(e, v) => setResp(new Answer(v[0], v[1]))}
+                      marks={rangedSliderMarks}
+                    />
+                  : <Typography variant="body2" sx={{ mb: 2 }}>
+                      Enter the range below. A slider is available once this
+                      factor has a finite range.
+                    </Typography>
+                  }
                   {/* } */}
                   <span>
                     <TextField

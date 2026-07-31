@@ -120,6 +120,21 @@ function parseNumber(sheet, address, label, optional = false) {
   return number
 }
 
+function parseOptimal(sheet, address, label) {
+  const value = cellValue(sheet, address)
+  const text = String(value ?? "").trim().toLowerCase()
+  if (text === "min" || text === "-infinity") return -Infinity
+  if (text === "max" || text === "infinity" || text === "+infinity")
+    return Infinity
+  return parseNumber(sheet, address, label, true)
+}
+
+function serializeOptimal(optimal) {
+  if (optimal === -Infinity) return "Min"
+  if (optimal === Infinity) return "Max"
+  return optimal ?? ""
+}
+
 function parseFactorSpecifications(sheet, decisionFactorNames) {
   if (!sheet)
     spreadsheetError('Could not parse factors: the workbook must contain a sheet named "Factors".')
@@ -162,7 +177,7 @@ function parseFactorSpecifications(sheet, decisionFactorNames) {
     const specification = {
       name,
       unit: cellText(sheet, XLSX.utils.encode_cell({ r: row, c: 1 })) || null,
-      optimal: parseNumber(sheet, XLSX.utils.encode_cell({ r: row, c: 2 }), `optimal for "${name}"`, true),
+      optimal: parseOptimal(sheet, XLSX.utils.encode_cell({ r: row, c: 2 }), `optimal for "${name}"`),
       weight: parseNumber(sheet, XLSX.utils.encode_cell({ r: row, c: 3 }), `weight for "${name}"`, true),
       min: parseNumber(sheet, XLSX.utils.encode_cell({ r: row, c: 4 }), `minimum for "${name}"`, true),
       max: parseNumber(sheet, XLSX.utils.encode_cell({ r: row, c: 5 }), `maximum for "${name}"`, true),
@@ -305,7 +320,7 @@ export function createDecisionSpreadsheet(decision) {
     ...decision.factors.map((factor) => [
       factor.name,
       factor.unit ?? "",
-      factor.optimal ?? "",
+      serializeOptimal(factor.optimal),
       factor.weight ?? "",
       factor.min ?? "",
       factor.max ?? "",

@@ -1,7 +1,6 @@
 import Answer from "./Answer.js"
 import Factor from "./Factor.js"
 
-// TODO: some sort of way to indicate that the optimal value is the min or max (even if the min or max is calculated)
 // TODO: remove the threshold member (it doesn't do anything anymore)
 
 export default class Decision {
@@ -227,7 +226,7 @@ export default class Decision {
       const legacyFactors = obj.factors ?? {}
       d.factors = (legacyFactors.names ?? []).map(
         (name, index) =>
-          new Factor({
+          Factor.deserialize({
             name,
             unit: legacyFactors.units?.[index] ?? null,
             optimal: legacyFactors.optimals?.[index] ?? null,
@@ -275,51 +274,58 @@ export default class Decision {
     return this.answers.map((row) => row.map((ans) => ans.max))
   }
 
+  optimals() {
+    return this.factors.map((factor, factorIndex) => {
+      if (Number.isFinite(factor.optimal)) return factor.optimal
+      if (factor.optimal !== -Infinity && factor.optimal !== Infinity)
+        return factor.optimal
+
+      const answerValues = this.answers
+        .map((row) => {
+          const answer = row[factorIndex]
+          return factor.optimal === -Infinity ? answer?.min : answer?.max
+        })
+        .filter(Number.isFinite)
+
+      if (!answerValues.length) return null
+      return factor.optimal === -Infinity ?
+          Math.min(...answerValues)
+        : Math.max(...answerValues)
+    })
+  }
+
   mins() {
-    const res = []
-    for (let i = 0; i < this.factors.length; i++) {
-      const specified = this.factors[i].min
-      if (specified != null) {
-        res.push(specified)
-        continue
-      }
-      // compute min from answers or optimal
-      let minVal = Infinity
-      for (let r = 0; r < this.answers.length; r++) {
-        const v = this.answers[r][i].min
-        if (!Number.isNaN(v)) minVal = Math.min(minVal, v)
-      }
-      const opt = this.factors[i].optimal
-      res.push(Math.min(minVal === Infinity ? opt : minVal, opt))
-    }
-    return res
+    const optimals = this.optimals()
+    return this.factors.map((factor, i) => {
+      if (factor.min != null) return factor.min
+
+      const values = this.answers
+        .map((row) => row[i]?.min)
+        .filter(Number.isFinite)
+      if (Number.isFinite(optimals[i])) values.push(optimals[i])
+      return values.length ? Math.min(...values) : null
+    })
   }
 
   maxs() {
-    const res = []
-    for (let i = 0; i < this.factors.length; i++) {
-      const specified = this.factors[i].max
-      if (specified != null) {
-        res.push(specified)
-        continue
-      }
-      let maxVal = -Infinity
-      for (let r = 0; r < this.answers.length; r++) {
-        const v = this.answers[r][i].max
-        if (!Number.isNaN(v)) maxVal = Math.max(maxVal, v)
-      }
-      const opt = this.factors[i].optimal
-      res.push(Math.max(maxVal === -Infinity ? opt : maxVal, opt))
-    }
-    return res
+    const optimals = this.optimals()
+    return this.factors.map((factor, i) => {
+      if (factor.max != null) return factor.max
+
+      const values = this.answers
+        .map((row) => row[i]?.max)
+        .filter(Number.isFinite)
+      if (Number.isFinite(optimals[i])) values.push(optimals[i])
+      return values.length ? Math.max(...values) : null
+    })
   }
 
   optimalNormalized() {
     const mins = this.mins()
     const maxs = this.maxs()
-    return this.factors.map(
-      (factor, i) =>
-        (factor.optimal - mins[i]) / (maxs[i] - mins[i] + Number.EPSILON),
+    return this.optimals().map(
+      (optimal, i) =>
+        (optimal - mins[i]) / (maxs[i] - mins[i] + Number.EPSILON),
     )
   }
 
@@ -543,9 +549,7 @@ export default class Decision {
     const best_because = [this.factors[argmax(goodnessVectors[bestIdx])].name]
     const best_despite = [this.factors[argmax(badnessVectors[bestIdx])].name]
     const worst_because = [this.factors[argmax(badnessVectors[worstIdx])].name]
-    const worst_despite = [
-      this.factors[argmax(goodnessVectors[worstIdx])].name,
-    ]
+    const worst_despite = [this.factors[argmax(goodnessVectors[worstIdx])].name]
     const best = {
       is: options[bestIdx],
       because: best_because,

@@ -668,6 +668,8 @@ export default function Results() {
         answers: [],
       }
     }
+    // Resolve Min/Max optimal sentinels from the completed answer set before
+    // sending the theoretical best to Plotly.
     const optimal = decision.optimalNormalized()
     const worstOpt = optimal.map((v) => (Math.round(v) === 0 ? 1 : 0))
     const normalized_weighted_dists = calc.mean.badness || []

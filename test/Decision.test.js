@@ -98,6 +98,83 @@ test("Decision serialization uses Factor objects and copy is independent", () =>
   assert.equal(decision.answers[0][0].min, 10)
 })
 
+test("Min and Max optimals serialize and resolve from answers", () => {
+  const decision = new Decision("Open-ended")
+  decision.addFactor({
+    name: "Cost",
+    optimal: -Infinity,
+    weight: 1,
+    min: 0,
+    max: null,
+  })
+  decision.addFactor({
+    name: "Quality",
+    optimal: Infinity,
+    weight: 1,
+    min: null,
+    max: 10,
+  })
+  decision.addOption("A")
+  decision.addOption("B")
+  decision.setAnswer("A", "Cost", 8)
+  decision.setAnswer("A", "Quality", 4)
+  decision.setAnswer("B", "Cost", 3)
+  decision.setAnswer("B", "Quality", 9)
+
+  assert.deepEqual(decision.optimals(), [3, 9])
+  assert.deepEqual(decision.mins(), [0, 4])
+  assert.deepEqual(decision.maxs(), [8, 10])
+  assert.deepEqual(decision.optimalNormalized(), [3 / 8, 5 / 6])
+
+  const serialized = decision.serialize()
+  assert.equal(JSON.parse(serialized).factors[0].optimal, "-Infinity")
+  assert.equal(JSON.parse(serialized).factors[1].optimal, "Infinity")
+
+  const copy = Decision.deserialize(serialized)
+  assert.equal(copy.factors[0].optimal, -Infinity)
+  assert.equal(copy.factors[1].optimal, Infinity)
+  assert.deepEqual(copy.optimals(), [3, 9])
+})
+
+test("an unfinished optimal does not resolve to an answer extreme", () => {
+  const decision = new Decision("Unfinished")
+  decision.addFactor({ name: "Unknown", optimal: null, weight: 1 })
+  decision.addOption("A")
+  decision.setAnswer("A", "Unknown", 4)
+
+  assert.deepEqual(decision.optimals(), [null])
+})
+
+test("Min and Max optimals rank the lowest and highest answers as best", () => {
+  const decision = new Decision("Directions")
+  decision.addFactor({
+    name: "Cost",
+    optimal: -Infinity,
+    weight: 1,
+    min: null,
+    max: null,
+  })
+  decision.addFactor({
+    name: "Quality",
+    optimal: Infinity,
+    weight: 1,
+    min: null,
+    max: null,
+  })
+  decision.addOption("Best directions")
+  decision.addOption("Worst directions")
+  decision.setAnswer("Best directions", "Cost", 1)
+  decision.setAnswer("Best directions", "Quality", 10)
+  decision.setAnswer("Worst directions", "Cost", 10)
+  decision.setAnswer("Worst directions", "Quality", 1)
+
+  assert.deepEqual(decision.optimalNormalized(), [0, 1])
+  const calculation = decision.calculateAll({ numSamples: 1 })
+  assert.ok(calculation.mean.goodness.every(Number.isFinite))
+  assert.equal(calculation.best.is, "Best directions")
+  assert.equal(calculation.worst.is, "Worst directions")
+})
+
 test("legacy object-of-arrays decisions migrate to Factor objects", () => {
   const decision = Decision.deserialize({
     name: "Legacy",
