@@ -155,7 +155,7 @@ const onDrag = (e) => {
 };
 
 // Lilly: positions from here is accurate
-console.log(positions)
+// console.log(positions)
 
 const endDrag = () => {
   draggingIndex.current = null;

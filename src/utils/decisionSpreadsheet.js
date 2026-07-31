@@ -195,7 +195,6 @@ function parseFactorSpecifications(sheet, decisionFactorNames) {
     factorNames.length !== decisionFactorNames.length ||
     factorNames.some((name) => !decisionFactorNames.includes(name))
   if (sheetsHaveDifferentFactors){
-		console.log({factorNames, decisionFactorNames})
 		let msg = "Could not parse factors: the factors in the Factors sheet must match the factors in the Decision sheet."
 		const factorsInDecisionButNotInFactors = decisionFactorNames.filter((name) => !factorNames.includes(name))
 		const factorsInFactorsButNotInDecision = factorNames.filter((name) => !decisionFactorNames.includes(name))

@@ -69,7 +69,6 @@ export function DecisionsProvider({ children }) {
   }
 
   function addOption(name = "") {
-    console.log('adding option', name)
     modifyCurrentDecision((d) => d.addOption(name))
   }
 

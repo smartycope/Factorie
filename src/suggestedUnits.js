@@ -38,6 +38,5 @@ export function getSuggestedUnitAnswerOptions(unit) {
 }
 
 export function getSuggestedUnitMinMax(unit){
-  console.log(unit)
   return SUGGESTED_UNIT_MIN_MAX[normalizeSuggestedUnit(unit)] ?? null
 }

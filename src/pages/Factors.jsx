@@ -487,7 +487,7 @@ export default function Factors() {
         : Number(addMax),
       unit: addUnit || undefined,
     }
-    console.log(newFactor)
+
     if (editFactorIndex != null) {
       // modify existing factor, including the name
       editFactor(editFactorIndex, newFactor)

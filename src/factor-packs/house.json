@@ -194,7 +194,7 @@
             "min": 0
         },
         {
-            "name": "Does it already have a sidewalk",
+        "name": "Does it already have a sidewalk",
             "unit": "0: No, 1: Yes",
             "optimal": 1,
             "min": 0,
