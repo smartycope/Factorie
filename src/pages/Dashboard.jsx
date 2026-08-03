@@ -139,7 +139,13 @@ export default function Dashboard() {
     const file = e.target.files && e.target.files[0]
     if (!file) return
     try {
-      const importedDecision = parseDecisionSpreadsheet(await file.arrayBuffer())
+      const warnings = []
+      const importedDecision = parseDecisionSpreadsheet(
+        await file.arrayBuffer(),
+        { onWarning: (warning) => warnings.push(warning) },
+      )
+      if (warnings.length)
+        alert(`Spreadsheet imported with warnings:\n\n${warnings.join("\n\n")}`)
       const existingIndex = decisions.findIndex(
         (decision) => decision.name.toLowerCase() === importedDecision.name.toLowerCase(),
       )

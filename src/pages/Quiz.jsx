@@ -304,7 +304,7 @@ export default function Quiz() {
 
   // UI state (unconditional hooks)
   const [idx, setIdx] = useState(0)
-  const [anticolumnar, setAnticolumnar] = useState(true)
+  const [anticolumnar, setAnticolumnar] = useState(false)
   const [precise, setPrecise] = useState(false)
   const [unsure, setUnsure] = useState(false)
   const [onlyShowUnanswered, setOnlyShowUnanswered] = useState(false)

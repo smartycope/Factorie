@@ -227,6 +227,63 @@ function parseFactorSpecifications(sheet, decisionFactorNames) {
   return decisionFactorNames.map((name) => specifications.get(name))
 }
 
+function parseOptionNotes(sheet, decision, onWarning) {
+  if (!sheet) return
+
+  const expectedHeaders = ["Option", "Notes"]
+  expectedHeaders.forEach((header, column) => {
+    const address = XLSX.utils.encode_cell({ r: 0, c: column })
+    if (cellText(sheet, address) !== header)
+      spreadsheetError(`Could not parse option notes: ${address} must say "${header}".`)
+  })
+
+  const notes = new Map()
+  const range = XLSX.utils.decode_range(sheet["!ref"] ?? "A1")
+  let encounteredBlankRow = false
+
+  for (let row = 1; row <= range.e.r; row += 1) {
+    const optionAddress = XLSX.utils.encode_cell({ r: row, c: 0 })
+    const notesAddress = XLSX.utils.encode_cell({ r: row, c: 1 })
+    const option = cellText(sheet, optionAddress)
+    const noteValue = cellValue(sheet, notesAddress)
+    const rowHasValues =
+      cellValue(sheet, optionAddress) != null || noteValue != null
+
+    if (!option) {
+      if (rowHasValues)
+        spreadsheetError(
+          `Could not parse option notes row ${row + 1}: ${optionAddress} must contain an option name.`,
+        )
+      encounteredBlankRow = true
+      continue
+    }
+
+    if (encounteredBlankRow)
+      spreadsheetError(
+        `Could not parse option notes: ${optionAddress} contains "${option}" after an empty option row. Options must be contiguous from A2.`,
+      )
+    if (notes.has(option))
+      spreadsheetError(`Could not parse option notes: "${option}" is listed more than once.`)
+
+    notes.set(option, noteValue == null ? "" : String(noteValue))
+  }
+
+  const extraOptions = [...notes.keys()].filter(
+    (option) => !decision.options.includes(option),
+  )
+  if (extraOptions.length) {
+    onWarning(
+      "The Options sheet contains options that are not in the Decision sheet. " +
+        "Their notes were ignored:\n" +
+        extraOptions.map((option) => `- ${option}`).join("\n"),
+    )
+  }
+
+  decision.options.forEach((option, index) => {
+    if (notes.has(option)) decision.setOptionNote(index, notes.get(option))
+  })
+}
+
 function parseAnswers(sheet, decision, factorNames, optionNames) {
   optionNames.forEach((optionName) => decision.addOption(optionName))
 
@@ -245,7 +302,10 @@ function parseAnswers(sheet, decision, factorNames, optionNames) {
   })
 }
 
-export function parseDecisionSpreadsheet(arrayBuffer) {
+export function parseDecisionSpreadsheet(
+  arrayBuffer,
+  { onWarning = (message) => console.warn(message) } = {},
+) {
   let workbook
   try {
     workbook = XLSX.read(arrayBuffer, { type: "array" })
@@ -276,6 +336,7 @@ export function parseDecisionSpreadsheet(arrayBuffer) {
   decision.factorPacks = new Set(factorPackNames)
   factorSpecifications.forEach((factor) => decision.addFactor(factor))
   parseAnswers(sheet, decision, factorNames, optionNames)
+  parseOptionNotes(workbook.Sheets.Options, decision, onWarning)
 
   return decision
 }
@@ -339,5 +400,32 @@ export function createDecisionSpreadsheet(decision) {
     if (factorSheet[address]) factorSheet[address].s = { font: { bold: true } }
   })
   XLSX.utils.book_append_sheet(workbook, factorSheet, "Factors")
+  const optionSheet = XLSX.utils.aoa_to_sheet([
+    ["Option", "Notes"],
+    ...decision.options.map((option) => [
+      option,
+      decision.optionNotes?.[option] ?? "",
+    ]),
+  ])
+  optionSheet["!cols"] = [
+    { wch: Math.max(12, ...decision.options.map((option) => option.length + 2)) },
+    {
+      wch: Math.min(
+        80,
+        Math.max(
+          24,
+          ...decision.options.map(
+            (option) => String(decision.optionNotes?.[option] ?? "").length + 2,
+          ),
+        ),
+      ),
+    },
+  ]
+  const optionSheetHeaderCells = ["A1", "B1"]
+  optionSheetHeaderCells.forEach((address) => {
+    if (optionSheet[address])
+      optionSheet[address].s = { font: { bold: true } }
+  })
+  XLSX.utils.book_append_sheet(workbook, optionSheet, "Options")
   return XLSX.write(workbook, { bookType: "xlsx", type: "array" })
 }

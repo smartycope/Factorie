@@ -10,6 +10,7 @@ export default class Decision {
     this.name = name
     this.factors = []
     this.options = []
+    this.optionNotes = {}
     // answers: array of shape [numOptions][numFactors] initialized as empty, filled with Answers
     this.answers = []
     this.threshold = 0
@@ -160,13 +161,25 @@ export default class Decision {
   removeOption(option) {
     const idx = this._parseOptionParam(option)
     if (idx === -1) return
+    delete this.optionNotes[this.options[idx]]
     this.options.splice(idx, 1)
     this.answers.splice(idx, 1)
   }
 
   renameOption(option, name) {
     const idx = this._parseOptionParam(option)
+    const oldName = this.options[idx]
     this.options[idx] = name
+    if (oldName !== name && Object.hasOwn(this.optionNotes, oldName)) {
+      this.optionNotes[name] = this.optionNotes[oldName]
+      delete this.optionNotes[oldName]
+    }
+  }
+
+  setOptionNote(option, note) {
+    const name = this.options[this._parseOptionParam(option)]
+    if (note) this.optionNotes[name] = note
+    else delete this.optionNotes[name]
   }
 
   // Throws an error if it fails
@@ -211,6 +224,7 @@ export default class Decision {
       name: this.name,
       factors: this.factors.map((factor) => factor.serialize()),
       options: this.options,
+      optionNotes: this.optionNotes,
       answers: this.answers.map((row) => row.map((ans) => ans.serialize())),
       threshold: this.threshold,
       factorPacks: Array.from(this.factorPacks),
@@ -237,6 +251,12 @@ export default class Decision {
       )
     }
     d.options = obj.options
+    d.optionNotes = Object.fromEntries(
+      Object.entries(obj.optionNotes ?? {}).filter(
+        ([option, note]) =>
+          d.options.includes(option) && typeof note === "string",
+      ),
+    )
     d.answers = obj.answers.map((row) => row.map((ans) => new Answer(...ans)))
     d.threshold = obj.threshold
     d.factorPacks = new Set(obj.factorPacks || [])

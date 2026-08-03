@@ -77,6 +77,7 @@ test("factor edits and removal keep the answer matrix aligned", () => {
 
 test("Decision serialization uses Factor objects and copy is independent", () => {
   const decision = createCompleteDecision()
+  decision.setOptionNote("Tacos", "Open late and has outdoor seating.")
   const serialized = JSON.parse(decision.serialize())
 
   assert.ok(Array.isArray(serialized.factors))
@@ -88,14 +89,39 @@ test("Decision serialization uses Factor objects and copy is independent", () =>
     min: 0,
     max: 10,
   })
+  assert.deepEqual(serialized.optionNotes, {
+    Tacos: "Open late and has outdoor seating.",
+  })
 
   const copy = decision.copy()
   assert.ok(copy.factors[0] instanceof Factor)
   assert.ok(copy.answers[0][0] instanceof Answer)
   copy.editFactor(0, { name: "Flavor" })
   copy.setAnswer(0, 0, 5)
+  copy.setOptionNote("Tacos", "Different note")
   assert.equal(decision.factors[0].name, "Taste")
   assert.equal(decision.answers[0][0].min, 10)
+  assert.equal(decision.optionNotes.Tacos, "Open late and has outdoor seating.")
+})
+
+test("option notes follow renames, are removed with options, and migrate safely", () => {
+  const decision = createCompleteDecision()
+  decision.setOptionNote(0, "Try the al pastor")
+
+  decision.renameOption(0, "Street tacos")
+  assert.deepEqual(decision.optionNotes, {
+    "Street tacos": "Try the al pastor",
+  })
+
+  decision.setOptionNote("Street tacos", "")
+  assert.deepEqual(decision.optionNotes, {})
+
+  decision.setOptionNote("Soup", "Good on cold days")
+  decision.removeOption("Soup")
+  assert.deepEqual(decision.optionNotes, {})
+
+  const legacy = Decision.deserialize(JSON.parse(decision.serialize()))
+  assert.deepEqual(legacy.optionNotes, {})
 })
 
 test("Min and Max optimals serialize and resolve from answers", () => {
@@ -216,6 +242,7 @@ test("legacy object-of-arrays decisions migrate to Factor objects", () => {
   )
   assert.equal(decision.getAnswer("Tacos", "Cost").toString(), "7 - 8")
   assert.deepEqual([...decision.factorPacks], ["Choosing Dinner"])
+  assert.deepEqual(decision.optionNotes, {})
   assert.ok(Array.isArray(JSON.parse(decision.serialize()).factors))
 })
 
