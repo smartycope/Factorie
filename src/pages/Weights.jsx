@@ -6,6 +6,8 @@ import Plot from "react-plotly.js"
 import { useDecisions } from "../contexts/UseDecisions"
 import Decision from "../models/Decision"
 import Paper from "@mui/material/Paper"
+import Menu from "@mui/material/Menu"
+import MenuItem from "@mui/material/MenuItem"
 import MultiHandledSlider from "../components/MultiHandledSlider"
 import { Checkbox, FormControlLabel, TextField } from "@mui/material"
 
@@ -20,6 +22,65 @@ const linspace = (a, b, count) => {
     (_, i) => a + (b - a) * (i / (count - 1)),
   )
 }
+
+const cubicspace = (a, b, count, scale = 8) => {
+  if (count === 1) return [a]
+
+  const f = (x) => x ** 3
+  const lo = f(-0.5 * scale)
+  const hi = f(0.5 * scale)
+
+  return Array.from({ length: count }, (_, i) => {
+    const x = (i / (count - 1) - 0.5) * scale
+    const y = (f(x) - lo) / (hi - lo)
+    return a + (b - a) * y
+  })
+}
+
+const expspace = (a, b, count, exponent = 4) => {
+  if (count === 1) return [a]
+
+  const denom = Math.exp(exponent) - 1
+
+  return Array.from({ length: count }, (_, i) => {
+    const t = i / (count - 1)
+    const u = (Math.exp(exponent * t) - 1) / denom
+    return a + (b - a) * u
+  })
+}
+
+const easespace = (a, b, count) => {
+  if (count === 1) return [a]
+
+  return Array.from({ length: count }, (_, i) => {
+    // const t = i / (count - 1)
+    // const u = (Math.exp(exponent * t) - 1) / denom
+    // return 3*i**2 - 2*i**3
+    const t = i / (count - 1)
+    // const u = 3*t**2 - 2*t**3
+    const u = 6 * t ** 5 - 15 * t ** 4 + 10 * t ** 3
+    return a + (b - a) * u
+  })
+}
+
+const WEIGHT_ARRANGEMENTS = [
+  {
+    label: "Ease",
+    getWeights: (count) => easespace(0, 1, count),
+  },
+  {
+    label: "Linear",
+    getWeights: (count) => linspace(0, 1, count),
+  },
+  {
+    label: "Cubic",
+    getWeights: (count) => cubicspace(0, 1, count, 1),
+  },
+  {
+    label: "Exponential",
+    getWeights: (count) => expspace(0, 1, count, 3),
+  },
+]
 
 function* mergeSortCoroutine(arr) {
   if (arr.length <= 1) return arr
@@ -172,6 +233,7 @@ export default function Weights() {
   // positions state must be top-level (hooks cannot be conditional)
   const [handles, setHandles] = useState({})
   const [allowReordering, setAllowReordering] = useState(false)
+  const [arrangeMenuAnchorEl, setArrangeMenuAnchorEl] = useState(null)
   const [showRadar, setShowRadar] = useState(true)
   const [plotFactorLimit, setPlotFactorLimit] = useState(20)
 
@@ -238,7 +300,7 @@ export default function Weights() {
     if (!sortedResult || sortedResult.length === 0) return
     const n = sortedResult.length
 
-    const newWeightsSeq = linspace(1, 1 / n, n)
+    const newWeightsSeq = easespace(0, 1, n)
     const orderedLabels = decision.factors.map((factor) => factor.name)
     const orderedWeights = Array(orderedLabels.length).fill(0)
     for (let i = 0; i < sortedResult.length; i++) {
@@ -263,6 +325,24 @@ export default function Weights() {
         return acc
       }, {}),
     )
+  }
+
+  function arrangeWeights(getWeights) {
+    const orderedLabels = Object.entries(handles)
+      .sort(([, a], [, b]) => a - b)
+      .map(([label]) => label)
+    const count = orderedLabels.length
+    if (count === 0) return
+
+    const arrangedWeights = getWeights(count)
+
+    setHandles(
+      orderedLabels.reduce((nextHandles, label, index) => {
+        nextHandles[label] = arrangedWeights[index]
+        return nextHandles
+      }, {}),
+    )
+    setArrangeMenuAnchorEl(null)
   }
 
   function applyPositionsToWeights() {
@@ -356,16 +436,18 @@ export default function Weights() {
           <Typography variant="h6">Sort Factors</Typography>
           {!sortStarted ?
             <Typography variant="body2">
-              Press the button below to compare factors in order to sort
-              them from least important to most important.<br/>This uses an
-              algorithm (a modified version of Timsort) which makes it much faster
-              than sorting by hand.
+              Press the button below to compare factors in order to sort them
+              from least important to most important.
+              <br />
+              This uses an algorithm (a modified version of Timsort) which makes
+              it much faster than sorting by hand.
               <br />
               It will ask for {decision.factors.length} -{" "}
               {Math.ceil(
                 decision.factors.length * Math.log(decision.factors.length),
               )}{" "}
-              comparisons, then the answers will appear in the slider below once finished.
+              comparisons, then the answers will appear in the slider below once
+              finished.
             </Typography>
           : quizFinished ?
             <Typography variant="body1">
@@ -429,11 +511,35 @@ export default function Weights() {
         </Paper>
 
         <Paper sx={{ p: 2 }} elevation={3}>
-          <Checkbox
-            checked={allowReordering}
-            onChange={(e) => setAllowReordering(e.target.checked)}
-          />
-          Allow reordering
+          <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
+            <FormControlLabel
+              control={
+                <Checkbox
+                  checked={allowReordering}
+                  onChange={(e) => setAllowReordering(e.target.checked)}
+                />
+              }
+              label="Allow reordering"
+            />
+            <Button
+              variant="outlined"
+              onClick={(event) => setArrangeMenuAnchorEl(event.currentTarget)}
+              sx={{ whiteSpace: "nowrap" }}>
+              Arrange Weights
+            </Button>
+            <Menu
+              anchorEl={arrangeMenuAnchorEl}
+              open={Boolean(arrangeMenuAnchorEl)}
+              onClose={() => setArrangeMenuAnchorEl(null)}>
+              {WEIGHT_ARRANGEMENTS.map(({ label, getWeights }) => (
+                <MenuItem
+                  key={label}
+                  onClick={() => arrangeWeights(getWeights)}>
+                  {label}
+                </MenuItem>
+              ))}
+            </Menu>
+          </Box>
           <MultiHandledSlider
             handles={handles}
             overlap={allowReordering ? "free" : "block"}
