@@ -11,6 +11,8 @@ import Chip from "@mui/material/Chip"
 import Button from "@mui/material/Button"
 import Checkbox from "@mui/material/Checkbox"
 import FormControlLabel from "@mui/material/FormControlLabel"
+import Collapse from "@mui/material/Collapse"
+import ExpandMoreIcon from "@mui/icons-material/ExpandMore"
 import { useTheme } from "@mui/material/styles"
 import Plot from "react-plotly.js"
 import * as PCAImport from "pca-js"
@@ -59,70 +61,99 @@ function SimulationControls({
   factors,
   ranges,
   onRangeChange,
+  canRun,
+  onRun,
 }) {
+  const [expanded, setExpanded] = useState(true)
+
   return (
     <Paper variant="outlined" sx={{ p: 2, mt: 2 }}>
-      <FormControlLabel
-        control={
-          <Checkbox
-            checked={enabled}
-            onChange={(event) => onEnabledChange(event.target.checked)}
+      <Button
+        color="inherit"
+        fullWidth
+        onClick={() => setExpanded((current) => !current)}
+        endIcon={
+          <ExpandMoreIcon
+            sx={{
+              transform: expanded ? "rotate(180deg)" : "rotate(0deg)",
+              transition: "transform 150ms",
+            }}
           />
         }
-        label="Run with simulated values"
-      />
-      {enabled && (
-        <Stack spacing={2} sx={{ mt: 1 }}>
-          <Typography variant="body2">
-            Unanswered entries will use the full possible range, representing
-            maximum uncertainty.
-          </Typography>
-          {factors.map((factor) => {
-            const range = resolvedRange(factor, ranges)
-            const minValue = rangeInputValue(factor, ranges, "min")
-            const maxValue = rangeInputValue(factor, ranges, "max")
-            const hasBothValues = minValue !== "" && maxValue !== ""
-            return (
-              <Box
-                key={factor.name}
-                sx={{ display: "flex", gap: 2, alignItems: "flex-start" }}>
-                <Typography sx={{ minWidth: 160, pt: 1 }}>
-                  {factor.name}
-                </Typography>
-                <TextField
-                  label="Finite minimum"
-                  type="number"
-                  size="small"
-                  value={minValue}
-                  disabled={Number.isFinite(factor.min)}
-                  onChange={(event) =>
-                    onRangeChange(factor.name, "min", event.target.value)
-                  }
-                />
-                <TextField
-                  label="Finite maximum"
-                  type="number"
-                  size="small"
-                  value={maxValue}
-                  disabled={Number.isFinite(factor.max)}
-                  error={hasBothValues && !range.valid}
-                  helperText={
-                    hasBothValues && !range.valid ?
-                      "Maximum must be greater than minimum"
-                    : ""
-                  }
-                  onChange={(event) =>
-                    onRangeChange(factor.name, "max", event.target.value)
-                  }
-                />
-                <Typography sx={{ pt: 1, color: "text.secondary" }}>
+        sx={{ justifyContent: "space-between" }}>
+        Simulation controls{enabled ? " (enabled)" : ""}
+      </Button>
+      <Collapse in={expanded}>
+        <FormControlLabel
+          control={
+            <Checkbox
+              checked={enabled}
+              onChange={(event) => onEnabledChange(event.target.checked)}
+            />
+          }
+          label="Run with simulated values"
+        />
+        {enabled && (
+          <Stack spacing={2} sx={{ mt: 1 }}>
+            <Typography variant="body2">
+              Unanswered entries will use the full possible range, representing
+              maximum uncertainty.
+            </Typography>
+            {factors.map((factor) => {
+              const range = resolvedRange(factor, ranges)
+              const minValue = rangeInputValue(factor, ranges, "min")
+              const maxValue = rangeInputValue(factor, ranges, "max")
+              const hasBothValues = minValue !== "" && maxValue !== ""
+              return (
+                <Box
+                  key={factor.name}
+                  sx={{ display: "flex", gap: 2, alignItems: "flex-start" }}>
+                  <Typography sx={{ minWidth: 160, pt: 1 }}>
+                    {factor.name}
+                  </Typography>
+                  <TextField
+                    label="Finite minimum"
+                    type="number"
+                    size="small"
+                    value={minValue}
+                    disabled={Number.isFinite(factor.min)}
+                    onChange={(event) =>
+                      onRangeChange(factor.name, "min", event.target.value)
+                    }
+                  />
+                  <TextField
+                    label="Finite maximum"
+                    type="number"
+                    size="small"
+                    value={maxValue}
+                    disabled={Number.isFinite(factor.max)}
+                    error={hasBothValues && !range.valid}
+                    helperText={
+                      hasBothValues && !range.valid ?
+                        "Maximum must be greater than minimum"
+                      : ""
+                    }
+                    onChange={(event) =>
+                      onRangeChange(factor.name, "max", event.target.value)
+                    }
+                  />
+                  <Typography sx={{ pt: 1, color: "text.secondary" }}>
                     <i>{factor.unit ? `${factor.unit}` : ""}</i>
-                </Typography>
-              </Box>
-            )
-          })}
-        </Stack>
-      )}
+                  </Typography>
+                </Box>
+              )
+            })}
+            <Button
+              variant="contained"
+              disabled={!canRun}
+              // TODO: This doesn't seem to work?
+              onClick={() => {onRun(); setExpanded(false)}}
+              sx={{ alignSelf: "flex-start" }}>
+              Run simulation
+            </Button>
+          </Stack>
+        )}
+      </Collapse>
     </Paper>
   )
 }
@@ -282,22 +313,32 @@ function GoodnessPlot({ decision, goodness, goodnessConf }) {
 // "Usefulness of each factor"
 function EntropyPlot({ factorNames, answers, weights }) {
   const theme = useTheme()
+  const [topCount, setTopCount] = useState(10)
+  const visibleCount =
+    topCount === "" ?
+      factorNames.length
+    : Math.min(
+        factorNames.length,
+        Math.max(1, Math.floor(Number(topCount) || 1)),
+      )
   const plot = useMemo(() => {
-    const entropies = factorNames.map((_, j) => {
-      return stdDev(answers.map((row) => row[j])) * weights[j]
-    })
+    const rows = factorNames
+      .map((factor, factorIndex) => ({
+        factor,
+        entropy:
+          stdDev(answers.map((row) => row[factorIndex])) * weights[factorIndex],
+        weight: weights[factorIndex],
+      }))
+      .sort((a, b) => b.entropy - a.entropy)
+      .slice(0, visibleCount)
 
     return {
       data: [
         {
           type: "bar",
-          x: factorNames.toSorted(
-            (a, b) =>
-              entropies[factorNames.indexOf(b)] -
-              entropies[factorNames.indexOf(a)],
-          ),
-          y: entropies.toSorted((a, b) => b - a),
-          width: weights,
+          x: rows.map((row) => row.factor),
+          y: rows.map((row) => row.entropy),
+          width: rows.map((row) => row.weight),
           marker: {
             // color: weights.map((x) => 1 - x),
             colorscale: [
@@ -324,14 +365,27 @@ function EntropyPlot({ factorNames, answers, weights }) {
           title: { text: "How much each factor contributed to the decision" },
           showticklabels: false,
         },
-        margin: { t: 60, b: 40, l: 50, r: 20 },
+        margin: { t: 60, b: 100, l: 50, r: 20 },
       },
     }
-  }, [factorNames, answers, weights, theme])
+  }, [factorNames, answers, weights, theme, visibleCount])
 
   return (
     <HelpOverlay helpText={texts.results.entropy}>
       <Paper sx={{ p: 2 }}>
+        <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
+          <Typography>Show the top:</Typography>
+          <TextField
+            type="number"
+            size="small"
+            value={topCount}
+            onChange={(event) => setTopCount(event.target.value)}
+            slotProps={{
+              htmlInput: { min: 1, max: factorNames.length, step: 1 },
+            }}
+            sx={{ width: 100 }}
+          />
+        </Box>
         <Plot
           data={plot.data}
           layout={plot.layout}
@@ -354,41 +408,72 @@ function HeatmapPlot({
   calc,
 }) {
   const theme = useTheme()
+  const [showText, setShowText] = useState(
+    () => (decision?.factors.length ?? 0) < 20,
+  )
+  const [square, setSquare] = useState(true)
+  const [topCount, setTopCount] = useState(10)
+  const visibleCount =
+    topCount === "" ? factorNames.length : (
+      Math.min(
+        factorNames.length,
+        Math.max(1, Math.floor(Number(topCount) || 1)),
+      )
+    )
   const plot = useMemo(() => {
     const colorscale = ["#9B1127", "rgba(255, 255, 191, 0)", "#195695"]
     const nRows = normalizedAnswers.length
-    const nCols = factorNames.length
+    const factorIndexes = factorNames
+      .map((_, factorIndex) => ({
+        factorIndex,
+        entropy:
+          stdDev(answers.map((row) => row[factorIndex])) *
+          weights[factorIndex],
+      }))
+      .sort((a, b) => b.entropy - a.entropy)
+      .slice(0, visibleCount)
+      .map(({ factorIndex }) => factorIndex)
+    const visibleFactorNames = factorIndexes.map(
+      (factorIndex) => factorNames[factorIndex],
+    )
+    const nCols = factorIndexes.length
     const leftMargin = Math.min(
       260,
-      Math.max(90, Math.max(...factorNames.map((factor) => factor.length)) * 8),
+      Math.max(
+        90,
+        Math.max(...visibleFactorNames.map((factor) => factor.length)) * 8,
+      ),
     )
     const shapes = []
     const textX = []
     const textY = []
     const textLabels = []
     const textColors = []
+    const maxs = decision.maxs()
     for (let i = 0; i < nRows; i++) {
-      for (let j = 0; j < nCols; j++) {
-        const value = 1 - Math.abs(calc.mean.delta_vectors_normalized[i][j])
-        const weight = weights[j]
+      for (let factorPosition = 0; factorPosition < nCols; factorPosition++) {
+        const factorIndex = factorIndexes[factorPosition]
+        const value =
+          1 -
+          Math.abs(calc.mean.delta_vectors_normalized[i][factorIndex])
+        const weight = weights[factorIndex]
         const color = sampleColorscale(colorscale, value)
         const halfW = (1 * weight) / 2
         const halfH = (1 * weight) / 2
         shapes.push({
           type: "rect",
           x0: i - halfW,
-          y0: j - halfH,
+          y0: factorPosition - halfH,
           x1: i + halfW,
-          y1: j + halfH,
+          y1: factorPosition + halfH,
           line: { width: 0 },
           fillcolor: color,
           layer: "below",
         })
-        const maxs = decision.maxs()
-        const answer = answers[i][j]
-        const maxVal = maxs[j]
+        const answer = answers[i][factorIndex]
+        const maxVal = maxs[factorIndex]
         textX.push(i)
-        textY.push(j)
+        textY.push(factorPosition)
         textLabels.push(
           `${Math.round(value * 100)}%<br>(${Math.round(answer)}/${Math.round(
             maxVal,
@@ -404,7 +489,7 @@ function HeatmapPlot({
           mode: "text",
           x: textX,
           y: textY,
-          text: textLabels,
+          text: showText ? textLabels : undefined,
           textfont: { color: textColors, size: 12 },
           hoverinfo: "skip",
           showlegend: false,
@@ -416,29 +501,73 @@ function HeatmapPlot({
           ticktext: decision?.options,
           showgrid: false,
           zeroline: false,
-          scaleanchor: "y",
+          scaleanchor: square ? "y" : undefined,
         },
         yaxis: {
           tickvals: Array.from({ length: nCols }, (_, i) => i),
-          ticktext: factorNames,
+          ticktext: visibleFactorNames,
           showgrid: false,
           zeroline: false,
           autorange: "reversed",
           automargin: true,
           //   scaleanchor: "x",
         },
-        margin: { t: 60, b: 20, l: leftMargin, r: 20 },
+        margin: { t: 60, b: 100, l: leftMargin, r: 20 },
         title: { text: "How good each option is" },
         title_x: 0.2,
         title_font_size: 20,
         shapes,
       },
     }
-  }, [normalizedAnswers, factorNames, weights, theme, decision, answers, calc])
+  }, [
+    normalizedAnswers,
+    factorNames,
+    weights,
+    theme,
+    decision,
+    answers,
+    calc,
+    showText,
+    visibleCount,
+    square,
+  ])
 
   return (
     <HelpOverlay helpText={texts.results.contributions_var_size}>
       <Paper sx={{ p: 2 }}>
+        <Box sx={{ display: "flex", alignItems: "center", gap: 2 }}>
+          <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
+            <Typography>Show the top most useful:</Typography>
+            <TextField
+              type="number"
+              size="small"
+              value={topCount}
+              onChange={(event) => setTopCount(event.target.value)}
+              slotProps={{
+                htmlInput: { min: 1, max: factorNames.length, step: 1 },
+              }}
+              sx={{ width: 100 }}
+            />
+          </Box>
+          <FormControlLabel
+            control={
+              <Checkbox
+                checked={showText}
+                onChange={(event) => setShowText(event.target.checked)}
+              />
+            }
+            label="Show text"
+          />
+          <FormControlLabel
+            control={
+              <Checkbox
+                checked={square}
+                onChange={(event) => setSquare(event.target.checked)}
+              />
+            }
+            label="Square"
+          />
+        </Box>
         <Plot
           data={plot.data}
           layout={plot.layout}
@@ -456,16 +585,19 @@ function SingleLinePlot({ results }) {
   const theme = useTheme()
   const plot = useMemo(() => {
     const t = linspace(0, 100, 1000)
-    const annotations = results.map((r) => ({
-      x: r.percentage,
-      y: 0,
-      text: `${r.option} (${r.percentage.toFixed(1)}%)`,
-      showarrow: false,
-      font: { color: theme.palette.text.primary, size: 15 },
-      xanchor: "left",
-      yanchor: "bottom",
-      textangle: -45,
-    }))
+    const annotations = results.map((r, index) => {
+      const isAbove = index % 2 === 0
+      return {
+        x: r.percentage,
+        y: isAbove ? 0.08 : -0.08,
+        text: `${r.option} (${r.percentage.toFixed(1)}%)`,
+        showarrow: false,
+        font: { color: theme.palette.text.primary, size: 15 },
+        xanchor: "left",
+        yanchor: isAbove ? "bottom" : "top",
+        textangle: isAbove ? -45 : 45,
+      }
+    })
     annotations.push(
       {
         x: 0,
@@ -560,7 +692,7 @@ function PcaPlot({
   const plot = useMemo(() => {
     const enabled = false
     if (!enabled) {
-      console.warn("TODO: PCA plot")
+      //   console.warn("TODO: PCA plot")
       return null
     }
     const data = [...normalizedAnswers]
@@ -734,15 +866,17 @@ export default function Results() {
   const [simulationRanges, _setSimulationRanges] = useState(
     persistedValues.simulationRanges,
   )
+  const [submittedSimulationRanges, setSubmittedSimulationRanges] =
+    useState(null)
   const setUseSimulatedValues = (to) => {
-      if (to instanceof Function) to = to(useSimulatedValues)
-      persistedValues.useSimulatedValues = to
-      _setUseSimulatedValues(to)
+    if (to instanceof Function) to = to(useSimulatedValues)
+    persistedValues.useSimulatedValues = to
+    _setUseSimulatedValues(to)
   }
   const setSimulationRanges = (to) => {
-      if (to instanceof Function) to = to(simulationRanges)
-      persistedValues.simulationRanges = to
-      _setSimulationRanges(to)
+    if (to instanceof Function) to = to(simulationRanges)
+    persistedValues.simulationRanges = to
+    _setSimulationRanges(to)
   }
   const [simulationRun, setSimulationRun] = useState(0)
   const invalid = decision?.isInvalid() || ""
@@ -758,7 +892,7 @@ export default function Results() {
     [canUseSimulatedValues, decision],
   )
 
-  const overrideFactorRanges = useMemo(
+  const pendingOverrideFactorRanges = useMemo(
     () =>
       Object.fromEntries(
         nonFiniteFactors.map((factor) => {
@@ -773,13 +907,16 @@ export default function Results() {
     (factor) => resolvedRange(factor, simulationRanges).valid,
   )
   const simulationReady =
-    canUseSimulatedValues && useSimulatedValues && simulationRangesAreValid
+    canUseSimulatedValues &&
+    useSimulatedValues &&
+    submittedSimulationRanges !== null
 
   const calculationDecision = useMemo(() => {
     if (!decision) return null
-    if (simulationReady) return decision.uncertainCopy(overrideFactorRanges)
+    if (simulationReady)
+      return decision.uncertainCopy(submittedSimulationRanges)
     return invalid ? null : decision
-  }, [decision, invalid, overrideFactorRanges, simulationReady])
+  }, [decision, invalid, submittedSimulationRanges, simulationReady])
 
   const calc = useMemo(() => {
     if (!calculationDecision || calculationDecision.isInvalid()) return null
@@ -849,6 +986,7 @@ export default function Results() {
   }, [calculationDecision, calc])
 
   function handleSimulationRangeChange(factorName, endpoint, value) {
+    setSubmittedSimulationRanges(null)
     setSimulationRanges((current) => ({
       ...current,
       [factorName]: {
@@ -858,14 +996,27 @@ export default function Results() {
     }))
   }
 
+  function handleUseSimulatedValuesChange(enabled) {
+    setUseSimulatedValues(enabled)
+    if (!enabled) setSubmittedSimulationRanges(null)
+  }
+
+  function handleRunSimulation() {
+    if (!simulationRangesAreValid) return
+    setSubmittedSimulationRanges(pendingOverrideFactorRanges)
+    setSimulationRun((run) => run + 1)
+  }
+
   const simulationControls =
     canUseSimulatedValues ?
       <SimulationControls
         enabled={useSimulatedValues}
-        onEnabledChange={setUseSimulatedValues}
+        onEnabledChange={handleUseSimulatedValuesChange}
         factors={nonFiniteFactors}
         ranges={simulationRanges}
         onRangeChange={handleSimulationRangeChange}
+        canRun={simulationRangesAreValid}
+        onRun={handleRunSimulation}
       />
     : null
 

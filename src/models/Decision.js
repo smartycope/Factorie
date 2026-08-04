@@ -66,7 +66,7 @@ export default class Decision {
     if (this.answers.some((row) => row.length !== this.factors.length))
       return `Answers length (likely ${this.answers[0].length}) does not match factors length (${this.factors.length})`
     // const invalidAnswers = this.factors.filter((row) =>
-      // row.some((ans) => ans.isInvalid(this, )),
+    // row.some((ans) => ans.isInvalid(this, )),
     // )
     let invalidAnswers = []
     for (let i = 0; i < this.factors.length; i++) {
