@@ -17,12 +17,22 @@ import TableRow from "@mui/material/TableRow"
 import Paper from "@mui/material/Paper"
 import Card from "@mui/material/Card"
 import CardContent from "@mui/material/CardContent"
-import { IconButton, TextField } from "@mui/material"
+import FormControl from "@mui/material/FormControl"
+import InputLabel from "@mui/material/InputLabel"
+import MenuItem from "@mui/material/MenuItem"
+import Select from "@mui/material/Select"
+import { TextField } from "@mui/material"
 import Answer from "../models/Answer"
 import { Link } from "react-router-dom"
 import { getSuggestedUnitAnswerOptions } from "../suggestedUnits"
 
 const TRANSPOSED = true
+const ALL_OPTIONS = ""
+const persistedQuizFilters = {
+  focusedOption: ALL_OPTIONS,
+  onlyShowUnanswered: false,
+  factorSearch: "",
+}
 
 // TODO: negative values don't work well with this right now
 function cloneDecision(decision) {
@@ -104,12 +114,18 @@ function optionHasProblem(decision, optionIndex) {
   )
 }
 
-function optionIndexesForMode(decision, onlyShowUnanswered) {
+function optionIndexesForMode(
+  decision,
+  onlyShowUnanswered,
+  focusedOption = ALL_OPTIONS,
+) {
   if (!decision) return []
   return decision.options
     .map((_, index) => index)
     .filter(
-      (index) => !onlyShowUnanswered || optionHasProblem(decision, index),
+      (index) =>
+        (!focusedOption || decision.options[index] === focusedOption) &&
+        (!onlyShowUnanswered || optionHasProblem(decision, index)),
     )
 }
 
@@ -143,13 +159,11 @@ function AnswersTable({
   optionIdx,
   factorIdx,
   changeCell,
-  indexToIdx,
-  onlyShowUnanswered,
-  factorSearch,
+  optionIndexes,
+  factorIndexes,
 }) {
   const [page, setPage] = useState(0)
   const [rowsPerPage, setRowsPerPage] = useState(10)
-  const optionIndexes = optionIndexesForMode(decision, onlyShowUnanswered)
   const selectedOptionPosition = optionIndexes.indexOf(optionIdx)
   const selectedPage =
     selectedOptionPosition === -1 ? page : (
@@ -164,11 +178,7 @@ function AnswersTable({
   const safePage = Math.min(page, maxPage)
   const start = safePage * rowsPerPage
   const visibleOptionIndexes = optionIndexes.slice(start, start + rowsPerPage)
-  const visibleFactorIndexes = factorIndexesForMode(
-    decision,
-    onlyShowUnanswered,
-    factorSearch,
-  )
+  const visibleFactorIndexes = factorIndexes
 
   useEffect(() => {
     if (selectedOptionPosition === -1) return
@@ -205,7 +215,7 @@ function AnswersTable({
                     return (
                       <TableCell
                         key={c}
-                        onClick={() => changeCell(indexToIdx(r, c))}
+                        onClick={() => changeCell([r, c])}
                         sx={answerCellSx(isActive, hasProblem)}>
                         {text}
                       </TableCell>
@@ -238,18 +248,12 @@ function TransposedAnswersTable({
   optionIdx,
   factorIdx,
   changeCell,
-  indexToIdx,
-  onlyShowUnanswered,
-  factorSearch,
+  optionIndexes,
+  factorIndexes,
 }) {
   const activeCellRef = useRef(null)
   const [page, setPage] = useState(0)
   const [rowsPerPage, setRowsPerPage] = useState(10)
-  const factorIndexes = factorIndexesForMode(
-    decision,
-    onlyShowUnanswered,
-    factorSearch,
-  )
   const selectedFactorPosition = factorIndexes.indexOf(factorIdx)
   const selectedPage =
     selectedFactorPosition === -1 ? page : (
@@ -261,7 +265,6 @@ function TransposedAnswersTable({
   const safePage = Math.min(page, maxPage)
   const start = safePage * rowsPerPage
   const visibleFactorIndexes = factorIndexes.slice(start, start + rowsPerPage)
-  const optionIndexes = optionIndexesForMode(decision, onlyShowUnanswered)
 
   useEffect(() => {
     if (selectedFactorPosition === -1) return
@@ -275,7 +278,7 @@ function TransposedAnswersTable({
       block: "nearest",
       inline: "nearest",
     })
-  }, [optionIdx, factorIdx, safePage, onlyShowUnanswered])
+  }, [optionIdx, factorIdx, safePage, optionIndexes, factorIndexes])
 
   return (
     <>
@@ -305,7 +308,7 @@ function TransposedAnswersTable({
                         <TableCell
                           key={r}
                           ref={isActive ? activeCellRef : null}
-                          onClick={() => changeCell(indexToIdx(r, c))}
+                          onClick={() => changeCell([r, c])}
                           sx={answerCellSx(isActive, hasProblem)}>
                           {text}
                         </TableCell>
@@ -338,186 +341,57 @@ export default function Quiz() {
   const { decisions, setDecisions, selectedIndex, decision } = useDecisions()
 
   // UI state (unconditional hooks)
-  const [idx, setIdx] = useState(0)
-  const [anticolumnar, setAnticolumnar] = useState(false)
   const [precise, setPrecise] = useState(false)
-  const [unsure, setUnsure] = useState(false)
-  const [onlyShowUnanswered, setOnlyShowUnanswered] = useState(false)
-  const [factorSearch, setFactorSearch] = useState("")
+  const [unsure, setUnsure] = useState(null)
+  const [focusedOption, setFocusedOption] = useState(
+    persistedQuizFilters.focusedOption,
+  )
+  const [onlyShowUnanswered, setOnlyShowUnanswered] = useState(
+    persistedQuizFilters.onlyShowUnanswered,
+  )
+  const [factorSearch, setFactorSearch] = useState(
+    persistedQuizFilters.factorSearch,
+  )
+  const [selectedCell, setSelectedCell] = useState([0, 0])
+  const [history, setHistory] = useState([])
   // The value of the response given by the user
   const [resp, setResp] = useState(null)
-  // cur is only null if decision is not yet specified
-  const [cur, setCur] = useState(null)
-  const value = resp ?? cur ?? new Answer()
 
   const decisionOptionCount = decision?.options.length ?? 0
   const decisionFactorCount = decision?.factors.length ?? 0
-  const hasQuizCells = decisionOptionCount > 0 && decisionFactorCount > 0
+  const activeFocusedOption =
+    decision?.options.includes(focusedOption) ? focusedOption : ALL_OPTIONS
   const traversalOptionIndexes = optionIndexesForMode(
     decision,
     onlyShowUnanswered,
+    activeFocusedOption,
   )
   const traversalFactorIndexes = factorIndexesForMode(
     decision,
     onlyShowUnanswered,
     factorSearch,
   )
-  const numOptions = traversalOptionIndexes.length
-  const numFactors = traversalFactorIndexes.length
-  const hasVisibleQuizCells = numOptions > 0 && numFactors > 0
+  const hasVisibleQuizCells =
+    traversalOptionIndexes.length > 0 && traversalFactorIndexes.length > 0
+  const selectedCellIsVisible =
+    traversalOptionIndexes.includes(selectedCell[0]) &&
+    traversalFactorIndexes.includes(selectedCell[1])
+  const [optionIdx, factorIdx] =
+    hasVisibleQuizCells && !selectedCellIsVisible ?
+      [traversalOptionIndexes[0], traversalFactorIndexes[0]]
+    : selectedCell
 
-  // After we select a decision, initialize cur to the first cell if it's not already set
-  if (hasQuizCells && cur == null)
-    setCur(() => {
-      return copyAnswer(decision.getAnswer(0, 0))
-    })
-
-  // keep idx in bounds
-  if (idx > 0 && (!numOptions || !numFactors || idx >= numOptions * numFactors))
-    setIdx(0)
-
-  // index mapping helpers
-  function normalizeIdx(
-    localIdx,
-    sourceDecision = decision,
-    useOnlyShowUnanswered = onlyShowUnanswered,
-    sourceFactorSearch = factorSearch,
-  ) {
-    const sourceNumOptions = optionIndexesForMode(
-      sourceDecision,
-      useOnlyShowUnanswered,
-    ).length
-    const sourceNumFactors = factorIndexesForMode(
-      sourceDecision,
-      useOnlyShowUnanswered,
-      sourceFactorSearch,
-    ).length
-    const total = sourceNumOptions * sourceNumFactors
-    if (!total) return 0
-    return ((localIdx % total) + total) % total
-  }
-
-  function computeIndex(
-    localIdx = idx,
-    sourceDecision = decision,
-    useOnlyShowUnanswered = onlyShowUnanswered,
-    sourceFactorSearch = factorSearch,
-  ) {
-    const sourceOptionIndexes = optionIndexesForMode(
-      sourceDecision,
-      useOnlyShowUnanswered,
-    )
-    const sourceNumOptions = sourceOptionIndexes.length
-    const sourceFactorIndexes = factorIndexesForMode(
-      sourceDecision,
-      useOnlyShowUnanswered,
-      sourceFactorSearch,
-    )
-    const sourceNumFactors = sourceFactorIndexes.length
-    if (!sourceNumOptions || !sourceNumFactors) return [0, 0]
-
-    const normalizedIdx = normalizeIdx(
-      localIdx,
-      sourceDecision,
-      useOnlyShowUnanswered,
-      sourceFactorSearch,
-    )
-    if (TRANSPOSED ? anticolumnar : !anticolumnar) {
-      const optionIdx = normalizedIdx % sourceNumOptions
-      const factorPosition = Math.floor(normalizedIdx / sourceNumOptions)
-      return [sourceOptionIndexes[optionIdx], sourceFactorIndexes[factorPosition]]
-    }
-    const optionPosition = Math.floor(normalizedIdx / sourceNumFactors)
-    const factorPosition = normalizedIdx % sourceNumFactors
-    return [
-      sourceOptionIndexes[optionPosition],
-      sourceFactorIndexes[factorPosition],
-    ]
-  }
-
-  function indexToIdx(
-    optionIdx,
-    factorIdx,
-    sourceDecision = decision,
-    useOnlyShowUnanswered = onlyShowUnanswered,
-    sourceFactorSearch = factorSearch,
-  ) {
-    const sourceOptionIndexes = optionIndexesForMode(
-      sourceDecision,
-      useOnlyShowUnanswered,
-    )
-    const sourceNumOptions = sourceOptionIndexes.length
-    const sourceFactorIndexes = factorIndexesForMode(
-      sourceDecision,
-      useOnlyShowUnanswered,
-      sourceFactorSearch,
-    )
-    const sourceNumFactors = sourceFactorIndexes.length
-    if (!sourceNumOptions || !sourceNumFactors) return 0
-
-    const optionPosition = Math.max(0, sourceOptionIndexes.indexOf(optionIdx))
-    const factorPosition = Math.max(0, sourceFactorIndexes.indexOf(factorIdx))
-    if (TRANSPOSED ? anticolumnar : !anticolumnar) {
-      return factorPosition * sourceNumOptions + optionPosition
-    }
-    return optionPosition * sourceNumFactors + factorPosition
-  }
-
-  function nextIdxFromCurrent(sourceDecision, delta) {
-    const sourceOptionIndexes = optionIndexesForMode(
-      sourceDecision,
-      onlyShowUnanswered,
-    )
-    const sourceNumOptions = sourceOptionIndexes.length
-    const sourceFactorIndexes = factorIndexesForMode(
-      sourceDecision,
-      onlyShowUnanswered,
-      factorSearch,
-    )
-    const sourceNumFactors = sourceFactorIndexes.length
-    if (!sourceNumOptions || !sourceNumFactors) return 0
-
-    const currentOptionPosition = sourceOptionIndexes.indexOf(optionIdx)
-    const currentFactorPosition = sourceFactorIndexes.indexOf(factorIdx)
-    if (currentOptionPosition !== -1 && currentFactorPosition !== -1) {
-      return normalizeIdx(
-        indexToIdx(optionIdx, factorIdx, sourceDecision) + delta,
-        sourceDecision,
-        onlyShowUnanswered,
-        factorSearch,
-      )
-    }
-
-    const coordinates = []
-    if (TRANSPOSED ? anticolumnar : !anticolumnar)
-      sourceFactorIndexes.forEach((sourceFactorIndex) =>
-        sourceOptionIndexes.forEach((sourceOptionIndex) =>
-          coordinates.push([sourceOptionIndex, sourceFactorIndex]),
-        ),
-      )
-    else
-      sourceOptionIndexes.forEach((sourceOptionIndex) =>
-        sourceFactorIndexes.forEach((sourceFactorIndex) =>
-          coordinates.push([sourceOptionIndex, sourceFactorIndex]),
-        ),
-      )
-
-    const nextPosition = coordinates.findIndex(([nextOption, nextFactor]) =>
-      (TRANSPOSED ? anticolumnar : !anticolumnar) ?
-        nextFactor > factorIdx ||
-        (nextFactor === factorIdx && nextOption > optionIdx)
-      : nextOption > optionIdx ||
-        (nextOption === optionIdx && nextFactor > factorIdx),
-    )
-    return nextPosition === -1 ? 0 : nextPosition
-  }
-
-  const [optionIdx, factorIdx] = computeIndex()
   const option = hasVisibleQuizCells ? decision?.options[optionIdx] || "" : ""
   const factor =
     hasVisibleQuizCells ? decision?.factors[factorIdx]?.name || "" : ""
   const unit =
     hasVisibleQuizCells ? decision?.factors[factorIdx]?.unit || "" : ""
+  const currentAnswer =
+    hasVisibleQuizCells ?
+      copyAnswer(decision.getAnswer(optionIdx, factorIdx))
+    : new Answer()
+  const value = resp ?? currentAnswer
+  const isUnsure = unsure ?? currentAnswer.isRanged() ?? false
   const valueLabel = unit || "Value"
   const minLabel = unit ? `Min: ${unit}` : "Min"
   const maxLabel = unit ? `Max: ${unit}` : "Max"
@@ -532,44 +406,94 @@ export default function Quiz() {
     Number.isFinite(scale[1]) &&
     scale[0] < scale[1]
 
-  function changeCell(
-    newIdx,
-    sourceDecision = decision,
-    useOnlyShowUnanswered = onlyShowUnanswered,
-    sourceFactorSearch = factorSearch,
-  ) {
+  function changeCell(newCell, sourceDecision = decision, remember = true) {
+    if (!newCell) return
+    const [newOptionIdx, newFactorIdx] = newCell
     if (
-      !optionIndexesForMode(sourceDecision, useOnlyShowUnanswered).length ||
-      !factorIndexesForMode(
-        sourceDecision,
-        useOnlyShowUnanswered,
-        sourceFactorSearch,
-      ).length
+      !sourceDecision ||
+      newOptionIdx < 0 ||
+      newOptionIdx >= sourceDecision.options.length ||
+      newFactorIdx < 0 ||
+      newFactorIdx >= sourceDecision.factors.length
     )
       return
-
-    let newIdxValue
-    if (typeof newIdx === "function") newIdxValue = newIdx(idx)
-    else newIdxValue = newIdx
-    const normalizedIdx = normalizeIdx(
-      newIdxValue,
-      sourceDecision,
-      useOnlyShowUnanswered,
-      sourceFactorSearch,
+    if (
+      remember &&
+      (newOptionIdx !== optionIdx || newFactorIdx !== factorIdx)
     )
-    const [newOptionIdx, newFactorIdx] = computeIndex(
-      normalizedIdx,
-      sourceDecision,
-      useOnlyShowUnanswered,
-      sourceFactorSearch,
-    )
+      setHistory((previous) => [...previous, [optionIdx, factorIdx]])
     const newValue = copyAnswer(
       sourceDecision?.getAnswer(newOptionIdx, newFactorIdx),
     )
     setUnsure(newValue.isRanged() ?? false)
-    setCur(newValue)
     setResp(null)
-    setIdx(normalizedIdx)
+    setSelectedCell([newOptionIdx, newFactorIdx])
+  }
+
+  function getNextUnanswered(
+    currentlySelected,
+    ignoredFactors,
+    ignoredOptions,
+    sourceDecision = decision,
+  ) {
+    const ignoredFactorSet = new Set(ignoredFactors)
+    const ignoredOptionSet = new Set(ignoredOptions)
+    const coordinates = sourceDecision.factors.flatMap((_, sourceFactorIndex) =>
+      sourceDecision.options.map((__, sourceOptionIndex) => [
+        sourceOptionIndex,
+        sourceFactorIndex,
+      ]),
+    )
+    const currentPosition = coordinates.findIndex(
+      ([sourceOptionIndex, sourceFactorIndex]) =>
+        sourceOptionIndex === currentlySelected[0] &&
+        sourceFactorIndex === currentlySelected[1],
+    )
+
+    for (let offset = 1; offset <= coordinates.length; offset += 1) {
+      const position =
+        (Math.max(currentPosition, -1) + offset) % coordinates.length
+      const [sourceOptionIndex, sourceFactorIndex] = coordinates[position]
+      if (
+        !ignoredOptionSet.has(sourceOptionIndex) &&
+        !ignoredFactorSet.has(sourceFactorIndex) &&
+        answerHasProblem(sourceDecision, sourceOptionIndex, sourceFactorIndex)
+      )
+        return [sourceOptionIndex, sourceFactorIndex]
+    }
+    return null
+  }
+
+  function visibleIndexes(
+    sourceDecision = decision,
+    nextOnlyShowUnanswered = onlyShowUnanswered,
+    nextFactorSearch = factorSearch,
+    nextFocusedOption = activeFocusedOption,
+  ) {
+    return [
+      optionIndexesForMode(
+        sourceDecision,
+        nextOnlyShowUnanswered,
+        nextFocusedOption,
+      ),
+      factorIndexesForMode(
+        sourceDecision,
+        nextOnlyShowUnanswered,
+        nextFactorSearch,
+      ),
+    ]
+  }
+
+  function ignoredIndexes(sourceDecision = decision) {
+    const [visibleOptions, visibleFactors] = visibleIndexes(sourceDecision)
+    return [
+      sourceDecision.factors
+        .map((_, index) => index)
+        .filter((index) => !visibleFactors.includes(index)),
+      sourceDecision.options
+        .map((_, index) => index)
+        .filter((index) => !visibleOptions.includes(index)),
+    ]
   }
 
   function updateDecision(mutator) {
@@ -584,7 +508,15 @@ export default function Quiz() {
   function handleDeleteAll() {
     if (confirm("Are you sure you want to delete all answers?")) {
       const updatedDecision = updateDecision((d) => d.clearAllAnswers())
-      changeCell(0, updatedDecision)
+      setHistory([])
+      const [visibleOptions, visibleFactors] = visibleIndexes(updatedDecision)
+      changeCell(
+        visibleOptions.length && visibleFactors.length ?
+          [visibleOptions[0], visibleFactors[0]]
+        : null,
+        updatedDecision,
+        false,
+      )
     }
   }
 
@@ -592,7 +524,16 @@ export default function Quiz() {
     const updatedDecision = updateDecision((d) => {
       d.setAnswer(option, factor, submittedValue)
     })
-    changeCell(nextIdxFromCurrent(updatedDecision, 1), updatedDecision)
+    const [ignoredFactors, ignoredOptions] = ignoredIndexes(updatedDecision)
+    changeCell(
+      getNextUnanswered(
+        [optionIdx, factorIdx],
+        ignoredFactors,
+        ignoredOptions,
+        updatedDecision,
+      ),
+      updatedDecision,
+    )
   }
 
   function handleSuggestedUnitAnswer(answerValue) {
@@ -600,17 +541,26 @@ export default function Quiz() {
   }
 
   function handleSkip() {
-    changeCell((i) => i + 1)
+    const [ignoredFactors, ignoredOptions] = ignoredIndexes()
+    changeCell(
+      getNextUnanswered(
+        [optionIdx, factorIdx],
+        ignoredFactors,
+        ignoredOptions,
+      ),
+    )
   }
 
   function handleBack() {
-    changeCell((i) => Math.max(0, i - 1))
+    const previousCell = history.at(-1)
+    setHistory(history.slice(0, -1))
+    changeCell(previousCell, decision, false)
   }
 
   const step = precise ? 0.1 : 1
   const sliderMin = Number.isFinite(value.min) ? value.min : scale[0]
   const sliderMax = Number.isFinite(value.max) ? value.max : sliderMin
-  const sliderValue = unsure ? [sliderMin, sliderMax] : sliderMin
+  const sliderValue = isUnsure ? [sliderMin, sliderMax] : sliderMin
   const sliderMarks = [
     { value: scale[0], label: scale[0] },
     { value: scale[1], label: scale[1] },
@@ -636,10 +586,15 @@ export default function Quiz() {
       setResp(new Answer(scale[0], scale[1]))
   }
 
-  function changeFilters(nextOnlyShowUnanswered, nextFactorSearch) {
+  function changeFilters(
+    nextOnlyShowUnanswered,
+    nextFactorSearch,
+    nextFocusedOption = activeFocusedOption,
+  ) {
     const nextOptionIndexes = optionIndexesForMode(
       decision,
       nextOnlyShowUnanswered,
+      nextFocusedOption,
     )
     const nextFactorIndexes = factorIndexesForMode(
       decision,
@@ -647,39 +602,39 @@ export default function Quiz() {
       nextFactorSearch,
     )
 
-    if (!nextOptionIndexes.length || !nextFactorIndexes.length) {
-      setIdx(0)
-      return
-    }
+    if (!nextOptionIndexes.length || !nextFactorIndexes.length) return
 
     const nextOptionIdx =
       nextOptionIndexes.includes(optionIdx) ? optionIdx : nextOptionIndexes[0]
     const nextFactorIdx =
       nextFactorIndexes.includes(factorIdx) ? factorIdx : nextFactorIndexes[0]
-    changeCell(
-      indexToIdx(
-        nextOptionIdx,
-        nextFactorIdx,
-        decision,
-        nextOnlyShowUnanswered,
-        nextFactorSearch,
-      ),
-      decision,
-      nextOnlyShowUnanswered,
-      nextFactorSearch,
-    )
+    const visibleCell = ([sourceOptionIndex, sourceFactorIndex]) =>
+      nextOptionIndexes.includes(sourceOptionIndex) &&
+      nextFactorIndexes.includes(sourceFactorIndex)
+    setHistory((previous) => previous.filter(visibleCell))
+    changeCell([nextOptionIdx, nextFactorIdx], decision, false)
   }
 
   function handleOnlyShowUnansweredChange(event) {
     const isChecked = event.target.checked
     setOnlyShowUnanswered(isChecked)
+    persistedQuizFilters.onlyShowUnanswered = isChecked
     changeFilters(isChecked, factorSearch)
   }
 
   function handleFactorSearchChange(event) {
     const nextFactorSearch = event.target.value
     setFactorSearch(nextFactorSearch)
+    persistedQuizFilters.factorSearch = nextFactorSearch
     changeFilters(onlyShowUnanswered, nextFactorSearch)
+  }
+
+  function handleFocusedOptionChange(event) {
+    const nextFocusedOption = event.target.value
+    setFocusedOption(nextFocusedOption)
+    persistedQuizFilters.focusedOption = nextFocusedOption
+    setHistory([])
+    changeFilters(onlyShowUnanswered, factorSearch, nextFocusedOption)
   }
 
   const isRespInValid =
@@ -762,17 +717,23 @@ export default function Quiz() {
         <Typography variant="h4">Quiz</Typography>
       </Box>
 
-      {/* Top Checkboxes */}
+      {/* Quiz controls */}
       <Box sx={{ display: "flex", gap: 2, mb: 2, alignItems: "center" }}>
-        <FormControlLabel
-          control={
-            <Checkbox
-              checked={anticolumnar}
-              onChange={(e) => setAnticolumnar(e.target.checked)}
-            />
-          }
-          label="Left to Right"
-        />
+        <FormControl size="small" sx={{ minWidth: 200 }}>
+          <InputLabel id="focus-option-label">Focus option</InputLabel>
+          <Select
+            labelId="focus-option-label"
+            value={activeFocusedOption}
+            label="Focus option"
+            onChange={handleFocusedOptionChange}>
+            <MenuItem value={ALL_OPTIONS}>All</MenuItem>
+            {decision.options.map((optionName) => (
+              <MenuItem key={optionName} value={optionName}>
+                {optionName}
+              </MenuItem>
+            ))}
+          </Select>
+        </FormControl>
         <FormControlLabel
           control={
             <Checkbox
@@ -795,7 +756,7 @@ export default function Quiz() {
             <FormControlLabel
               control={
                 <Checkbox
-                  checked={unsure ?? false}
+                  checked={isUnsure}
                   onChange={handleUnsureChange}
                 />
               }
@@ -803,7 +764,7 @@ export default function Quiz() {
             />
 
             <Box sx={{ mt: 2 }}>
-              {!unsure ?
+              {!isUnsure ?
                 <Box sx={{ px: 2 }}>
                   {hasSuggestedUnitButtons ?
                     <SuggestedUnitAnswerButtons
@@ -904,7 +865,10 @@ export default function Quiz() {
             </Box>
 
             <Box sx={{ mt: 2 }}>
-              <Button onClick={handleBack} sx={{ mr: 1 }}>
+              <Button
+                onClick={handleBack}
+                disabled={!history.length}
+                sx={{ mr: 1 }}>
                 Back
               </Button>
               {!hasSuggestedUnitButtons && (
@@ -957,9 +921,8 @@ export default function Quiz() {
           optionIdx={optionIdx}
           factorIdx={factorIdx}
           changeCell={changeCell}
-          indexToIdx={indexToIdx}
-          onlyShowUnanswered={onlyShowUnanswered}
-          factorSearch={factorSearch}
+          optionIndexes={traversalOptionIndexes}
+          factorIndexes={traversalFactorIndexes}
         />
       )}
       {TRANSPOSED && (
@@ -968,9 +931,8 @@ export default function Quiz() {
           optionIdx={optionIdx}
           factorIdx={factorIdx}
           changeCell={changeCell}
-          indexToIdx={indexToIdx}
-          onlyShowUnanswered={onlyShowUnanswered}
-          factorSearch={factorSearch}
+          optionIndexes={traversalOptionIndexes}
+          factorIndexes={traversalFactorIndexes}
         />
       )}
       <Box sx={{ mt: 2, display: "flex" }}>
