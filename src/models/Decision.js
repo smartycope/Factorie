@@ -206,8 +206,10 @@ export default class Decision {
   // Throws an error if it fails
   setAnswer(option, factor, answer) {
     answer = Answer.parse(answer)
-    // if (answer === null) throw new Error(`Unable to parse answer ${answer}`)
     if (answer === null) throw new Error(`Unable to parse answer`)
+    // If they didn't answer it, that's fine
+    if (!answer.isAnswered()) return
+
     const err = answer.isInvalid(this, factor, true)
     if (err) throw new Error(err)
     this.answers[this._parseOptionParam(option)][

@@ -3,10 +3,10 @@ function nully(value) {
   return value === undefined || value === null || isNaN(value)
 }
 export default class Answer {
-  constructor(min = null, max = min, isTentative = false) {
+  constructor(min = null, max = min, tentative = false) {
     this._min = min
     this._max = max
-    this.isTentative = Boolean(isTentative)
+    this.tentative = Boolean(tentative)
     // They're either always both null or both defined
     if (nully(min) || nully(max)) {
       this._min = null
@@ -32,9 +32,17 @@ export default class Answer {
     return this._max
   }
 
+  isTentative(decision, factor) {
+    const factorIdx = decision._parseFactorParam(factor)
+
+    const {min: factorMin, max: factorMax} = decision.factors[factorIdx]
+    // It's tentative if the user has marked it as such, or if it has the maximum range possible (maximum uncertainty)
+    return this.tentative || ((factorMin != null && this.min == factorMin) && (factorMax != null && this.max == factorMax))
+  }
+
   // Returns an object, not a string
   serialize() {
-    return this.isTentative ?
+    return this.tentative ?
         [this.min, this.max, true]
       : [this.min, this.max]
   }
@@ -46,7 +54,7 @@ export default class Answer {
   clear() {
     this._min = null
     this._max = null
-    this.isTentative = false
+    this.tentative = false
   }
 
   // Retruns null if it can't parse it (but "" -> empty answer)
@@ -55,6 +63,8 @@ export default class Answer {
     if (answer instanceof Answer) return answer
     if (typeof answer === "number") return new Answer(answer, answer)
     if (typeof answer === "string") {
+      if (answer.trim() === "") return new Answer()
+
       const m = answer.match(
         // LLM translated version
         // /(([+-])?\d+(?:\.\d+)?)(?:\s?-\s?(([+-])?\d+(?:\.\d+)?))?/,
@@ -63,14 +73,19 @@ export default class Answer {
         // Hand made EZRegex Version
         // num = group(either(full_float, signed))
         // lineStart + ow + num + optional(ow + '-' + ow + num) + ow + lineEnd
-        /^(?:\s+)?((?:(?:(?:-|\+))?\d+\.(?:\d+)?(?:e(?:(?:-|\+))?\d+)?|(?:(?:-|\+))?\d+))(?:(?:\s+)?-(?:\s+)?((?:(?:(?:-|\+))?\d+\.(?:\d+)?(?:e(?:(?:-|\+))?\d+)?|(?:(?:-|\+))?\d+)))?(?:\s+)?$/,
-      ) // simplified
+        // /^(?:\s+)?((?:(?:(?:-|\+))?\d+\.(?:\d+)?(?:e(?:(?:-|\+))?\d+)?|(?:(?:-|\+))?\d+))(?:(?:\s+)?-(?:\s+)?((?:(?:(?:-|\+))?\d+\.(?:\d+)?(?:e(?:(?:-|\+))?\d+)?|(?:(?:-|\+))?\d+)))?(?:\s+)?$/,
+
+        // EZRegex Version with tentative
+        // num = group(either(full_float, signed))
+        // pattern = lineStart + ow + num + optional(ow + '-' + ow + num) + ow + optional(group('?', name="tentative"))+lineEnd
+        /^\s*((?:(?:(?:-|\+))?(?:\d*\.\d+|\d+\.\d*)(?:e(?:-|\+)\d+)?|(?:(?:-|\+))?\d+(?:e(?:-|\+)\d+)?))(?:\s*-\s*((?:(?:(?:-|\+))?(?:\d*\.\d+|\d+\.\d*)(?:e(?:-|\+)\d+)?|(?:(?:-|\+))?\d+(?:e(?:-|\+)\d+)?)))?\s*(?:(?<tentative>\?))?$/m
+      )
       if (m)
         return new Answer(
           parseFloat(m[1]),
           m[3] ? parseFloat(m[3]) : parseFloat(m[1]),
+          Boolean(m.groups?.tentative),
         )
-      else if (answer.trim() === "") return new Answer()
       else return null
     }
     return null
@@ -78,8 +93,8 @@ export default class Answer {
 
   toString() {
     if (!this.isAnswered()) return ""
-    if (this.isRanged()) return `${this.min} - ${this.max}`
-    return `${this.min}`
+    if (this.isRanged()) return `${this.min} - ${this.max}` + (this.tentative ? "?" : "")
+    return `${this.min}` + (this.tentative ? "?" : "")
   }
 
   isRanged() {
@@ -87,6 +102,7 @@ export default class Answer {
     return null
   }
 
+  // TODO: is this still accurate, with the new non-finite min/max system?
   isAnswered() {
     return Number.isFinite(this.min)
   }

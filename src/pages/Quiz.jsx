@@ -47,7 +47,7 @@ function formatAnswer(cell) {
 }
 
 function copyAnswer(answer) {
-  return new Answer(answer?.min, answer?.max, answer?.isTentative)
+  return new Answer(answer?.min, answer?.max, answer?.tentative)
 }
 
 function numberOrNull(value) {
@@ -59,21 +59,21 @@ function numberOrNull(value) {
 
 function updateAnswerMin(answer, min) {
   if (min === null)
-    return new Answer(null, null, answer.isTentative)
+    return new Answer(null, null, answer.tentative)
   return new Answer(
     min,
     Number.isFinite(answer.max) ? answer.max : min,
-    answer.isTentative,
+    answer.tentative,
   )
 }
 
 function updateAnswerMax(answer, max) {
   if (max === null)
-    return new Answer(null, null, answer.isTentative)
+    return new Answer(null, null, answer.tentative)
   return new Answer(
     Number.isFinite(answer.min) ? answer.min : max,
     max,
-    answer.isTentative,
+    answer.tentative,
   )
 }
 
@@ -113,7 +113,7 @@ function answerHasProblem(decision, optionIndex, factorIndex) {
   const factor = decision.factors[factorIndex].name
   return (
     !answer?.isAnswered() ||
-    answer.isTentative ||
+    answer.isTentative(decision, factor) ||
     Boolean(answer.isInvalid(decision, factor, true))
   )
 }
@@ -170,12 +170,12 @@ function factorIndexesForMode(
     )
 }
 
-function answerCellSx(isActive, hasProblem, isTentative) {
+function answerCellSx(isActive, hasProblem, tentative) {
   return {
     cursor: "pointer",
     backgroundColor:
       isActive ? "#bcdaf8"
-      : isTentative ? "#f6c34499"
+      : tentative ? "#f6c34499"
       : hasProblem ? "#e02d2d67"
       : "inherit",
   }
@@ -239,12 +239,12 @@ function AnswersTable({
                     const text = formatAnswer(cell)
                     const isActive = r === optionIdx && c === factorIdx
                     const hasProblem = answerHasProblem(decision, r, c)
-                    const isTentative = Answer.parse(cell)?.isTentative
+                    const tentative = Answer.parse(cell)?.isTentative(decision, factorIdx)
                     return (
                       <TableCell
                         key={c}
                         onClick={() => changeCell([r, c])}
-                        sx={answerCellSx(isActive, hasProblem, isTentative)}>
+                        sx={answerCellSx(isActive, hasProblem, tentative)}>
                         {text}
                       </TableCell>
                     )
@@ -356,7 +356,7 @@ function TransposedAnswersTable({
                           sx={answerCellSx(
                             isActive,
                             hasProblem,
-                            parsedAnswer?.isTentative,
+                            parsedAnswer?.isTentative(decision, c),
                           )}>
                           {text}
                         </TableCell>
@@ -611,7 +611,7 @@ export default function Quiz() {
 
   function handleSuggestedUnitAnswer(answerValue) {
     handleSubmit(
-      new Answer(answerValue, answerValue, value.isTentative),
+      new Answer(answerValue, answerValue, value.tentative),
     )
   }
 
@@ -694,7 +694,7 @@ export default function Quiz() {
     setUnsure(isChecked)
     if (isChecked && !value.isRanged() && hasSliderScale)
       setAnswerResponse(
-        new Answer(scale[0], scale[1], value.isTentative),
+        new Answer(scale[0], scale[1], value.tentative),
       )
   }
 
@@ -887,7 +887,7 @@ export default function Quiz() {
             <FormControlLabel
               control={
                 <Checkbox
-                  checked={value.isTentative}
+                  checked={value.tentative}
                   onChange={handleTentativeChange}
                 />
               }
@@ -912,7 +912,7 @@ export default function Quiz() {
                       step={step}
                       onChange={(e, v) =>
                         setAnswerResponse(
-                          new Answer(v, v, value.isTentative),
+                          new Answer(v, v, value.tentative),
                         )
                       }
                       marks={sliderMarks}
@@ -930,7 +930,7 @@ export default function Quiz() {
                         new Answer(
                           nextValue,
                           nextValue,
-                          value.isTentative,
+                          value.tentative,
                         ),
                       )
                     }}
@@ -960,7 +960,7 @@ export default function Quiz() {
                       step={step}
                       onChange={(e, v) =>
                         setAnswerResponse(
-                          new Answer(v[0], v[1], value.isTentative),
+                          new Answer(v[0], v[1], value.tentative),
                         )
                       }
                       marks={rangedSliderMarks}

@@ -139,11 +139,11 @@ test("tentative answers survive serialization without changing legacy answers", 
   assert.deepEqual(serialized.answers[0][1], [8, 8])
 
   const copy = Decision.deserialize(serialized)
-  assert.equal(copy.getAnswer("Tacos", "Taste").isTentative, true)
-  assert.equal(copy.getAnswer("Tacos", "Cost").isTentative, false)
-  assert.equal(new Answer(null, null, true).isTentative, true)
+  assert.equal(copy.getAnswer("Tacos", "Taste").tentative, true)
+  assert.equal(copy.getAnswer("Tacos", "Cost").tentative, false)
+  assert.equal(new Answer(null, null, true).tentative, true)
   copy.getAnswer("Tacos", "Taste").clear()
-  assert.equal(copy.getAnswer("Tacos", "Taste").isTentative, false)
+  assert.equal(copy.getAnswer("Tacos", "Taste").tentative, false)
 })
 
 test("option notes follow renames, are removed with options, and migrate safely", () => {
