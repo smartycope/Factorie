@@ -21,6 +21,9 @@ import FormControl from "@mui/material/FormControl"
 import InputLabel from "@mui/material/InputLabel"
 import MenuItem from "@mui/material/MenuItem"
 import Select from "@mui/material/Select"
+import IconButton from "@mui/material/IconButton"
+import InputAdornment from "@mui/material/InputAdornment"
+import CloseIcon from "@mui/icons-material/Close"
 import { TextField } from "@mui/material"
 import Answer from "../models/Answer"
 import { Link } from "react-router-dom"
@@ -739,6 +742,10 @@ export default function Quiz() {
 
   function handleFactorSearchChange(event) {
     const nextFactorSearch = event.target.value
+    changeFactorSearch(nextFactorSearch)
+  }
+
+  function changeFactorSearch(nextFactorSearch) {
     setFactorSearch(nextFactorSearch)
     persistedQuizFilters.factorSearch = nextFactorSearch
     changeFilters(onlyShowUnanswered, nextFactorSearch)
@@ -1051,6 +1058,22 @@ export default function Quiz() {
           size="small"
           value={factorSearch}
           onChange={handleFactorSearchChange}
+          slotProps={{
+            input: {
+              endAdornment:
+                factorSearch ?
+                  <InputAdornment position="end">
+                    <IconButton
+                      size="small"
+                      aria-label="Clear factor search"
+                      onClick={() => changeFactorSearch("")}
+                      edge="end">
+                      <CloseIcon fontSize="small" />
+                    </IconButton>
+                  </InputAdornment>
+                : null,
+            },
+          }}
           sx={{ flex: 1, maxWidth: 400, mx: 2 }}
         />
         <FormControlLabel

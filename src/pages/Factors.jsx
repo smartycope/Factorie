@@ -15,6 +15,8 @@ import DialogContent from "@mui/material/DialogContent"
 import DialogTitle from "@mui/material/DialogTitle"
 import DeleteIcon from "@mui/icons-material/Delete"
 import DragIndicatorIcon from "@mui/icons-material/DragIndicator"
+import CloseIcon from "@mui/icons-material/Close"
+import InputAdornment from "@mui/material/InputAdornment"
 // Select/MenuItem not needed anymore
 import Paper from "@mui/material/Paper"
 import Table from "@mui/material/Table"
@@ -825,6 +827,22 @@ export default function Factors() {
               size="small"
               value={factorSearch}
               onChange={(event) => setFactorSearch(event.target.value)}
+              slotProps={{
+                input: {
+                  endAdornment:
+                    factorSearch ?
+                      <InputAdornment position="end">
+                        <IconButton
+                          size="small"
+                          aria-label="Clear factor search"
+                          onClick={() => setFactorSearch("")}
+                          edge="end">
+                          <CloseIcon fontSize="small" />
+                        </IconButton>
+                      </InputAdornment>
+                    : null,
+                },
+              }}
               sx={{ flex: 1, maxWidth: 400, mx: 2 }}
             />
             <FormControlLabel
