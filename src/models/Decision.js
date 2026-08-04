@@ -186,6 +186,21 @@ export default class Decision {
     this.answers.push(row)
   }
 
+  reorderOptions(order) {
+    const expectedOrder = this.options.map((_, index) => index)
+    if (
+      !Array.isArray(order) ||
+      order.length !== expectedOrder.length ||
+      [...order].sort((a, b) => a - b).some((value, index) => value !== index)
+    )
+      throw new Error(
+        "Option order must contain every option index exactly once",
+      )
+
+    this.options = order.map((index) => this.options[index])
+    this.answers = order.map((index) => this.answers[index])
+  }
+
   removeOption(option) {
     const idx = this._parseOptionParam(option)
     if (idx === -1) return

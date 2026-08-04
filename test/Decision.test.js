@@ -90,6 +90,31 @@ test("factor reordering keeps answer columns aligned", () => {
   )
 })
 
+test("option reordering keeps answer rows and notes aligned", () => {
+  const decision = createCompleteDecision()
+  decision.setOptionNote("Tacos", "Taco note")
+  decision.setOptionNote("Soup", "Soup note")
+
+  decision.reorderOptions([1, 0])
+
+  assert.deepEqual(decision.options, ["Soup", "Tacos"])
+  assert.deepEqual(
+    decision.answers.map((row) => row.map((answer) => answer.min)),
+    [
+      [7, 4],
+      [10, 8],
+    ],
+  )
+  assert.deepEqual(decision.optionNotes, {
+    Tacos: "Taco note",
+    Soup: "Soup note",
+  })
+  assert.throws(
+    () => decision.reorderOptions([0, 0]),
+    /Option order must contain every option index exactly once/,
+  )
+})
+
 test("Decision serialization uses Factor objects and copy is independent", () => {
   const decision = createCompleteDecision()
   decision.setOptionNote("Tacos", "Open late and has outdoor seating.")

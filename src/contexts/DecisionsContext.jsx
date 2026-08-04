@@ -83,6 +83,10 @@ export function DecisionsProvider({ children }) {
     modifyCurrentDecision((d) => d.removeOption(idx))
   }
 
+  function reorderOptions(order) {
+    modifyCurrentDecision((d) => d.reorderOptions(order))
+  }
+
   function createDecision() {
     const name = window.prompt("Decision name")
     if (!name) return
@@ -164,6 +168,7 @@ export function DecisionsProvider({ children }) {
     reorderFactors,
     addOption,
     removeOption,
+    reorderOptions,
     decision,
     createDecision,
     removeDecision,

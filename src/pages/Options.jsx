@@ -2,6 +2,7 @@ import { Fragment, useState, useRef } from "react"
 import AddIcon from "@mui/icons-material/Add"
 import DeleteIcon from "@mui/icons-material/Delete"
 import NotesOutlinedIcon from "@mui/icons-material/NotesOutlined"
+import DragIndicatorIcon from "@mui/icons-material/DragIndicator"
 import Box from "@mui/material/Box"
 import Button from "@mui/material/Button"
 import Divider from "@mui/material/Divider"
@@ -22,10 +23,13 @@ function OptionsEditor({
   decision,
   addOption,
   removeOption,
+  reorderOptions,
   renameOption,
   setOptionNote,
 }) {
   const [selectedOptionIndex, setSelectedOptionIndex] = useState(null)
+  const [draggedOptionIndex, setDraggedOptionIndex] = useState(null)
+  const [dragOverOptionIndex, setDragOverOptionIndex] = useState(null)
   const [optionName, setOptionName] = useState("")
   const nameBox = useRef()
   const selectedOption =
@@ -66,6 +70,44 @@ function OptionsEditor({
     } else if (selectedOptionIndex > index) {
       setSelectedOptionIndex(selectedOptionIndex - 1)
     }
+  }
+
+  function handleDragStart(event, index) {
+    setDraggedOptionIndex(index)
+    event.dataTransfer.setData("text/plain", String(index))
+    event.dataTransfer.effectAllowed = "move"
+  }
+
+  function handleDrop(event, targetIndex) {
+    event.preventDefault()
+    const transferredValue = event.dataTransfer.getData("text/plain")
+    const transferredIndex = Number(transferredValue)
+    const sourceIndex =
+      transferredValue !== "" && Number.isInteger(transferredIndex) ?
+        transferredIndex
+      : draggedOptionIndex
+
+    setDraggedOptionIndex(null)
+    setDragOverOptionIndex(null)
+    if (
+      sourceIndex == null ||
+      sourceIndex < 0 ||
+      sourceIndex >= decision.options.length ||
+      sourceIndex === targetIndex
+    )
+      return
+
+    const order = decision.options.map((_, index) => index)
+    const [movedOptionIndex] = order.splice(sourceIndex, 1)
+    order.splice(targetIndex, 0, movedOptionIndex)
+    reorderOptions(order)
+    if (selectedOptionIndex != null)
+      setSelectedOptionIndex(order.indexOf(selectedOptionIndex))
+  }
+
+  function handleDragEnd() {
+    setDraggedOptionIndex(null)
+    setDragOverOptionIndex(null)
   }
 
   return (
@@ -136,6 +178,21 @@ function OptionsEditor({
                 {index > 0 && <Divider component="li" />}
                 <ListItem
                   disablePadding
+                  onDragOver={(event) => {
+                    event.preventDefault()
+                    event.dataTransfer.dropEffect = "move"
+                    setDragOverOptionIndex(index)
+                  }}
+                  onDrop={(event) => handleDrop(event, index)}
+                  sx={{
+                    outline:
+                      dragOverOptionIndex === index &&
+                      draggedOptionIndex !== index ?
+                        "2px solid"
+                      : "2px solid transparent",
+                    // outlineColor: "primary.main",
+                    outlineOffset: -2,
+                  }}
                   secondaryAction={
                     <Tooltip title={`Delete ${option}`}>
                       <IconButton
@@ -150,13 +207,21 @@ function OptionsEditor({
                     selected={selectedOptionIndex === index}
                     onClick={() => selectOption(index)}
                     sx={{ pr: 7 }}>
-                    <ListItemIcon sx={{ minWidth: 40 }}>
-                      <NotesOutlinedIcon
+                    <ListItemIcon
+                      draggable
+                      title={`Drag to reorder ${option}`}
+                      onDragStart={(event) => handleDragStart(event, index)}
+                      onDragEnd={handleDragEnd}
+                      sx={{ minWidth: 32, cursor: "grab" }}>
+                      <DragIndicatorIcon color="action" />
+                    </ListItemIcon>
+                    {/* <ListItemIcon sx={{ minWidth: 40 }}> */}
+                      {/* <NotesOutlinedIcon
                         color={
                           decision.optionNotes[option] ? "primary" : "disabled"
                         }
-                      />
-                    </ListItemIcon>
+                      /> */}
+                    {/* </ListItemIcon> */}
                     <ListItemText
                       primary={option}
                       secondary={
@@ -203,6 +268,7 @@ export default function Options() {
     selectedIndex,
     addOption,
     removeOption,
+    reorderOptions,
     renameOption,
     setOptionNote,
   } = useDecisions()
@@ -220,6 +286,7 @@ export default function Options() {
           decision={decision}
           addOption={addOption}
           removeOption={removeOption}
+          reorderOptions={reorderOptions}
           renameOption={renameOption}
           setOptionNote={setOptionNote}
         />
