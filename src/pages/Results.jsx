@@ -20,6 +20,7 @@ import texts from "../assets/texts.json"
 import HelpOverlay from "../components/HelpOverlay"
 import Link from "@mui/material/Link"
 import { Link as RouterLink } from "react-router-dom"
+import {Tooltip} from "@mui/material";
 
 const PCA = PCAImport.default ?? PCAImport
 
@@ -857,6 +858,60 @@ function RadarPlot({
   )
 }
 
+function Summary({ results, best, worst }) {
+  const chipProps = {
+    variant: "outlined",
+    size: "small",
+    sx: { ml: 0.5, mr: 0.5 },
+  }
+
+  const formatChipList = (list, color) => {
+    return (
+      <Stack
+        direction="column"
+        spacing={0.5}
+        flexwrap="wrap"
+        sx={{ display: "inline-flex", gap: 0.5, ml: 0.5, mr: 0.5 }}>
+        {list.map((reason, index) => (
+          <Chip
+            key={`chip-${index}`}
+            label={reason}
+            color={color}
+            {...chipProps}
+          />
+        ))}
+      </Stack>
+    )
+  }
+  console.log(results)
+  return (
+    <Box>
+      <Box sx={{ mt: 1, whiteSpace: "pre-line" }}>
+        The best option is
+        <Tooltip title={results.filter((r) => r.option === best.is)[0].percentage.toFixed(1) + "% badness"}>
+        <Chip label={best.is} color="success" {...chipProps} />
+        </Tooltip>
+        because of
+        {formatChipList(best.because, "success")}
+        even though
+        {formatChipList(best.despite, "error")}
+        isn't what you want.
+        <br />
+        <br />
+        The worst option is
+        <Tooltip title={results.filter((r) => r.option === worst.is)[0].percentage.toFixed(1) + "% badness"}>
+          <Chip label={worst.is} color="error" {...chipProps} />
+        </Tooltip>
+        because of
+        {formatChipList(worst.because, "error")}
+        even though
+        {formatChipList(worst.despite, "success")}
+        is what you want.
+      </Box>
+    </Box>
+  )
+}
+
 export default function Results() {
   const { decision } = useDecisions()
 
@@ -1112,59 +1167,30 @@ export default function Results() {
     )
   }
 
-  const chipProps = { variant: "outlined", size: "small", sx: { ml: .5, mr: .5 } }
-
-  const formatChipList = (list, color) => {
-    return <Stack direction="column" spacing={0.5} flexWrap="wrap" sx={{ display: "inline-flex", gap: 0.5, ml: 0.5, mr: 0.5 }}>
-    {list.map((reason, index) => (
-      <Chip
-        key={`chip-${index}`}
-        label={reason}
-        color={color}
-        {...chipProps}
-      />
-    ))}
-    </Stack>
-  }
-
   return (
     <Box sx={{ flex: 1, p: 3, minWidth: 0 }}>
       <Stack spacing={3}>
-        <Box>
-          <Box
-            sx={{
-              display: "flex",
-              justifyContent: "space-between",
-              alignItems: "center",
-              gap: 2,
-            }}>
-            <Typography variant="h5">Results</Typography>
-            <Button
-              variant="outlined"
-              onClick={() => setSimulationRun((run) => run + 1)}>
-              Rerun simulation
-            </Button>
-          </Box>
-          {simulationControls}
-          <Box sx={{ mt: 1, whiteSpace: "pre-line" }}>
-            The best option is
-            <Chip label={best.is} color="success" {...chipProps} />
-            because of
-            {formatChipList(best.because, "success")}
-            even though
-            {formatChipList(best.despite, "error")}
-            isn't what you want.
-            <br />
-            <br />
-            The worst option is
-            <Chip label={worst.is} color="error" {...chipProps} />
-            because of
-            {formatChipList(worst.because, "error")}
-            even though
-            {formatChipList(worst.despite, "success")}
-            is what you want.
-          </Box>
+        <Box
+          sx={{
+            display: "flex",
+            justifyContent: "space-between",
+            alignItems: "center",
+            gap: 2,
+          }}>
+          <Typography variant="h5">Results</Typography>
+          <Button
+            variant="outlined"
+            onClick={() => setSimulationRun((run) => run + 1)}>
+            Rerun simulation
+          </Button>
         </Box>
+        {simulationControls}
+
+        <Summary
+          results={results}
+          best={best}
+          worst={worst}
+        />
 
         <Divider />
 
