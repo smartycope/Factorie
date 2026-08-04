@@ -301,12 +301,13 @@ function TransposedAnswersTable({
     setPage(selectedPage)
   }, [selectedFactorPosition, selectedPage, selectedPageKey])
 
-  useEffect(() => {
-    activeCellRef.current?.scrollIntoView({
-      block: "nearest",
-      inline: "nearest",
-    })
-  }, [optionIdx, factorIdx, safePage, optionIndexes, factorIndexes])
+//   Why did I want this??
+//   useEffect(() => {
+//     activeCellRef.current?.scrollIntoView({
+//       block: "nearest",
+//       inline: "nearest",
+//     })
+//   }, [optionIdx, factorIdx, safePage, optionIndexes, factorIndexes])
 
   return (
     <>
