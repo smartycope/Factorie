@@ -65,12 +65,19 @@ export default class Decision {
       return `Answers length (${this.answers.length}) does not match options length (${this.options.length})`
     if (this.answers.some((row) => row.length !== this.factors.length))
       return `Answers length (likely ${this.answers[0].length}) does not match factors length (${this.factors.length})`
-    if (
-      this.answers.some((row) =>
-        row.some((ans, i) => ans.isInvalid(this, i, true)),
-      )
-    )
-      return "Not all answers are valid"
+    // const invalidAnswers = this.factors.filter((row) =>
+      // row.some((ans) => ans.isInvalid(this, )),
+    // )
+    let invalidAnswers = []
+    for (let i = 0; i < this.factors.length; i++) {
+      for (let j = 0; j < this.options.length; j++) {
+        const ans = this.answers[j][i]
+        if (ans.isInvalid(this, i)) invalidAnswers.push([ans])
+      }
+    }
+    if (invalidAnswers.length)
+      return `Not all answers are valid:
+        ${invalidAnswers.map((row) => row.map((ans) => ans.serialize()).join(", ")).join("\n")}`
 
     if (
       !allowUnanswered &&
@@ -163,13 +170,13 @@ export default class Decision {
       order.length !== expectedOrder.length ||
       [...order].sort((a, b) => a - b).some((value, index) => value !== index)
     ) {
-      throw new Error("Factor order must contain every factor index exactly once")
+      throw new Error(
+        "Factor order must contain every factor index exactly once",
+      )
     }
 
     this.factors = order.map((index) => this.factors[index])
-    this.answers = this.answers.map((row) =>
-      order.map((index) => row[index]),
-    )
+    this.answers = this.answers.map((row) => order.map((index) => row[index]))
   }
 
   addOption(name) {
@@ -208,10 +215,10 @@ export default class Decision {
     answer = Answer.parse(answer)
     if (answer === null) throw new Error(`Unable to parse answer`)
     // If they didn't answer it, that's fine
-    if (!answer.isAnswered()) return
-
-    const err = answer.isInvalid(this, factor, true)
-    if (err) throw new Error(err)
+    if (answer.isAnswered()) {
+      const err = answer.isInvalid(this, factor, true)
+      if (err) throw new Error(err)
+    }
     this.answers[this._parseOptionParam(option)][
       this._parseFactorParam(factor)
     ] = answer
@@ -261,16 +268,15 @@ export default class Decision {
       d.factors = obj.factors.map((factor) => Factor.deserialize(factor))
     } else {
       const legacyFactors = obj.factors ?? {}
-      d.factors = (legacyFactors.names ?? []).map(
-        (name, index) =>
-          Factor.deserialize({
-            name,
-            unit: legacyFactors.units?.[index] ?? null,
-            optimal: legacyFactors.optimals?.[index] ?? null,
-            weight: legacyFactors.weights?.[index] ?? null,
-            min: legacyFactors.mins?.[index] ?? null,
-            max: legacyFactors.maxs?.[index] ?? null,
-          }),
+      d.factors = (legacyFactors.names ?? []).map((name, index) =>
+        Factor.deserialize({
+          name,
+          unit: legacyFactors.units?.[index] ?? null,
+          optimal: legacyFactors.optimals?.[index] ?? null,
+          weight: legacyFactors.weights?.[index] ?? null,
+          min: legacyFactors.mins?.[index] ?? null,
+          max: legacyFactors.maxs?.[index] ?? null,
+        }),
       )
     }
     d.options = obj.options
@@ -288,6 +294,39 @@ export default class Decision {
 
   copy() {
     return Decision.deserialize(this.serialize())
+  }
+
+  // Returns an array of factors that have non-finite ranges, given the currently answered answers.
+  // For example, if there's a non-finite factor, but all answers are finite, it won't be returned
+  getPracticalNonFiniteFactors() {
+    return this.factors.filter(
+      (factor, factorIndex) =>
+        !factor.isFinite() &&
+        this.answers.some((row) => !row[factorIndex].isAnswered()),
+    )
+  }
+
+  // Return a copy of the current decision, but with any unanswered answers replaced with maximally
+  // uncertain answers (their mins and maxs equal their factors' mins and maxs)
+  // Because factors can have non-finite ranges, overrideFactorRanges can be used to override the ranges
+  // of specific factors. Format looks like {factorName: [min, max]}
+  uncertainCopy(overrideFactorRanges = {}) {
+    const copy = this.copy()
+
+    // Override the ranges of specific factors
+    copy.factors.forEach((factor, factorIndex) => {
+      const [overrideMin, overrideMax] = overrideFactorRanges[factor.name] ?? []
+      const min = overrideMin ?? factor.min
+      const max = overrideMax ?? factor.max
+      copy.answers.forEach((row) => {
+        const ans = row[factorIndex]
+        if (ans.isAnswered()) return
+        ans.min = min
+        ans.max = max
+      })
+    })
+
+    return copy
   }
 
   // ---- Calculation methods ----

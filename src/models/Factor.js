@@ -37,4 +37,12 @@ export default class Factor {
       : factor.optimal
     return new Factor({ ...factor, optimal })
   }
+
+  isFinite() {
+    return (
+      Number.isFinite(this.min) &&
+      Number.isFinite(this.max) &&
+      this.min < this.max
+    )
+  }
 }

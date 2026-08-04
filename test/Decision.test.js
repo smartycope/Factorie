@@ -213,6 +213,46 @@ test("an unfinished optimal does not resolve to an answer extreme", () => {
   assert.deepEqual(decision.optimals(), [null])
 })
 
+test("uncertain copies fill only unanswered cells and identify needed ranges", () => {
+  const decision = new Decision("Partial")
+  decision.addFactor({
+    name: "Quality",
+    optimal: 10,
+    weight: 0.5,
+    min: 0,
+    max: 10,
+  })
+  decision.addFactor({
+    name: "Cost",
+    optimal: -Infinity,
+    weight: 0.5,
+    min: 0,
+    max: null,
+  })
+  decision.addOption("Known")
+  decision.addOption("Unknown")
+  decision.setAnswer("Known", "Quality", 8)
+  decision.setAnswer("Known", "Cost", 25)
+
+  assert.deepEqual(
+    decision.getPracticalNonFiniteFactors().map((factor) => factor.name),
+    ["Cost"],
+  )
+
+  const simulated = decision.uncertainCopy({ Cost: [0, 100] })
+  assert.deepEqual(
+    simulated.getAnswer("Unknown", "Quality").serialize(),
+    [0, 10],
+  )
+  assert.deepEqual(simulated.getAnswer("Unknown", "Cost").serialize(), [0, 100])
+  assert.deepEqual(simulated.getAnswer("Known", "Cost").serialize(), [25, 25])
+  assert.equal(decision.getAnswer("Unknown", "Quality").isAnswered(), false)
+  assert.equal(simulated.isInvalid(), null)
+
+  decision.setAnswer("Unknown", "Cost", 40)
+  assert.deepEqual(decision.getPracticalNonFiniteFactors(), [])
+})
+
 test("Min and Max optimals rank the lowest and highest answers as best", () => {
   const decision = new Decision("Directions")
   decision.addFactor({

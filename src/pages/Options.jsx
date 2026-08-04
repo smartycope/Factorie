@@ -127,7 +127,7 @@ function OptionsEditor({
 
       <Paper variant="outlined" sx={{ mt: 1, overflow: "hidden" }}>
         {decision.options.length === 0 ?
-          <Typography color="text.caption" sx={{ px: 2, py: 4 }}>
+          <Typography color="text.secondary" sx={{ px: 2, py: 4 }}>
             No options yet. Enter a name above to add your first one.
           </Typography>
         : <List disablePadding aria-label="Decision options">

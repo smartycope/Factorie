@@ -8,6 +8,9 @@ import Stack from "@mui/material/Stack"
 import Autocomplete from "@mui/material/Autocomplete"
 import TextField from "@mui/material/TextField"
 import Chip from "@mui/material/Chip"
+import Button from "@mui/material/Button"
+import Checkbox from "@mui/material/Checkbox"
+import FormControlLabel from "@mui/material/FormControlLabel"
 import { useTheme } from "@mui/material/styles"
 import Plot from "react-plotly.js"
 import * as PCAImport from "pca-js"
@@ -18,6 +21,11 @@ import { Link as RouterLink } from "react-router-dom"
 
 const PCA = PCAImport.default ?? PCAImport
 
+const persistedValues = {
+  useSimulatedValues: false,
+  simulationRanges: {},
+}
+
 function joinAnd(items, { oxford = false, ampersand = false } = {}) {
   const andToken = ampersand ? " & " : " and "
   if (!items || items.length === 0) return ""
@@ -25,6 +33,98 @@ function joinAnd(items, { oxford = false, ampersand = false } = {}) {
   if (items.length === 2) return items.join(andToken)
   const sep = oxford ? `,${andToken}` : andToken
   return `${items.slice(0, -1).join(", ")}${sep}${items[items.length - 1]}`
+}
+
+function rangeInputValue(factor, ranges, endpoint) {
+  const range = ranges[factor.name]
+  if (range && Object.hasOwn(range, endpoint)) return range[endpoint]
+  return Number.isFinite(factor[endpoint]) ? factor[endpoint] : ""
+}
+
+function resolvedRange(factor, ranges) {
+  const minValue = rangeInputValue(factor, ranges, "min")
+  const maxValue = rangeInputValue(factor, ranges, "max")
+  const min = minValue === "" ? NaN : Number(minValue)
+  const max = maxValue === "" ? NaN : Number(maxValue)
+  return {
+    min,
+    max,
+    valid: Number.isFinite(min) && Number.isFinite(max) && min < max,
+  }
+}
+
+function SimulationControls({
+  enabled,
+  onEnabledChange,
+  factors,
+  ranges,
+  onRangeChange,
+}) {
+  return (
+    <Paper variant="outlined" sx={{ p: 2, mt: 2 }}>
+      <FormControlLabel
+        control={
+          <Checkbox
+            checked={enabled}
+            onChange={(event) => onEnabledChange(event.target.checked)}
+          />
+        }
+        label="Run with simulated values"
+      />
+      {enabled && (
+        <Stack spacing={2} sx={{ mt: 1 }}>
+          <Typography variant="body2">
+            Unanswered entries will use the full possible range, representing
+            maximum uncertainty.
+          </Typography>
+          {factors.map((factor) => {
+            const range = resolvedRange(factor, ranges)
+            const minValue = rangeInputValue(factor, ranges, "min")
+            const maxValue = rangeInputValue(factor, ranges, "max")
+            const hasBothValues = minValue !== "" && maxValue !== ""
+            return (
+              <Box
+                key={factor.name}
+                sx={{ display: "flex", gap: 2, alignItems: "flex-start" }}>
+                <Typography sx={{ minWidth: 160, pt: 1 }}>
+                  {factor.name}
+                </Typography>
+                <TextField
+                  label="Finite minimum"
+                  type="number"
+                  size="small"
+                  value={minValue}
+                  disabled={Number.isFinite(factor.min)}
+                  onChange={(event) =>
+                    onRangeChange(factor.name, "min", event.target.value)
+                  }
+                />
+                <TextField
+                  label="Finite maximum"
+                  type="number"
+                  size="small"
+                  value={maxValue}
+                  disabled={Number.isFinite(factor.max)}
+                  error={hasBothValues && !range.valid}
+                  helperText={
+                    hasBothValues && !range.valid ?
+                      "Maximum must be greater than minimum"
+                    : ""
+                  }
+                  onChange={(event) =>
+                    onRangeChange(factor.name, "max", event.target.value)
+                  }
+                />
+                <Typography sx={{ pt: 1, color: "text.secondary" }}>
+                    <i>{factor.unit ? `${factor.unit}` : ""}</i>
+                </Typography>
+              </Box>
+            )
+          })}
+        </Stack>
+      )}
+    </Paper>
+  )
 }
 
 // TODO: Weights.jsx also uses this, move it into a utils file or something
@@ -325,7 +425,7 @@ function HeatmapPlot({
           zeroline: false,
           autorange: "reversed",
           automargin: true,
-        //   scaleanchor: "x",
+          //   scaleanchor: "x",
         },
         margin: { t: 60, b: 20, l: leftMargin, r: 20 },
         title: { text: "How good each option is" },
@@ -628,12 +728,66 @@ export default function Results() {
   const { decision } = useDecisions()
 
   const [includedRadar, setIncludedRadar] = useState([])
+  const [useSimulatedValues, _setUseSimulatedValues] = useState(
+    persistedValues.useSimulatedValues,
+  )
+  const [simulationRanges, _setSimulationRanges] = useState(
+    persistedValues.simulationRanges,
+  )
+  const setUseSimulatedValues = (to) => {
+      if (to instanceof Function) to = to(useSimulatedValues)
+      persistedValues.useSimulatedValues = to
+      _setUseSimulatedValues(to)
+  }
+  const setSimulationRanges = (to) => {
+      if (to instanceof Function) to = to(simulationRanges)
+      persistedValues.simulationRanges = to
+      _setSimulationRanges(to)
+  }
+  const [simulationRun, setSimulationRun] = useState(0)
   const invalid = decision?.isInvalid() || ""
+  const hasUnansweredAnswers = invalid.startsWith("Not all answers are filled")
+  const canUseSimulatedValues =
+    Boolean(decision) &&
+    hasUnansweredAnswers &&
+    decision.isInvalid(true) === null
+
+  const nonFiniteFactors = useMemo(
+    () =>
+      canUseSimulatedValues ? decision.getPracticalNonFiniteFactors() : [],
+    [canUseSimulatedValues, decision],
+  )
+
+  const overrideFactorRanges = useMemo(
+    () =>
+      Object.fromEntries(
+        nonFiniteFactors.map((factor) => {
+          const range = resolvedRange(factor, simulationRanges)
+          return [factor.name, [range.min, range.max]]
+        }),
+      ),
+    [nonFiniteFactors, simulationRanges],
+  )
+
+  const simulationRangesAreValid = nonFiniteFactors.every(
+    (factor) => resolvedRange(factor, simulationRanges).valid,
+  )
+  const simulationReady =
+    canUseSimulatedValues && useSimulatedValues && simulationRangesAreValid
+
+  const calculationDecision = useMemo(() => {
+    if (!decision) return null
+    if (simulationReady) return decision.uncertainCopy(overrideFactorRanges)
+    return invalid ? null : decision
+  }, [decision, invalid, overrideFactorRanges, simulationReady])
 
   const calc = useMemo(() => {
-    if (!decision || invalid) return null
-    return decision.calculateAll({ method: "threshold" })
-  }, [decision, invalid])
+    if (!calculationDecision || calculationDecision.isInvalid()) return null
+    return calculationDecision.calculateAll({
+      method: "threshold",
+      run: simulationRun,
+    })
+  }, [calculationDecision, simulationRun])
 
   const labels = useMemo(() => {
     if (!decision) return []
@@ -653,7 +807,7 @@ export default function Results() {
     factorNames,
     answers,
   } = useMemo(() => {
-    if (!decision || !calc) {
+    if (!calculationDecision || !calc) {
       return {
         results: [],
         optimalNormalized: [],
@@ -670,10 +824,10 @@ export default function Results() {
     }
     // Resolve Min/Max optimal sentinels from the completed answer set before
     // sending the theoretical best to Plotly.
-    const optimal = decision.optimalNormalized()
+    const optimal = calculationDecision.optimalNormalized()
     const worstOpt = optimal.map((v) => (Math.round(v) === 0 ? 1 : 0))
     const normalized_weighted_dists = calc.mean.badness || []
-    const resultsRows = decision.options.map((opt, i) => ({
+    const resultsRows = calculationDecision.options.map((opt, i) => ({
       score: normalized_weighted_dists[i],
       option: opt,
       percentage: (normalized_weighted_dists[i] || 0) * 100,
@@ -688,11 +842,32 @@ export default function Results() {
       goodnessConf: calc.std.goodness || [],
       best: calc.best || null,
       worst: calc.worst || null,
-      weights: decision.factors.map((factor) => factor.weight),
-      factorNames: decision.factors.map((factor) => factor.name),
-      answers: decision.weightedAnswers(0.5) || [],
+      weights: calculationDecision.factors.map((factor) => factor.weight),
+      factorNames: calculationDecision.factors.map((factor) => factor.name),
+      answers: calculationDecision.weightedAnswers(0.5) || [],
     }
-  }, [decision, calc])
+  }, [calculationDecision, calc])
+
+  function handleSimulationRangeChange(factorName, endpoint, value) {
+    setSimulationRanges((current) => ({
+      ...current,
+      [factorName]: {
+        ...current[factorName],
+        [endpoint]: value,
+      },
+    }))
+  }
+
+  const simulationControls =
+    canUseSimulatedValues ?
+      <SimulationControls
+        enabled={useSimulatedValues}
+        onEnabledChange={setUseSimulatedValues}
+        factors={nonFiniteFactors}
+        ranges={simulationRanges}
+        onRangeChange={handleSimulationRangeChange}
+      />
+    : null
 
   if (!decision) {
     return (
@@ -731,8 +906,9 @@ export default function Results() {
   else if (invalid.startsWith("Not all answers are valid"))
     err = (
       <Typography variant="body2">
-        Not all answers are valid! Either you haven't answered some questions yet, or you have an answer that's
-        out of range of the min/max of it's factor. Head over to the{" "}
+        Not all answers are valid! Either you haven't answered some questions
+        yet, or you have an answer that's out of range of the min/max of it's
+        factor. Head over to the{" "}
         <Link component={RouterLink} to="/quiz">
           Quiz
         </Link>{" "}
@@ -764,11 +940,20 @@ export default function Results() {
       </Typography>
     )
 
-  if (invalid) {
+  if (invalid && !calc) {
     return (
       <Box sx={{ flex: 1, p: 3 }}>
         <Typography variant="h6">Results unavailable</Typography>
         {err}
+        {simulationControls}
+        {canUseSimulatedValues &&
+          useSimulatedValues &&
+          !simulationRangesAreValid && (
+            <Typography color="error" variant="body2" sx={{ mt: 1 }}>
+              Enter a finite minimum and maximum for every factor in order to
+              run the simulation.
+            </Typography>
+          )}
         <br />
         <Box sx={{ color: "#00000010" }}>{invalid}</Box>
       </Box>
@@ -779,7 +964,21 @@ export default function Results() {
     <Box sx={{ flex: 1, p: 3, minWidth: 0 }}>
       <Stack spacing={3}>
         <Box>
-          <Typography variant="h5">Results</Typography>
+          <Box
+            sx={{
+              display: "flex",
+              justifyContent: "space-between",
+              alignItems: "center",
+              gap: 2,
+            }}>
+            <Typography variant="h5">Results</Typography>
+            <Button
+              variant="outlined"
+              onClick={() => setSimulationRun((run) => run + 1)}>
+              Rerun simulation
+            </Button>
+          </Box>
+          {simulationControls}
           <Typography variant="body2" sx={{ mt: 1, whiteSpace: "pre-line" }}>
             The best option is <code>{best.is}</code> because of{" "}
             <code>{joinAnd(best.because)}</code>, even though{" "}
@@ -794,7 +993,7 @@ export default function Results() {
         <Divider />
 
         <GoodnessPlot
-          decision={decision}
+          decision={calculationDecision}
           goodness={goodness}
           goodnessConf={goodnessConf}
         />
@@ -809,7 +1008,7 @@ export default function Results() {
           normalizedAnswers={normalizedAnswers}
           factorNames={factorNames}
           weights={weights}
-          decision={decision}
+          decision={calculationDecision}
           answers={answers}
           calc={calc}
         />

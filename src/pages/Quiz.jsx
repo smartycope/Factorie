@@ -386,7 +386,7 @@ function TransposedAnswersTable({
 }
 
 export default function Quiz() {
-  const { decisions, setDecisions, selectedIndex, decision } = useDecisions()
+  const { decisions, setDecisions, selectedIndex, decision, modifyCurrentDecision:updateDecision } = useDecisions()
 
   // UI state (unconditional hooks)
   const [precise, setPrecise] = useState(false)
@@ -456,10 +456,7 @@ export default function Quiz() {
     hasVisibleQuizCells ?
       [decision.mins()[factorIdx], decision.maxs()[factorIdx]]
     : [null, null]
-  const hasSliderScale =
-    Number.isFinite(scale[0]) &&
-    Number.isFinite(scale[1]) &&
-    scale[0] < scale[1]
+  const hasSliderScale = decision.factors[factorIdx].isFinite()
 
   function focusValueInput() {
     requestAnimationFrame(() => valueInputRef.current?.focus())
@@ -476,8 +473,10 @@ export default function Quiz() {
     setResp(answer)
   }
 
-  function changeCell(newCell, sourceDecision = decision, remember = true) {
-    focusValueInput()
+  function changeCell(newCell, sourceDecision = decision, remember = true, dontFocus = false) {
+    if (!dontFocus) {
+      focusValueInput()
+    }
     if (!newCell) return
     const [newOptionIdx, newFactorIdx] = newCell
     if (
@@ -569,14 +568,6 @@ export default function Quiz() {
     ]
   }
 
-  function updateDecision(mutator) {
-    const copy = decisions.slice()
-    const d = cloneDecision(decision)
-    mutator(d)
-    copy[selectedIndex] = d
-    setDecisions(copy)
-    return d
-  }
 
   function handleDeleteAll() {
     if (confirm("Are you sure you want to delete all answers?")) {
@@ -707,6 +698,7 @@ export default function Quiz() {
     nextOnlyShowUnanswered,
     nextFactorSearch,
     nextFocusedOption = activeFocusedOption,
+    dontFocus = false
   ) {
     const nextOptionIndexes = optionIndexesForMode(
       decision,
@@ -730,7 +722,7 @@ export default function Quiz() {
       nextOptionIndexes.includes(sourceOptionIndex) &&
       nextFactorIndexes.includes(sourceFactorIndex)
     setHistory((previous) => previous.filter(visibleCell))
-    changeCell([nextOptionIdx, nextFactorIdx], decision, false)
+    changeCell([nextOptionIdx, nextFactorIdx], decision, false, dontFocus)
   }
 
   function handleOnlyShowUnansweredChange(event) {
@@ -742,13 +734,13 @@ export default function Quiz() {
 
   function handleFactorSearchChange(event) {
     const nextFactorSearch = event.target.value
-    changeFactorSearch(nextFactorSearch)
+    changeFactorSearch(nextFactorSearch, true)
   }
 
-  function changeFactorSearch(nextFactorSearch) {
+  function changeFactorSearch(nextFactorSearch, dontFocus = false) {
     setFactorSearch(nextFactorSearch)
     persistedQuizFilters.factorSearch = nextFactorSearch
-    changeFilters(onlyShowUnanswered, nextFactorSearch)
+    changeFilters(onlyShowUnanswered, nextFactorSearch, activeFocusedOption, dontFocus)
   }
 
   function handleFocusedOptionChange(event) {
