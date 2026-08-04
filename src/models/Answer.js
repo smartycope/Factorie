@@ -3,11 +3,15 @@ function nully(value) {
   return value === undefined || value === null || isNaN(value)
 }
 export default class Answer {
-  constructor(min = null, max = min) {
+  constructor(min = null, max = min, isTentative = false) {
     this._min = min
     this._max = max
+    this.isTentative = Boolean(isTentative)
     // They're either always both null or both defined
-    if (nully(min) || nully(max)) this.clear()
+    if (nully(min) || nully(max)) {
+      this._min = null
+      this._max = null
+    }
   }
 
   set min(min) {
@@ -30,7 +34,9 @@ export default class Answer {
 
   // Returns an object, not a string
   serialize() {
-    return [this.min, this.max]
+    return this.isTentative ?
+        [this.min, this.max, true]
+      : [this.min, this.max]
   }
 
   static deserialize(data) {
@@ -40,6 +46,7 @@ export default class Answer {
   clear() {
     this._min = null
     this._max = null
+    this.isTentative = false
   }
 
   // Retruns null if it can't parse it (but "" -> empty answer)

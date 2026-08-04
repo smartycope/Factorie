@@ -119,6 +119,22 @@ test("Decision serialization uses Factor objects and copy is independent", () =>
   assert.equal(decision.optionNotes.Tacos, "Open late and has outdoor seating.")
 })
 
+test("tentative answers survive serialization without changing legacy answers", () => {
+  const decision = createCompleteDecision()
+  decision.setAnswer("Tacos", "Taste", new Answer(9, 10, true))
+
+  const serialized = JSON.parse(decision.serialize())
+  assert.deepEqual(serialized.answers[0][0], [9, 10, true])
+  assert.deepEqual(serialized.answers[0][1], [8, 8])
+
+  const copy = Decision.deserialize(serialized)
+  assert.equal(copy.getAnswer("Tacos", "Taste").isTentative, true)
+  assert.equal(copy.getAnswer("Tacos", "Cost").isTentative, false)
+  assert.equal(new Answer(null, null, true).isTentative, true)
+  copy.getAnswer("Tacos", "Taste").clear()
+  assert.equal(copy.getAnswer("Tacos", "Taste").isTentative, false)
+})
+
 test("option notes follow renames, are removed with options, and migrate safely", () => {
   const decision = createCompleteDecision()
   decision.setOptionNote(0, "Try the al pastor")

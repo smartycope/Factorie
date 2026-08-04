@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState, Fragment } from "react"
+import { useEffect, useEffectEvent, useRef, useState, Fragment } from "react"
 import DeleteIcon from "@mui/icons-material/Delete"
 import { useDecisions } from "../contexts/UseDecisions"
 import Decision from "../models/Decision"
@@ -44,23 +44,34 @@ function formatAnswer(cell) {
 }
 
 function copyAnswer(answer) {
-  return new Answer(answer?.min, answer?.max)
+  return new Answer(answer?.min, answer?.max, answer?.isTentative)
 }
 
 function numberOrNull(value) {
-  if (value === "") return null
-  const parsed = Number(value)
+  const normalized = String(value).replaceAll(",", "").replaceAll("$", "").trim()
+  if (normalized === "") return null
+  const parsed = Number(normalized)
   return Number.isFinite(parsed) ? parsed : null
 }
 
 function updateAnswerMin(answer, min) {
-  if (min === null) return new Answer()
-  return new Answer(min, Number.isFinite(answer.max) ? answer.max : min)
+  if (min === null)
+    return new Answer(null, null, answer.isTentative)
+  return new Answer(
+    min,
+    Number.isFinite(answer.max) ? answer.max : min,
+    answer.isTentative,
+  )
 }
 
 function updateAnswerMax(answer, max) {
-  if (max === null) return new Answer()
-  return new Answer(Number.isFinite(answer.min) ? answer.min : max, max)
+  if (max === null)
+    return new Answer(null, null, answer.isTentative)
+  return new Answer(
+    Number.isFinite(answer.min) ? answer.min : max,
+    max,
+    answer.isTentative,
+  )
 }
 
 function SuggestedUnitAnswerButtons({ options, value, onAnswer }) {
@@ -98,7 +109,9 @@ function answerHasProblem(decision, optionIndex, factorIndex) {
   const answer = Answer.parse(decision.answers[optionIndex]?.[factorIndex])
   const factor = decision.factors[factorIndex].name
   return (
-    !answer?.isAnswered() || Boolean(answer.isInvalid(decision, factor, true))
+    !answer?.isAnswered() ||
+    answer.isTentative ||
+    Boolean(answer.isInvalid(decision, factor, true))
   )
 }
 
@@ -129,9 +142,16 @@ function optionIndexesForMode(
     )
 }
 
-function factorIndexesForMode(decision, onlyShowUnanswered, factorSearch = "") {
+function factorIndexesForMode(
+  decision,
+  onlyShowUnanswered,
+  factorSearch = "",
+  focusedOption = ALL_OPTIONS,
+) {
   if (!decision) return []
   const query = factorSearch.trim().toLowerCase()
+  const focusedOptionIndex =
+    focusedOption ? decision.options.indexOf(focusedOption) : -1
   return decision.factors
     .map((_, index) => index)
     .filter(
@@ -140,15 +160,19 @@ function factorIndexesForMode(decision, onlyShowUnanswered, factorSearch = "") {
           String(decision.factors[index].name)
             .toLowerCase()
             .includes(query)) &&
-        (!onlyShowUnanswered || factorHasProblem(decision, index)),
+        (!onlyShowUnanswered ||
+          (focusedOptionIndex === -1 ?
+            factorHasProblem(decision, index)
+          : answerHasProblem(decision, focusedOptionIndex, index))),
     )
 }
 
-function answerCellSx(isActive, hasProblem) {
+function answerCellSx(isActive, hasProblem, isTentative) {
   return {
     cursor: "pointer",
     backgroundColor:
       isActive ? "#bcdaf8"
+      : isTentative ? "#f6c34499"
       : hasProblem ? "#e02d2d67"
       : "inherit",
   }
@@ -212,11 +236,12 @@ function AnswersTable({
                     const text = formatAnswer(cell)
                     const isActive = r === optionIdx && c === factorIdx
                     const hasProblem = answerHasProblem(decision, r, c)
+                    const isTentative = Answer.parse(cell)?.isTentative
                     return (
                       <TableCell
                         key={c}
                         onClick={() => changeCell([r, c])}
-                        sx={answerCellSx(isActive, hasProblem)}>
+                        sx={answerCellSx(isActive, hasProblem, isTentative)}>
                         {text}
                       </TableCell>
                     )
@@ -287,7 +312,13 @@ function TransposedAnswersTable({
           <Table sx={{ width: "max-content", minWidth: "100%" }}>
             <TableHead>
               <TableRow>
-                <TableCell></TableCell>
+                <TableCell
+                  sx={{
+                    position: "sticky",
+                    left: 0,
+                    zIndex: 3,
+                    backgroundColor: "background.paper",
+                  }}></TableCell>
                 {optionIndexes.map((r) => (
                   <TableCell key={r} sx={{ whiteSpace: "nowrap" }}>
                     {decision.options[r]}
@@ -299,9 +330,19 @@ function TransposedAnswersTable({
               {visibleFactorIndexes.map((c) => {
                 return (
                   <TableRow key={c}>
-                    <TableCell>{decision.factors[c].name}</TableCell>
+                    <TableCell
+                      sx={{
+                        position: "sticky",
+                        left: 0,
+                        zIndex: 2,
+                        backgroundColor: "background.paper",
+                      }}>
+                      {decision.factors[c].name}
+                    </TableCell>
                     {optionIndexes.map((r) => {
-                      const text = formatAnswer(decision.answers[r]?.[c])
+                      const cell = decision.answers[r]?.[c]
+                      const parsedAnswer = Answer.parse(cell)
+                      const text = formatAnswer(cell)
                       const isActive = r === optionIdx && c === factorIdx
                       const hasProblem = answerHasProblem(decision, r, c)
                       return (
@@ -309,7 +350,11 @@ function TransposedAnswersTable({
                           key={r}
                           ref={isActive ? activeCellRef : null}
                           onClick={() => changeCell([r, c])}
-                          sx={answerCellSx(isActive, hasProblem)}>
+                          sx={answerCellSx(
+                            isActive,
+                            hasProblem,
+                            parsedAnswer?.isTentative,
+                          )}>
                           {text}
                         </TableCell>
                       )
@@ -356,6 +401,10 @@ export default function Quiz() {
   const [history, setHistory] = useState([])
   // The value of the response given by the user
   const [resp, setResp] = useState(null)
+  const [valueInputText, setValueInputText] = useState(null)
+  const [minInputText, setMinInputText] = useState(null)
+  const [maxInputText, setMaxInputText] = useState(null)
+  const valueInputRef = useRef(null)
 
   const decisionOptionCount = decision?.options.length ?? 0
   const decisionFactorCount = decision?.factors.length ?? 0
@@ -370,6 +419,7 @@ export default function Quiz() {
     decision,
     onlyShowUnanswered,
     factorSearch,
+    activeFocusedOption,
   )
   const hasVisibleQuizCells =
     traversalOptionIndexes.length > 0 && traversalFactorIndexes.length > 0
@@ -386,6 +436,8 @@ export default function Quiz() {
     hasVisibleQuizCells ? decision?.factors[factorIdx]?.name || "" : ""
   const unit =
     hasVisibleQuizCells ? decision?.factors[factorIdx]?.unit || "" : ""
+  const factorDefinition =
+    hasVisibleQuizCells ? decision?.factors[factorIdx] : null
   const currentAnswer =
     hasVisibleQuizCells ?
       copyAnswer(decision.getAnswer(optionIdx, factorIdx))
@@ -406,7 +458,23 @@ export default function Quiz() {
     Number.isFinite(scale[1]) &&
     scale[0] < scale[1]
 
+  function focusValueInput() {
+    requestAnimationFrame(() => valueInputRef.current?.focus())
+  }
+
+  function clearInputText() {
+    setValueInputText(null)
+    setMinInputText(null)
+    setMaxInputText(null)
+  }
+
+  function setAnswerResponse(answer) {
+    clearInputText()
+    setResp(answer)
+  }
+
   function changeCell(newCell, sourceDecision = decision, remember = true) {
+    focusValueInput()
     if (!newCell) return
     const [newOptionIdx, newFactorIdx] = newCell
     if (
@@ -426,6 +494,7 @@ export default function Quiz() {
       sourceDecision?.getAnswer(newOptionIdx, newFactorIdx),
     )
     setUnsure(newValue.isRanged() ?? false)
+    clearInputText()
     setResp(null)
     setSelectedCell([newOptionIdx, newFactorIdx])
   }
@@ -480,6 +549,7 @@ export default function Quiz() {
         sourceDecision,
         nextOnlyShowUnanswered,
         nextFactorSearch,
+        nextFocusedOption,
       ),
     ]
   }
@@ -537,7 +607,9 @@ export default function Quiz() {
   }
 
   function handleSuggestedUnitAnswer(answerValue) {
-    handleSubmit(new Answer(answerValue, answerValue))
+    handleSubmit(
+      new Answer(answerValue, answerValue, value.isTentative),
+    )
   }
 
   function handleSkip() {
@@ -557,13 +629,46 @@ export default function Quiz() {
     changeCell(previousCell, decision, false)
   }
 
+  function handleClearAnswer() {
+    const updatedDecision = updateDecision((d) => {
+      d.setAnswer(option, factor, new Answer())
+    })
+    changeCell([optionIdx, factorIdx], updatedDecision, false)
+  }
+
+  const submitOnEnter = useEffectEvent(() => {
+    if (hasVisibleQuizCells) handleSubmit()
+  })
+
+  useEffect(() => {
+    function handleKeyDown(event) {
+      if (
+        event.key !== "Enter" ||
+        event.repeat ||
+        event.isComposing
+      )
+        return
+      event.preventDefault()
+      submitOnEnter()
+    }
+
+    window.addEventListener("keydown", handleKeyDown)
+    return () => window.removeEventListener("keydown", handleKeyDown)
+  }, [])
+
   const step = precise ? 0.1 : 1
   const sliderMin = Number.isFinite(value.min) ? value.min : scale[0]
   const sliderMax = Number.isFinite(value.max) ? value.max : sliderMin
   const sliderValue = isUnsure ? [sliderMin, sliderMax] : sliderMin
   const sliderMarks = [
-    { value: scale[0], label: scale[0] },
-    { value: scale[1], label: scale[1] },
+    {
+      value: scale[0],
+      label: factorDefinition?.min == null ? "−∞" : scale[0],
+    },
+    {
+      value: scale[1],
+      label: factorDefinition?.max == null ? "∞" : scale[1],
+    },
   ]
   const rangedSliderMarks = [sliderMin, sliderMax].reduce(
     (marks, markValue) => {
@@ -572,9 +677,11 @@ export default function Quiz() {
       if (existingIndex === -1)
         return [...marks, { value: markValue, label: markValue }]
 
-      return marks.map((mark, index) =>
-        index === existingIndex ? { ...mark, label: markValue } : mark,
-      )
+      return marks.map((mark, index) => {
+        if (index !== existingIndex) return mark
+        if (mark.label === "−∞" || mark.label === "∞") return mark
+        return { ...mark, label: markValue }
+      })
     },
     sliderMarks,
   )
@@ -583,7 +690,14 @@ export default function Quiz() {
     const isChecked = event.target.checked
     setUnsure(isChecked)
     if (isChecked && !value.isRanged() && hasSliderScale)
-      setResp(new Answer(scale[0], scale[1]))
+      setAnswerResponse(
+        new Answer(scale[0], scale[1], value.isTentative),
+      )
+  }
+
+  function handleTentativeChange(event) {
+    setResp(new Answer(value.min, value.max, event.target.checked))
+    focusValueInput()
   }
 
   function changeFilters(
@@ -600,6 +714,7 @@ export default function Quiz() {
       decision,
       nextOnlyShowUnanswered,
       nextFactorSearch,
+      nextFocusedOption,
     )
 
     if (!nextOptionIndexes.length || !nextFactorIndexes.length) return
@@ -762,6 +877,15 @@ export default function Quiz() {
               }
               label="I'm not sure"
             />
+            <FormControlLabel
+              control={
+                <Checkbox
+                  checked={value.isTentative}
+                  onChange={handleTentativeChange}
+                />
+              }
+              label="Tentative"
+            />
 
             <Box sx={{ mt: 2 }}>
               {!isUnsure ?
@@ -779,7 +903,11 @@ export default function Quiz() {
                       min={scale[0]}
                       max={scale[1]}
                       step={step}
-                      onChange={(e, v) => setResp(new Answer(v, v))}
+                      onChange={(e, v) =>
+                        setAnswerResponse(
+                          new Answer(v, v, value.isTentative),
+                        )
+                      }
                       marks={sliderMarks}
                     />
                   : <Typography variant="body2" sx={{ mb: 2 }}>
@@ -789,11 +917,20 @@ export default function Quiz() {
                   }
                   <TextField
                     onChange={(e) => {
+                      setValueInputText(e.target.value)
                       const nextValue = numberOrNull(e.target.value)
-                      setResp(new Answer(nextValue, nextValue))
+                      setResp(
+                        new Answer(
+                          nextValue,
+                          nextValue,
+                          value.isTentative,
+                        ),
+                      )
                     }}
                     key={`t-${optionIdx}-${factorIdx}`}
-                    value={value.min ?? ""}
+                    value={valueInputText ?? value.min ?? ""}
+                    inputRef={valueInputRef}
+                    autoFocus
                     label={valueLabel}
                     shrink="true"
                     error={isRespInValid}
@@ -814,7 +951,11 @@ export default function Quiz() {
                       min={scale[0]}
                       max={scale[1]}
                       step={step}
-                      onChange={(e, v) => setResp(new Answer(v[0], v[1]))}
+                      onChange={(e, v) =>
+                        setAnswerResponse(
+                          new Answer(v[0], v[1], value.isTentative),
+                        )
+                      }
                       marks={rangedSliderMarks}
                     />
                   : <Typography variant="body2" sx={{ mb: 2 }}>
@@ -825,13 +966,16 @@ export default function Quiz() {
                   {/* } */}
                   <span>
                     <TextField
-                      onChange={(e) =>
+                      onChange={(e) => {
+                        setMinInputText(e.target.value)
                         setResp(
                           updateAnswerMin(value, numberOrNull(e.target.value)),
                         )
-                      }
+                      }}
                       key={`t1-${optionIdx}-${factorIdx}`}
-                      value={value.min ?? ""}
+                      value={minInputText ?? value.min ?? ""}
+                      inputRef={valueInputRef}
+                      autoFocus
                       label={minLabel}
                       shrink="true"
                       error={isRespInValid}
@@ -847,13 +991,14 @@ export default function Quiz() {
                       {" - "}
                     </span>
                     <TextField
-                      onChange={(e) =>
+                      onChange={(e) => {
+                        setMaxInputText(e.target.value)
                         setResp(
                           updateAnswerMax(value, numberOrNull(e.target.value)),
                         )
-                      }
+                      }}
                       key={`t2-${optionIdx}-${factorIdx}`}
-                      value={value.max ?? ""}
+                      value={maxInputText ?? value.max ?? ""}
                       label={maxLabel}
                       shrink="true"
                       error={isRespInValid}
@@ -865,13 +1010,16 @@ export default function Quiz() {
             </Box>
 
             <Box sx={{ mt: 2 }}>
+              <Button onClick={handleClearAnswer} sx={{ mr: 1 }}>
+                Clear Answer
+              </Button>
               <Button
                 onClick={handleBack}
                 disabled={!history.length}
                 sx={{ mr: 1 }}>
                 Back
               </Button>
-              {!hasSuggestedUnitButtons && (
+              {(!hasSuggestedUnitButtons || isUnsure) && (
                 <Button
                   variant="contained"
                   onClick={() => handleSubmit()}
