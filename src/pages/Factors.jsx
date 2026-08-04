@@ -397,6 +397,7 @@ export default function Factors() {
 
   // Edit state tracks which factor (by index) is being modified. We reuse the add form fields while editing.
   const [editFactorIndex, setEditFactorIndex] = useState(null)
+  const [clearExistingAnswers, setClearExistingAnswers] = useState(true)
   const [showOnlyUnfinished, setShowOnlyUnfinished] = useState(false)
   const [factorSearch, setFactorSearch] = useState("")
   const [unitMenuAnchorEl, setUnitMenuAnchorEl] = useState(null)
@@ -414,6 +415,7 @@ export default function Factors() {
     setAddMaxUnbounded(DEFAULTS.maxUnbounded)
     setAddMin(DEFAULTS.min)
     setAddMax(DEFAULTS.max)
+    setClearExistingAnswers(true)
   }, [])
 
   useEffect(() => {
@@ -446,6 +448,7 @@ export default function Factors() {
       setAddMaxUnbounded(factor.max == null)
       setAddMin(factor.min ?? DEFAULTS.min)
       setAddMax(factor.max ?? DEFAULTS.max)
+      setClearExistingAnswers(true)
     }, 0)
     return () => clearTimeout(t)
   }, [editFactorIndex, decision])
@@ -513,7 +516,7 @@ export default function Factors() {
 
     if (editFactorIndex != null) {
       // modify existing factor, including the name
-      editFactor(editFactorIndex, newFactor)
+      editFactor(editFactorIndex, newFactor, clearExistingAnswers)
       // exit edit mode
       setEditFactorIndex(null)
       // reset add form
@@ -778,6 +781,19 @@ export default function Factors() {
                 <Typography color="error" sx={{ mt: 1 }}>
                   {addError}
                 </Typography>
+              )}
+              {editFactorIndex != null && (
+                <FormControlLabel
+                  control={
+                    <Checkbox
+                      checked={clearExistingAnswers}
+                      onChange={(event) =>
+                        setClearExistingAnswers(event.target.checked)
+                      }
+                    />
+                  }
+                  label="Clear existing answers"
+                />
               )}
               <Box sx={{ mt: 1 }}>
                 {editFactorIndex != null ?

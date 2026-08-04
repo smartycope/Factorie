@@ -137,6 +137,11 @@ export default class Decision {
     if (max !== undefined) currentFactor.max = max
   }
 
+  clearFactorAnswers(factor) {
+    const idx = this._parseFactorParam(factor)
+    for (const row of this.answers) row[idx].clear()
+  }
+
   removeFactor(factor) {
     let idx
     try {

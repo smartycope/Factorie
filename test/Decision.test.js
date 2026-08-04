@@ -119,6 +119,17 @@ test("Decision serialization uses Factor objects and copy is independent", () =>
   assert.equal(decision.optionNotes.Tacos, "Open late and has outdoor seating.")
 })
 
+test("clearing a factor's answers preserves the other answer columns", () => {
+  const decision = createCompleteDecision()
+
+  decision.clearFactorAnswers("Taste")
+
+  assert.equal(decision.getAnswer("Tacos", "Taste").isAnswered(), false)
+  assert.equal(decision.getAnswer("Soup", "Taste").isAnswered(), false)
+  assert.equal(decision.getAnswer("Tacos", "Cost").min, 8)
+  assert.equal(decision.getAnswer("Soup", "Cost").min, 4)
+})
+
 test("tentative answers survive serialization without changing legacy answers", () => {
   const decision = createCompleteDecision()
   decision.setAnswer("Tacos", "Taste", new Answer(9, 10, true))

@@ -60,8 +60,11 @@ export function DecisionsProvider({ children }) {
     )
   }
 
-  function editFactor(idx, patch) {
-    modifyCurrentDecision((d) => d.editFactor(idx, patch))
+  function editFactor(idx, patch, clearExistingAnswers = false) {
+    modifyCurrentDecision((d) => {
+      d.editFactor(idx, patch)
+      if (clearExistingAnswers) d.clearFactorAnswers(idx)
+    })
   }
 
   function removeFactor(idx) {
