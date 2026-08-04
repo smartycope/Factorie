@@ -68,6 +68,10 @@ export function DecisionsProvider({ children }) {
     modifyCurrentDecision((d) => d.removeFactor(idx))
   }
 
+  function reorderFactors(order) {
+    modifyCurrentDecision((d) => d.reorderFactors(order))
+  }
+
   function addOption(name = "") {
     modifyCurrentDecision((d) => d.addOption(name))
   }
@@ -154,6 +158,7 @@ export function DecisionsProvider({ children }) {
     addFactor,
     editFactor,
     removeFactor,
+    reorderFactors,
     addOption,
     removeOption,
     decision,

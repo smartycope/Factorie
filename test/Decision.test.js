@@ -75,6 +75,21 @@ test("factor edits and removal keep the answer matrix aligned", () => {
   )
 })
 
+test("factor reordering keeps answer columns aligned", () => {
+  const decision = createCompleteDecision()
+
+  decision.reorderFactors([1, 0])
+
+  assert.deepEqual(
+    decision.factors.map((factor) => factor.name),
+    ["Cost", "Taste"],
+  )
+  assert.deepEqual(
+    decision.answers.map((row) => row.map((answer) => answer.min)),
+    [[8, 10], [4, 7]],
+  )
+})
+
 test("Decision serialization uses Factor objects and copy is independent", () => {
   const decision = createCompleteDecision()
   decision.setOptionNote("Tacos", "Open late and has outdoor seating.")

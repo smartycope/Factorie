@@ -9,7 +9,12 @@ import FormControlLabel from "@mui/material/FormControlLabel"
 import Slider from "@mui/material/Slider"
 import Menu from "@mui/material/Menu"
 import MenuItem from "@mui/material/MenuItem"
+import Dialog from "@mui/material/Dialog"
+import DialogActions from "@mui/material/DialogActions"
+import DialogContent from "@mui/material/DialogContent"
+import DialogTitle from "@mui/material/DialogTitle"
 import DeleteIcon from "@mui/icons-material/Delete"
+import DragIndicatorIcon from "@mui/icons-material/DragIndicator"
 // Select/MenuItem not needed anymore
 import Paper from "@mui/material/Paper"
 import Table from "@mui/material/Table"
@@ -367,8 +372,14 @@ const FactorsDataGrid = React.memo(function FactorsDataGrid({
 })
 
 export default function Factors() {
-  const { decisions, selectedIndex, editFactor, addFactor, removeFactor } =
-    useDecisions()
+  const {
+    decisions,
+    selectedIndex,
+    editFactor,
+    addFactor,
+    removeFactor,
+    reorderFactors,
+  } = useDecisions()
   const decision = selectedIndex != null ? decisions[selectedIndex] : null
   const [addError, setAddError] = useState("")
 
@@ -387,6 +398,9 @@ export default function Factors() {
   const [showOnlyUnfinished, setShowOnlyUnfinished] = useState(false)
   const [factorSearch, setFactorSearch] = useState("")
   const [unitMenuAnchorEl, setUnitMenuAnchorEl] = useState(null)
+  const [reorderDialogOpen, setReorderDialogOpen] = useState(false)
+  const [factorOrder, setFactorOrder] = useState([])
+  const [draggedFactorIndex, setDraggedFactorIndex] = useState(null)
   const unitMenuOpen = Boolean(unitMenuAnchorEl)
 
   const resetFormFields = useCallback(() => {
@@ -529,37 +543,52 @@ export default function Factors() {
     setUnitMenuAnchorEl(null)
   }
 
-  // Drag and drop the factor rows
-  //   const onDragStart = (e, idx) => {
-  //     e.dataTransfer.setData("text/plain", String(idx))
-  //     e.dataTransfer.effectAllowed = "move"
-  //   }
+  function openReorderDialog() {
+    setFactorOrder(decision.factors.map((_, index) => index))
+    setDraggedFactorIndex(null)
+    setReorderDialogOpen(true)
+  }
 
-  //   const onDragOver = (e) => {
-  //     e.preventDefault()
-  //     e.dataTransfer.dropEffect = "move"
-  //   }
+  function closeReorderDialog() {
+    setReorderDialogOpen(false)
+    setDraggedFactorIndex(null)
+  }
 
-  //   const onDropRow = (e, targetIdx) => {
-  //     e.preventDefault()
-  //     const from = Number(e.dataTransfer.getData("text/plain"))
-  //     const to = targetIdx
-  //     if (Number.isNaN(from)) return
-  //     if (from === to) return
+  function handleFactorDragStart(event, factorIndex) {
+    setDraggedFactorIndex(factorIndex)
+    event.dataTransfer.setData("text/plain", String(factorIndex))
+    event.dataTransfer.effectAllowed = "move"
+  }
 
-  //     const move = (arr) => {
-  //       const item = arr.splice(from, 1)[0]
-  //       arr.splice(to, 0, item)
-  //     }
+  function handleFactorDrop(event, targetFactorIndex) {
+    event.preventDefault()
+    const transferredValue = event.dataTransfer.getData("text/plain")
+    const transferredIndex = Number(transferredValue)
+    const sourceFactorIndex =
+      transferredValue !== "" && Number.isInteger(transferredIndex) ?
+        transferredIndex
+      : draggedFactorIndex
+    if (sourceFactorIndex == null || sourceFactorIndex === targetFactorIndex)
+      return
 
-  //     modifyCurrentDecision((d) => {
-  //       move(d.factors)
-  //       for (let r = 0; r < d.answers.length; r++) {
-  //         const col = d.answers[r].splice(from, 1)[0]
-  //         d.answers[r].splice(to, 0, col)
-  //       }
-  //     })
-  //   }
+    setFactorOrder((currentOrder) => {
+      const from = currentOrder.indexOf(sourceFactorIndex)
+      const to = currentOrder.indexOf(targetFactorIndex)
+      if (from === -1 || to === -1) return currentOrder
+      const nextOrder = [...currentOrder]
+      const [movedFactor] = nextOrder.splice(from, 1)
+      nextOrder.splice(to, 0, movedFactor)
+      return nextOrder
+    })
+    setDraggedFactorIndex(null)
+  }
+
+  function applyFactorOrder() {
+    reorderFactors(factorOrder)
+    if (editFactorIndex != null)
+      setEditFactorIndex(factorOrder.indexOf(editFactorIndex))
+    closeReorderDialog()
+  }
 
   return !decision ?
       <Box sx={{ flex: 1 }}>
@@ -826,6 +855,61 @@ export default function Factors() {
             showOnlyUnfinished={showOnlyUnfinished}
             factorSearch={factorSearch}
           />
+          <Button
+            variant="outlined"
+            onClick={openReorderDialog}
+            disabled={decision.factors.length < 2}
+            sx={{ mt: 1, whiteSpace: "nowrap" }}>
+            Reorder factors
+          </Button>
         </Box>
+        <Dialog
+          open={reorderDialogOpen}
+          onClose={closeReorderDialog}
+          fullWidth
+          maxWidth="sm">
+          <DialogTitle>Reorder factors</DialogTitle>
+          <DialogContent>
+            <Typography color="text.secondary" sx={{ mb: 2 }}>
+              Drag factors into the order you want.
+            </Typography>
+            <Stack spacing={1}>
+              {factorOrder.map((factorIndex) => (
+                <Paper
+                  key={factorIndex}
+                  draggable
+                  onDragStart={(event) =>
+                    handleFactorDragStart(event, factorIndex)
+                  }
+                  onDragOver={(event) => {
+                    event.preventDefault()
+                    event.dataTransfer.dropEffect = "move"
+                  }}
+                  onDrop={(event) => handleFactorDrop(event, factorIndex)}
+                  onDragEnd={() => setDraggedFactorIndex(null)}
+                  variant="outlined"
+                  sx={{
+                    display: "flex",
+                    alignItems: "center",
+                    gap: 1,
+                    p: 1.5,
+                    cursor: "grab",
+                    opacity: draggedFactorIndex === factorIndex ? 0.5 : 1,
+                  }}>
+                  <DragIndicatorIcon color="action" />
+                  <FactorNameText
+                    value={factorNameText(decision.factors[factorIndex]?.name)}
+                  />
+                </Paper>
+              ))}
+            </Stack>
+          </DialogContent>
+          <DialogActions>
+            <Button onClick={closeReorderDialog}>Cancel</Button>
+            <Button variant="contained" onClick={applyFactorOrder}>
+              Apply
+            </Button>
+          </DialogActions>
+        </Dialog>
       </Box>
 }

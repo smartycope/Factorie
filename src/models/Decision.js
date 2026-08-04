@@ -151,6 +151,22 @@ export default class Decision {
     }
   }
 
+  reorderFactors(order) {
+    const expectedOrder = this.factors.map((_, index) => index)
+    if (
+      !Array.isArray(order) ||
+      order.length !== expectedOrder.length ||
+      [...order].sort((a, b) => a - b).some((value, index) => value !== index)
+    ) {
+      throw new Error("Factor order must contain every factor index exactly once")
+    }
+
+    this.factors = order.map((index) => this.factors[index])
+    this.answers = this.answers.map((row) =>
+      order.map((index) => row[index]),
+    )
+  }
+
   addOption(name) {
     this.options.push(name)
     const row = []
