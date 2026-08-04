@@ -1,330 +1,330 @@
 {
-    "name": "Buying a House",
-    "description": "Factors relating to deciding where to live.",
-    "decisionName": "Which house should I buy?",
-    "factors": [
-        {
-            "name": "Price",
-            "unit": "$k",
-            "optimal": 0
-        },
-        {
-            "name": "How much land it's on",
-            "unit": "acres",
-            "min": 0
-        },
-        {
-            "name": "Square footage",
-            "unit": "sqft"
-        },
-        {
-            "name": "Is it a mobile home",
-            "unit": "0: No, 1: Yes",
-            "min": 0,
-            "max": 1
-        },
-        {
-            "name": "Safety of the area it's in",
-            "unit": "0-10",
-            "optimal": 10,
-            "min": 0,
-            "max": 10
-        },
-        {
-            "name": "How pretty it is inside",
-            "unit": "0-10",
-            "optimal": 10,
-            "min": 0,
-            "max": 10
-        },
-        {
-            "name": "How pretty it is outside",
-            "unit": "0-10",
-            "optimal": 10,
-            "min": 0,
-            "max": 10
-        },
-        {
-            "name": "How old is it",
-            "unit": "Year it was made",
-            "min": 1900
-        },
-        {
-            "name": "How much remodelling will it need",
-            "unit": "0-10",
-            "min": 0,
-            "max": 10
-        },
-        {
-            "name": "Does it have carpet",
-            "unit": "0: No, 1: Yes",
-            "min": 0,
-            "max": 1
-        },
-        {
-            "name": "Number of bedrooms",
-            "unit": "#",
-            "min": 1
-        },
-        {
-            "name": "Number of bathrooms",
-            "unit": "#",
-            "min": 1
-        },
-        {
-            "name": "Size of the front yard",
-            "unit": "sqft",
-            "min": 0
-        },
-        {
-            "name": "Does it have a fireplace",
-            "unit": "0: No, 1: Yes",
-            "min": 0,
-            "max": 1
-        },
-        {
-            "name": "Does it have AC",
-            "unit": "0: No, 1: Yes",
-            "optimal": 1,
-            "min": 0,
-            "max": 1
-        },
-        {
-            "name": "Does it have heating",
-            "unit": "0: No, 1: Yes",
-            "optimal": 1,
-            "min": 0,
-            "max": 1
-        },
-        {
-            "name": "Does it have a porch",
-            "unit": "0: No, 1: Yes",
-            "min": 0,
-            "max": 1
-        },
-        {
-            "name": "Does it smell inside",
-            "unit": "0: No, 1: Yes",
-            "optimal": 0,
-            "min": 0,
-            "max": 1
-        },
-        {
-            "name": "Does it smell outside",
-            "unit": "0: No, 1: Yes",
-            "optimal": 0,
-            "min": 0,
-            "max": 1
-        },
-        {
-            "name": "How much kitchen counter space it has",
-            "unit": "sqft",
-            "min": 0
-        },
-        {
-            "name": "Does it have space for a stove",
-            "unit": "0: No, 1: Yes",
-            "optimal": 1,
-            "min": 0,
-            "max": 1
-        },
-        {
-            "name": "Does it have space for a dishwasher",
-            "unit": "0: No, 1: Yes",
-            "optimal": 1,
-            "min": 0,
-            "max": 1
-        },
-        {
-            "name": "Does it have space for a fridge",
-            "unit": "0: No, 1: Yes",
-            "optimal": 1,
-            "min": 0,
-            "max": 1
-        },
-        {
-            "name": "Does it have washer and dryer hookups",
-            "unit": "0: No, 1: Yes",
-            "optimal": 1,
-            "min": 0,
-            "max": 1
-        },
-        {
-            "name": "Size of the kitchen",
-            "unit": "0: Tiny, 1: Medium, 2: Big, 3: Huge",
-            "min": 0,
-            "max": 3
-        },
-        {
-            "name": "How loud is the area",
-            "unit": "0-10",
-            "optimal": 0,
-            "min": 0,
-            "max": 1
-        },
-        {
-            "name": "Is it on a busy road",
-            "unit": "0: No, 1: Yes",
-            "optimal": 0,
-            "min": 0,
-            "max": 1
-        },
-        {
-            "name": "Is it next to a highway",
-            "unit": "0: No, 1: Yes",
-            "min": 0,
-            "max": 1
-        },
-        {
-            "name": "Does it have an HOA",
-            "unit": "0: No, 1: Yes",
-            "min": 0,
-            "max": 1
-        },
-        {
-            "name": "How buggy is it",
-            "unit": "0-10",
-            "optimal": 0,
-            "min": 0,
-            "max": 10
-        },
-        {
-            "name": "Size of the body of water on the land",
-            "unit": "sqft (0 for none)",
-            "min": 0
-        },
-        {
-        "name": "Does it already have a sidewalk",
-            "unit": "0: No, 1: Yes",
-            "optimal": 1,
-            "min": 0,
-            "max": 1
-        },
-        {
-            "name": "Does it have functioning electrical",
-            "unit": "0: No, 1: Yes",
-            "optimal": 1,
-            "min": 0,
-            "max": 1
-        },
-        {
-            "name": "Internet speed",
-            "unit": "Mb/s",
-            "min": 0,
-            "max": 2000
-        },
-        {
-            "name": "Does it have a fence",
-            "unit": "0: No, 1: Yes",
-            "min": 0,
-            "max": 1
-        },
-        {
-            "name": "The type of stove it has",
-            "unit": "0: Gas, 1: Electric",
-            "min": 0,
-            "max": 1
-        },
-        {
-            "name": "Does it have a propane tank that needs to be filled",
-            "unit": "0: No, 1: Yes",
-            "min": 0,
-            "max": 1
-        },
-        {
-            "name": "Does it come with appliances",
-            "unit": "0: No, 1: Yes",
-            "min": 0,
-            "max": 1
-        },
-        {
-            "name": "Size of basement",
-            "unit": "sqft (0 for none)",
-            "min": 0
-        },
-        {
-            "name": "Size of walk-in attic",
-            "unit": "sqft (0 for none)",
-            "min": 0
-        },
-        {
-            "name": "Is there a shed in the backyard",
-            "unit": "0: No, 1: Yes",
-            "min": 0,
-            "max": 1
-        },
-        {
-            "name": "Estimated heating cost",
-            "unit": "$/month",
-            "optimal": 0,
-            "min": 0
-        },
-        {
-            "name": "Estimated AC cost",
-            "unit": "$/month",
-            "optimal": 0,
-            "min": 0
-        },
-        {
-            "name": "Does it allow dogs",
-            "unit": "Number of dogs it allows",
-            "min": 0,
-            "max": 10
-        },
-        {
-            "name": "Does it have a 2 person shower",
-            "unit": "0: No, 1: Yes",
-            "min": 0,
-            "max": 1
-        },
-        {
-            "name": "How well lit is the house",
-            "unit": "0-10",
-            "min": 0,
-            "max": 10
-        },
-        {
-            "name": "Size of the pool",
-            "unit": "sqft (0 for none)",
-            "min": 0
-        },
-        {
-            "name": "Is it in a subdivision",
-            "unit": "0: No, 1: Yes",
-            "min": 0,
-            "max": 1
-        },
-        {
-            "name": "How close is the nearest neighbor",
-            "unit": "feet",
-            "min": 5
-        },
-        {
-            "name": "Size of the 2nd floor",
-            "unit": "sqft (0 for none)",
-            "min": 0
-        },
-        {
-            "name": "How soon is it available",
-            "unit": "months",
-            "min": 0,
-            "max": 12
-        },
-        {
-            "name": "How long is the commute",
-            "unit": "minutes",
-            "optimal": 0,
-            "min": 1
-        },
-        {
-            "name": "How close are your inlaws",
-            "unit": "minutes",
-            "min": 1
-        },
-        {
-            "name": "Number of trees",
-            "unit": "#",
-            "min": 0
-        }
-    ]
+  "name": "Buying a House",
+  "description": "Factors relating to deciding where to live.",
+  "decisionName": "Which house should I buy?",
+  "factors": [
+    {
+      "name": "Price",
+      "unit": "$k",
+      "optimal": 0
+    },
+    {
+      "name": "How much land it's on",
+      "unit": "acres",
+      "min": 0
+    },
+    {
+      "name": "Square footage",
+      "unit": "sqft"
+    },
+    {
+      "name": "Is it a mobile home",
+      "unit": "0: No, 1: Yes",
+      "min": 0,
+      "max": 1
+    },
+    {
+      "name": "Safety of the area it's in",
+      "unit": "0-10",
+      "optimal": 10,
+      "min": 0,
+      "max": 10
+    },
+    {
+      "name": "How pretty it is inside",
+      "unit": "0-10",
+      "optimal": 10,
+      "min": 0,
+      "max": 10
+    },
+    {
+      "name": "How pretty it is outside",
+      "unit": "0-10",
+      "optimal": 10,
+      "min": 0,
+      "max": 10
+    },
+    {
+      "name": "How old is it",
+      "unit": "Year it was made",
+      "min": 1900
+    },
+    {
+      "name": "How much remodelling will it need",
+      "unit": "0-10",
+      "min": 0,
+      "max": 10
+    },
+    {
+      "name": "Does it have carpet",
+      "unit": "0: No, 1: Yes",
+      "min": 0,
+      "max": 1
+    },
+    {
+      "name": "Number of bedrooms",
+      "unit": "#",
+      "min": 1
+    },
+    {
+      "name": "Number of bathrooms",
+      "unit": "#",
+      "min": 1
+    },
+    {
+      "name": "Size of the front yard",
+      "unit": "sqft",
+      "min": 0
+    },
+    {
+      "name": "Does it have a fireplace",
+      "unit": "0: No, 1: Yes",
+      "min": 0,
+      "max": 1
+    },
+    {
+      "name": "Does it have AC",
+      "unit": "0: No, 1: Yes",
+      "optimal": 1,
+      "min": 0,
+      "max": 1
+    },
+    {
+      "name": "Does it have heating",
+      "unit": "0: No, 1: Yes",
+      "optimal": 1,
+      "min": 0,
+      "max": 1
+    },
+    {
+      "name": "Does it have a porch",
+      "unit": "0: No, 1: Yes",
+      "min": 0,
+      "max": 1
+    },
+    {
+      "name": "Does it smell inside",
+      "unit": "0: No, 1: Yes",
+      "optimal": 0,
+      "min": 0,
+      "max": 1
+    },
+    {
+      "name": "Does it smell outside",
+      "unit": "0: No, 1: Yes",
+      "optimal": 0,
+      "min": 0,
+      "max": 1
+    },
+    {
+      "name": "How much kitchen counter space it has",
+      "unit": "sqft",
+      "min": 0
+    },
+    {
+      "name": "Does it have space for a stove",
+      "unit": "0: No, 1: Yes",
+      "optimal": 1,
+      "min": 0,
+      "max": 1
+    },
+    {
+      "name": "Does it have space for a dishwasher",
+      "unit": "0: No, 1: Yes",
+      "optimal": 1,
+      "min": 0,
+      "max": 1
+    },
+    {
+      "name": "Does it have space for a fridge",
+      "unit": "0: No, 1: Yes",
+      "optimal": 1,
+      "min": 0,
+      "max": 1
+    },
+    {
+      "name": "Does it have washer and dryer hookups",
+      "unit": "0: No, 1: Yes",
+      "optimal": 1,
+      "min": 0,
+      "max": 1
+    },
+    {
+      "name": "Size of the kitchen",
+      "unit": "0: Tiny, 1: Medium, 2: Big, 3: Huge",
+      "min": 0,
+      "max": 3
+    },
+    {
+      "name": "How loud is the area",
+      "unit": "0-10",
+      "optimal": 0,
+      "min": 0,
+      "max": 1
+    },
+    {
+      "name": "Is it on a busy road",
+      "unit": "0: No, 1: Yes",
+      "optimal": 0,
+      "min": 0,
+      "max": 1
+    },
+    {
+      "name": "Is it next to a highway",
+      "unit": "0: No, 1: Yes",
+      "min": 0,
+      "max": 1
+    },
+    {
+      "name": "Does it have an HOA",
+      "unit": "0: No, 1: Yes",
+      "min": 0,
+      "max": 1
+    },
+    {
+      "name": "How buggy is it",
+      "unit": "0-10",
+      "optimal": 0,
+      "min": 0,
+      "max": 10
+    },
+    {
+      "name": "Size of the body of water on the land",
+      "unit": "sqft (0 for none)",
+      "min": 0
+    },
+    {
+      "name": "Does it already have a sidewalk",
+      "unit": "0: No, 1: Yes",
+      "optimal": 1,
+      "min": 0,
+      "max": 1
+    },
+    {
+      "name": "Does it have functioning electrical",
+      "unit": "0: No, 1: Yes",
+      "optimal": 1,
+      "min": 0,
+      "max": 1
+    },
+    {
+      "name": "Internet speed",
+      "unit": "Mb/s",
+      "min": 0,
+      "max": 2000
+    },
+    {
+      "name": "Does it have a fence",
+      "unit": "0: No, 1: Yes",
+      "min": 0,
+      "max": 1
+    },
+    {
+      "name": "Does it have a gas stove?",
+      "unit": "0: No, 1: Yes",
+      "min": 0,
+      "max": 1
+    },
+    {
+      "name": "Does it have a propane tank that needs to be filled",
+      "unit": "0: No, 1: Yes",
+      "min": 0,
+      "max": 1
+    },
+    {
+      "name": "Does it come with appliances",
+      "unit": "0: No, 1: Yes",
+      "min": 0,
+      "max": 1
+    },
+    {
+      "name": "Size of basement",
+      "unit": "sqft (0 for none)",
+      "min": 0
+    },
+    {
+      "name": "Size of walk-in attic",
+      "unit": "sqft (0 for none)",
+      "min": 0
+    },
+    {
+      "name": "Is there a shed in the backyard",
+      "unit": "0: No, 1: Yes",
+      "min": 0,
+      "max": 1
+    },
+    {
+      "name": "Estimated heating cost",
+      "unit": "$/month",
+      "optimal": 0,
+      "min": 0
+    },
+    {
+      "name": "Estimated AC cost",
+      "unit": "$/month",
+      "optimal": 0,
+      "min": 0
+    },
+    {
+      "name": "Does it allow dogs",
+      "unit": "Number of dogs it allows",
+      "min": 0,
+      "max": 10
+    },
+    {
+      "name": "Does it have a 2 person shower",
+      "unit": "0: No, 1: Yes",
+      "min": 0,
+      "max": 1
+    },
+    {
+      "name": "How well lit is the house",
+      "unit": "0-10",
+      "min": 0,
+      "max": 10
+    },
+    {
+      "name": "Size of the pool",
+      "unit": "sqft (0 for none)",
+      "min": 0
+    },
+    {
+      "name": "Is it in a subdivision",
+      "unit": "0: No, 1: Yes",
+      "min": 0,
+      "max": 1
+    },
+    {
+      "name": "How close is the nearest neighbor",
+      "unit": "feet",
+      "min": 5
+    },
+    {
+      "name": "Size of the 2nd floor",
+      "unit": "sqft (0 for none)",
+      "min": 0
+    },
+    {
+      "name": "How soon is it available",
+      "unit": "months",
+      "min": 0,
+      "max": 12
+    },
+    {
+      "name": "How long is the commute",
+      "unit": "minutes",
+      "optimal": 0,
+      "min": 1
+    },
+    {
+      "name": "How close are your inlaws",
+      "unit": "minutes",
+      "min": 1
+    },
+    {
+      "name": "Number of trees",
+      "unit": "#",
+      "min": 0
+    }
+  ]
 }
