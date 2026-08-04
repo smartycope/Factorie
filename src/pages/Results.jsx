@@ -147,7 +147,10 @@ function SimulationControls({
               variant="contained"
               disabled={!canRun}
               // TODO: This doesn't seem to work?
-              onClick={() => {onRun(); setExpanded(false)}}
+              onClick={() => {
+                onRun()
+                setExpanded(false)
+              }}
               sx={{ alignSelf: "flex-start" }}>
               Run simulation
             </Button>
@@ -414,12 +417,12 @@ function HeatmapPlot({
   const [square, setSquare] = useState(true)
   const [topCount, setTopCount] = useState(10)
   const visibleCount =
-    topCount === "" ? factorNames.length : (
-      Math.min(
+    topCount === "" ?
+      factorNames.length
+    : Math.min(
         factorNames.length,
         Math.max(1, Math.floor(Number(topCount) || 1)),
       )
-    )
   const plot = useMemo(() => {
     const colorscale = ["#9B1127", "rgba(255, 255, 191, 0)", "#195695"]
     const nRows = normalizedAnswers.length
@@ -427,8 +430,7 @@ function HeatmapPlot({
       .map((_, factorIndex) => ({
         factorIndex,
         entropy:
-          stdDev(answers.map((row) => row[factorIndex])) *
-          weights[factorIndex],
+          stdDev(answers.map((row) => row[factorIndex])) * weights[factorIndex],
       }))
       .sort((a, b) => b.entropy - a.entropy)
       .slice(0, visibleCount)
@@ -454,8 +456,7 @@ function HeatmapPlot({
       for (let factorPosition = 0; factorPosition < nCols; factorPosition++) {
         const factorIndex = factorIndexes[factorPosition]
         const value =
-          1 -
-          Math.abs(calc.mean.delta_vectors_normalized[i][factorIndex])
+          1 - Math.abs(calc.mean.delta_vectors_normalized[i][factorIndex])
         const weight = weights[factorIndex]
         const color = sampleColorscale(colorscale, value)
         const halfW = (1 * weight) / 2
@@ -1111,6 +1112,21 @@ export default function Results() {
     )
   }
 
+  const chipProps = { variant: "outlined", size: "small", sx: { ml: .5, mr: .5 } }
+
+  const formatChipList = (list, color) => {
+    return <Stack direction="column" spacing={0.5} flexWrap="wrap" sx={{ display: "inline-flex", gap: 0.5, ml: 0.5, mr: 0.5 }}>
+    {list.map((reason, index) => (
+      <Chip
+        key={`chip-${index}`}
+        label={reason}
+        color={color}
+        {...chipProps}
+      />
+    ))}
+    </Stack>
+  }
+
   return (
     <Box sx={{ flex: 1, p: 3, minWidth: 0 }}>
       <Stack spacing={3}>
@@ -1130,15 +1146,24 @@ export default function Results() {
             </Button>
           </Box>
           {simulationControls}
-          <Typography variant="body2" sx={{ mt: 1, whiteSpace: "pre-line" }}>
-            The best option is <code>{best.is}</code> because of{" "}
-            <code>{joinAnd(best.because)}</code>, even though{" "}
-            <code>{joinAnd(best.despite)}</code> isn't what you want.
+          <Box sx={{ mt: 1, whiteSpace: "pre-line" }}>
+            The best option is
+            <Chip label={best.is} color="success" {...chipProps} />
+            because of
+            {formatChipList(best.because, "success")}
+            even though
+            {formatChipList(best.despite, "error")}
+            isn't what you want.
             <br />
-            The worst option is <code>{worst.is}</code> because of{" "}
-            <code>{joinAnd(worst.because)}</code>, even though{" "}
-            <code>{joinAnd(worst.despite)}</code> is what you want.
-          </Typography>
+            <br />
+            The worst option is
+            <Chip label={worst.is} color="error" {...chipProps} />
+            because of
+            {formatChipList(worst.because, "error")}
+            even though
+            {formatChipList(worst.despite, "success")}
+            is what you want.
+          </Box>
         </Box>
 
         <Divider />

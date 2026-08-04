@@ -37,7 +37,7 @@ export default class Answer {
 
     const {min: factorMin, max: factorMax} = decision.factors[factorIdx]
     // It's tentative if the user has marked it as such, or if it has the maximum range possible (maximum uncertainty)
-    return this.tentative || ((factorMin != null && this.min == factorMin) && (factorMax != null && this.max == factorMax))
+    return this.isAnswered() && (this.tentative || ((factorMin != null && this.min == factorMin) && (factorMax != null && this.max == factorMax)))
   }
 
   // Returns an object, not a string

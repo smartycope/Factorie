@@ -494,10 +494,12 @@ export default class Decision {
   }
 
   calculateAll(
-    options = { numSamples: Decision.numSamples, method: "extremes" },
+    options = { numSamples: Decision.numSamples, method: "extremes", minThresh: null, maxThresh: null },
   ) {
     const numSamples = options.numSamples || Decision.numSamples
     const method = options.method || "extremes"
+    const minThresh = options.minThresh
+    const maxThresh = options.maxThresh
     const results = {
       normalized_answers: [],
       delta_vectors_normalized: [],
@@ -597,7 +599,12 @@ export default class Decision {
       rtn.std[key] = stdv
     }
 
-    const bestWorst = this.bestWorst(rtn.mean, method)
+    const bestWorst = this.bestWorst(
+      rtn.mean,
+      method,
+      minThresh,
+      maxThresh,
+    )
     rtn.best = bestWorst.best
     rtn.worst = bestWorst.worst
     return rtn
@@ -632,15 +639,30 @@ export default class Decision {
     const best_despite = [this.factors[argmax(badnessVectors[bestIdx])].name]
     const worst_because = [this.factors[argmax(badnessVectors[worstIdx])].name]
     const worst_despite = [this.factors[argmax(goodnessVectors[worstIdx])].name]
+    const factorNames = this.factors.map((factor) => factor.name)
+    const aboveThreshold = (vector) =>
+      factorNames.filter((_, factorIndex) => vector[factorIndex] > max_thresh)
+    const best_because_thresh = aboveThreshold(goodnessVectors[bestIdx])
+    const best_despite_thresh = aboveThreshold(badnessVectors[bestIdx])
+    const worst_because_thresh = aboveThreshold(badnessVectors[worstIdx])
+    const worst_despite_thresh = aboveThreshold(goodnessVectors[worstIdx])
+
+    if (method !== "extremes" && method !== "threshold")
+      throw new Error(`Invalid method: ${method}`)
+
+    const thresholdOrExtreme = (thresholdFactors, extremeFactors) =>
+      method === "threshold" && thresholdFactors.length ?
+        thresholdFactors
+      : extremeFactors
     const best = {
       is: options[bestIdx],
-      because: best_because,
-      despite: best_despite,
+      because: thresholdOrExtreme(best_because_thresh, best_because),
+      despite: thresholdOrExtreme(best_despite_thresh, best_despite),
     }
     const worst = {
       is: options[worstIdx],
-      because: worst_because,
-      despite: worst_despite,
+      because: thresholdOrExtreme(worst_because_thresh, worst_because),
+      despite: thresholdOrExtreme(worst_despite_thresh, worst_despite),
     }
     return { best, worst }
   }

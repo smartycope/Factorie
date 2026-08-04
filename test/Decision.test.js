@@ -357,3 +357,37 @@ test("calculation and factor-pack flows continue to use factor values", () => {
   assert.deepEqual(decision.factors, [])
   assert.deepEqual(decision.answers, [[], []])
 })
+
+test("bestWorst supports extremes and threshold explanations", () => {
+  const decision = new Decision("Explanations")
+  for (const name of ["A", "B", "C"])
+    decision.addFactor({ name, optimal: 1, weight: 1, min: 0, max: 1 })
+  decision.addOption("Best")
+  decision.addOption("Worst")
+
+  const calc = {
+    weighted_delta_magnitudes: [1, 2],
+    delta_vectors_normalized: [
+      [0, 0.1, 0.9],
+      [0.8, 0.7, 0.2],
+    ],
+  }
+
+  const extremes = decision.bestWorst(calc, "extremes", 0.25, 0.75)
+  assert.deepEqual(extremes.best.because, ["A"])
+  assert.deepEqual(extremes.best.despite, ["C"])
+
+  const threshold = decision.bestWorst(calc, "threshold", 0.25, 0.75)
+  assert.deepEqual(threshold.best.because, ["A", "B"])
+  assert.deepEqual(threshold.best.despite, ["C"])
+  assert.deepEqual(threshold.worst.because, ["A"])
+  assert.deepEqual(threshold.worst.despite, ["C"])
+
+  const fallback = decision.bestWorst(calc, "threshold", 0, 2)
+  assert.deepEqual(fallback.best, extremes.best)
+  assert.deepEqual(fallback.worst, extremes.worst)
+  assert.throws(
+    () => decision.bestWorst(calc, "unknown"),
+    /Invalid method: unknown/,
+  )
+})
