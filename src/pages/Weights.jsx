@@ -543,7 +543,7 @@ export default function Weights() {
           <MultiHandledSlider
             handles={handles}
             overlap={allowReordering ? "free" : "block"}
-            gradient={["#C1CBD6", "#002463"]}
+            gradient={["#0024630f", "#002463"]}
             step={0.01}
             onChange={setHandles}
           />

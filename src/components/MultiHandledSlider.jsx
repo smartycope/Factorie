@@ -4,35 +4,10 @@ import { useRef, useState } from "react"
 
 const clamp = (value, min, max) => Math.min(Math.max(value, min), max)
 
-function lerpColor(a, b, t) {
-  const ah = parseInt(a.replace(/#/g, ""), 16)
-  const bh = parseInt(b.replace(/#/g, ""), 16)
-  const ar = (ah >> 16) & 0xff,
-    ag = (ah >> 8) & 0xff,
-    ab = ah & 0xff
-  const br = (bh >> 16) & 0xff,
-    bg = (bh >> 8) & 0xff,
-    bb = bh & 0xff
-  const rr = Math.round(ar + t * (br - ar))
-  const rg = Math.round(ag + t * (bg - ag))
-  const rb = Math.round(ab + t * (bb - ab))
-  return `rgb(${rr}, ${rg}, ${rb})`
-}
-
-function getColorFromGradient(gradient, t) {
-  if (!gradient || gradient.length === 1) return gradient?.[0] || "#000"
-  const scaledT = t * (gradient.length - 1)
-  const i = Math.floor(scaledT)
-  const f = scaledT - i
-  const c1 = gradient[i]
-  const c2 = gradient[Math.min(i + 1, gradient.length - 1)]
-  return lerpColor(c1, c2, f)
-}
-
 // Overlap can be "free" (handles can cross freely), "block" (handles can't cross), or "push" (handles push each other but can't cross)
 export default function MultiHandledSlider({
   handles = {},
-  gradient = ["#C1CBD6", "#002463"],
+  gradient = ["#00246300", "#002463"],
   overlap = "block",
   step = 0.01,
   showValues = true,
@@ -130,7 +105,6 @@ export default function MultiHandledSlider({
     handlesAndLabels = Object.entries(handles)
       .sort((a, b) => b[1] - a[1])
       .map(([label, pos], i) => {
-        const color = getColorFromGradient(gradient, pos)
         const selected = selectedLabel === label
         return (
           <div key={i}>
@@ -152,8 +126,8 @@ export default function MultiHandledSlider({
                 cursor: "grab",
                 display: "flex",
                 transform: "translate(-50%, -50%)",
-                backgroundColor: !selected ? color : "white",
-                border: `2px solid ${!selected ? "white" : color}`,
+                backgroundColor: !selected ? '#00000000' : "white",
+                border: `2px solid ${!selected ? "white" : '#00000000'}`,
                 borderRadius: "50%",
                 height: sliderDiam,
                 width: sliderDiam,
@@ -168,7 +142,6 @@ export default function MultiHandledSlider({
     handlesAndLabels = Object.entries(handles)
       .sort((a, b) => b[1] - a[1])
       .map(([label, pos], i) => {
-        const color = getColorFromGradient(gradient, pos)
         const selected = selectedLabel === label
         const flip = pos < 0.5
         const text = formatLabel(label)
@@ -198,9 +171,9 @@ export default function MultiHandledSlider({
                 cursor: "grab",
                 height: sliderDiam,
                 transform: "translate(-50%, -50%)",
-                backgroundColor: !selected ? color : "white",
+                backgroundColor: !selected ? '#00000000' : "white",
                 // border: "2px solid " + (flip ? "black" : "white"),
-                border: `2px solid ${!selected ? "white" : color}`,
+                border: `2px solid ${!selected ? "white" : '#00000000'}`,
                 borderRadius: "50%",
                 width: sliderDiam,
               }}
