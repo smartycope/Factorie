@@ -233,6 +233,7 @@ export default function Weights() {
   // positions state must be top-level (hooks cannot be conditional)
   const [handles, setHandles] = useState({})
   const [allowReordering, setAllowReordering] = useState(false)
+  const [precise, setPrecise] = useState(false)
   const [arrangeMenuAnchorEl, setArrangeMenuAnchorEl] = useState(null)
   const [showRadar, setShowRadar] = useState(true)
   const [plotFactorLimit, setPlotFactorLimit] = useState(20)
@@ -521,6 +522,15 @@ export default function Weights() {
               }
               label="Allow reordering"
             />
+            <FormControlLabel
+              control={
+                <Checkbox
+                  checked={precise}
+                  onChange={(e) => setPrecise(e.target.checked)}
+                />
+              }
+              label="Precise"
+            />
             <Button
               variant="outlined"
               onClick={(event) => setArrangeMenuAnchorEl(event.currentTarget)}
@@ -544,7 +554,8 @@ export default function Weights() {
             handles={handles}
             overlap={allowReordering ? "free" : "block"}
             gradient={["#0024630f", "#002463"]}
-            step={0.01}
+            step={precise ? 0 : 0.01}
+            digits={precise ? -1 : 2}
             onChange={setHandles}
           />
           <Box sx={{ mt: 2 }}>

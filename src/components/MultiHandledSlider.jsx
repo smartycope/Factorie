@@ -1,7 +1,5 @@
 import { useRef, useState } from "react"
 
-// TODO: the labels when to the left (i.e. value >50%, so the handle is on the right) don't align next to the handles properly
-
 const clamp = (value, min, max) => Math.min(Math.max(value, min), max)
 
 // Overlap can be "free" (handles can cross freely), "block" (handles can't cross), or "push" (handles push each other but can't cross)
@@ -91,11 +89,13 @@ export default function MultiHandledSlider({
     })
   }
 
-  const formatLabel = (label) => {
-    return (
+  const formatLabel = (selected, label) => {
+    const rtn = (
       `${label}` +
-      (showValues ? ` - ${(handles[label] * 100).toFixed(0)}%` : "")
+      (showValues ? ` - ${(handles[label] * 100).toFixed(Math.max(0, -digits))}%` : "")
     )
+    if (selected) return <b>{rtn}</b>
+    else return rtn
   }
 
   const sliderDiam = 16
@@ -114,7 +114,7 @@ export default function MultiHandledSlider({
                 height: sliderDiam,
                 fontSize: "16px",
               }}>
-              {formatLabel(label)}
+              {formatLabel(selected, label)}
             </div>
             <div
               onMouseDown={startDrag(label)}
@@ -144,15 +144,17 @@ export default function MultiHandledSlider({
       .map(([label, pos], i) => {
         const selected = selectedLabel === label
         const flip = pos < 0.5
-        const text = formatLabel(label)
-        const labelWidth = text.length * 8
+        const text = formatLabel(selected, label)
         return (
           <div key={i}>
             <div
               style={{
                 position: "absolute",
                 left: `${pos * 100}%`,
-                transform: `translate(${flip ? sliderDiam : -sliderDiam - labelWidth}px)`,
+                transform:
+                  flip ?
+                    `translateX(${sliderDiam}px)`
+                  : `translateX(calc(-100% - ${sliderDiam}px))`,
                 top: i * sliderDiam + 6,
                 height: sliderDiam,
                 color: flip ? "black" : "white",
