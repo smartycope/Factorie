@@ -47,6 +47,34 @@ test("Factor serializes and deserializes all factor properties", () => {
   assert.deepEqual(factor.serialize(), data)
 })
 
+test("Factor detects and parses discrete units", () => {
+  const factor = new Factor({
+    unit: "2.5: Short, 7e+1: Long",
+  })
+
+  assert.equal(factor.isDiscrete(), true)
+  assert.deepEqual(factor.discreteValues(), [
+    { number: 2.5, name: "Short" },
+    { number: 70, name: "Long" },
+  ])
+  assert.deepEqual(factor.discreteValues(), [
+    { number: 2.5, name: "Short" },
+    { number: 70, name: "Long" },
+  ])
+
+  for (const unit of [
+    "0: No, 1: Yes",
+    "0: Small, 1: Medium, 2: Large",
+    "-1: Disagree, 0: Neutral, 1: Agree",
+  ])
+    assert.equal(new Factor({ unit }).isDiscrete(), true)
+})
+
+test("Factor leaves continuous and missing units non-discrete", () => {
+  assert.equal(new Factor({ unit: "0-10 Scale" }).isDiscrete(), false)
+  assert.equal(new Factor().isDiscrete(), false)
+})
+
 test("Decision owns Factor and Answer instances", () => {
   const decision = createCompleteDecision()
 

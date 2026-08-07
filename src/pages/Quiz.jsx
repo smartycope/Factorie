@@ -27,7 +27,6 @@ import CloseIcon from "@mui/icons-material/Close"
 import { TextField } from "@mui/material"
 import Answer from "../models/Answer"
 import { Link } from "react-router-dom"
-import { getSuggestedUnitAnswerOptions } from "../suggestedUnits"
 
 const TRANSPOSED = true
 const ALL_OPTIONS = ""
@@ -77,7 +76,7 @@ function updateAnswerMax(answer, max) {
   )
 }
 
-function SuggestedUnitAnswerButtons({ options, value, onAnswer }) {
+function DiscreteAnswerButtons({ options, value, onAnswer }) {
   const selectedValue =
     (
       value.min === value.max &&
@@ -97,7 +96,7 @@ function SuggestedUnitAnswerButtons({ options, value, onAnswer }) {
       }}>
       {options.map((option) => (
         <Button
-          key={option.label}
+          key={`${option.value}:${option.label}`}
           variant={selectedValue === option.value ? "contained" : "outlined"}
           onClick={() => onAnswer(option.value)}
           sx={{ minWidth: 120 }}>
@@ -451,8 +450,13 @@ export default function Quiz() {
   const valueLabel = unit || "Value"
   const minLabel = unit ? `Min: ${unit}` : "Min"
   const maxLabel = unit ? `Max: ${unit}` : "Max"
-  const suggestedUnitAnswerOptions = getSuggestedUnitAnswerOptions(unit)
-  const hasSuggestedUnitButtons = Boolean(suggestedUnitAnswerOptions)
+  const discreteAnswerOptions = factorDefinition?.isDiscrete() ?
+      factorDefinition.discreteValues().map(({ number, name }) => ({
+        label: name,
+        value: number,
+      }))
+    : null
+  const hasDiscreteButtons = Boolean(discreteAnswerOptions)
   const scale =
     hasVisibleQuizCells ?
       [decision.mins()[factorIdx], decision.maxs()[factorIdx]]
@@ -601,7 +605,7 @@ export default function Quiz() {
     )
   }
 
-  function handleSuggestedUnitAnswer(answerValue) {
+  function handleDiscreteAnswer(answerValue) {
     handleSubmit(
       new Answer(answerValue, answerValue, value.tentative),
     )
@@ -890,11 +894,11 @@ export default function Quiz() {
             <Box sx={{ mt: 2 }}>
               {!isUnsure ?
                 <Box sx={{ px: 2 }}>
-                  {hasSuggestedUnitButtons ?
-                    <SuggestedUnitAnswerButtons
-                      options={suggestedUnitAnswerOptions}
+                  {hasDiscreteButtons ?
+                    <DiscreteAnswerButtons
+                      options={discreteAnswerOptions}
                       value={value}
-                      onAnswer={handleSuggestedUnitAnswer}
+                      onAnswer={handleDiscreteAnswer}
                     />
                   : hasSliderScale ?
                     <Slider
@@ -938,11 +942,11 @@ export default function Quiz() {
                 </Box>
               : <Box sx={{ px: 2 }}>
                   {/* Still use the slider if we're unsure */}
-                  {/* {hasSuggestedUnitButtons ?
-                    <SuggestedUnitAnswerButtons
-                      options={suggestedUnitAnswerOptions}
+                  {/* {hasDiscreteButtons ?
+                    <DiscreteAnswerButtons
+                      options={discreteAnswerOptions}
                       value={value}
-                      onAnswer={handleSuggestedUnitAnswer}
+                      onAnswer={handleDiscreteAnswer}
                     /> */}
                   {hasSliderScale ?
                     <Slider
@@ -1019,7 +1023,7 @@ export default function Quiz() {
                 sx={{ mr: 1 }}>
                 Back
               </Button>
-              {(!hasSuggestedUnitButtons || isUnsure) && (
+              {(!hasDiscreteButtons || isUnsure) && (
                 <Button
                   variant="contained"
                   onClick={() => handleSubmit()}

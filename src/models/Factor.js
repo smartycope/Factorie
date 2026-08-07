@@ -1,3 +1,6 @@
+// pattern = options("global") + group(int_or_float, name="number") + ow + ":" + group(at_least_one(any_char_except(",")), name="name")
+const discreteRegex = /(?<number>(?:(?:(?:-|\+))?(?:\d*\.\d+|\d+\.\d*)(?:e(?:-|\+)\d+)?|(?:(?:-|\+))?\d+(?:e(?:-|\+)\d+)?))\s*:(?<name>(?:[^,])+)/g
+
 export default class Factor {
   constructor({
     name = "",
@@ -44,5 +47,17 @@ export default class Factor {
       Number.isFinite(this.max) &&
       this.min < this.max
     )
+  }
+
+  isDiscrete() {
+    return this.discreteValues().length > 0
+  }
+
+  discreteValues() {
+    if (typeof this.unit !== "string") return []
+    return [...this.unit.matchAll(discreteRegex)].map(({ groups }) => ({
+      number: parseFloat(groups.number),
+      name: groups.name.trim(),
+    }))
   }
 }
