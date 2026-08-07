@@ -1,8 +1,9 @@
 import { Fragment, useState, useRef } from "react"
 import AddIcon from "@mui/icons-material/Add"
 import DeleteIcon from "@mui/icons-material/Delete"
-import NotesOutlinedIcon from "@mui/icons-material/NotesOutlined"
 import DragIndicatorIcon from "@mui/icons-material/DragIndicator"
+import VisibilityIcon from "@mui/icons-material/Visibility"
+import VisibilityOffIcon from "@mui/icons-material/VisibilityOff"
 import Box from "@mui/material/Box"
 import Button from "@mui/material/Button"
 import Divider from "@mui/material/Divider"
@@ -26,6 +27,7 @@ function OptionsEditor({
   reorderOptions,
   renameOption,
   setOptionNote,
+  setOptionHidden,
 }) {
   const [selectedOptionIndex, setSelectedOptionIndex] = useState(null)
   const [draggedOptionIndex, setDraggedOptionIndex] = useState(null)
@@ -36,13 +38,14 @@ function OptionsEditor({
     selectedOptionIndex == null ? null : decision.options[selectedOptionIndex]
   const normalizedName = optionName.trim()
   const duplicateName = decision.options.some(
-    (name, index) => name === normalizedName && index !== selectedOptionIndex,
+    (option, index) =>
+      option.name === normalizedName && index !== selectedOptionIndex,
   )
   const canSubmit = Boolean(normalizedName) && !duplicateName
 
   function selectOption(index) {
     setSelectedOptionIndex(index)
-    setOptionName(decision.options[index])
+    setOptionName(decision.options[index].name)
   }
 
   function startAdding() {
@@ -174,7 +177,7 @@ function OptionsEditor({
           </Typography>
         : <List disablePadding aria-label="Decision options">
             {decision.options.map((option, index) => (
-              <Fragment key={`${option}-${index}`}>
+              <Fragment key={`${option.name}-${index}`}>
                 {index > 0 && <Divider component="li" />}
                 <ListItem
                   disablePadding
@@ -194,39 +197,47 @@ function OptionsEditor({
                     outlineOffset: -2,
                   }}
                   secondaryAction={
-                    <Tooltip title={`Delete ${option}`}>
-                      <IconButton
-                        edge="end"
-                        aria-label={`Delete ${option}`}
-                        onClick={(event) => deleteOption(event, index)}>
-                        <DeleteIcon />
-                      </IconButton>
-                    </Tooltip>
+                    <Box sx={{ display: "flex", alignItems: "center" }}>
+                      <Tooltip
+                        title={`${option.hidden ? "Show" : "Hide"} ${option.name}`}>
+                        <IconButton
+                          aria-label={`${option.hidden ? "Show" : "Hide"} ${option.name}`}
+                          onClick={(event) => {
+                            event.stopPropagation()
+                            setOptionHidden(index, !option.hidden)
+                          }}>
+                          {option.hidden ?
+                            <VisibilityOffIcon />
+                          : <VisibilityIcon />}
+                        </IconButton>
+                      </Tooltip>
+                      <Tooltip title={`Delete ${option.name}`}>
+                        <IconButton
+                          edge="end"
+                          aria-label={`Delete ${option.name}`}
+                          onClick={(event) => deleteOption(event, index)}>
+                          <DeleteIcon />
+                        </IconButton>
+                      </Tooltip>
+                    </Box>
                   }>
                   <ListItemButton
                     selected={selectedOptionIndex === index}
                     onClick={() => selectOption(index)}
-                    sx={{ pr: 7 }}>
+                    sx={{ pr: 12, opacity: option.hidden ? 0.6 : 1 }}>
                     <ListItemIcon
                       draggable
-                      title={`Drag to reorder ${option}`}
+                      title={`Drag to reorder ${option.name}`}
                       onDragStart={(event) => handleDragStart(event, index)}
                       onDragEnd={handleDragEnd}
                       sx={{ minWidth: 32, cursor: "grab" }}>
                       <DragIndicatorIcon color="action" />
                     </ListItemIcon>
-                    {/* <ListItemIcon sx={{ minWidth: 40 }}> */}
-                      {/* <NotesOutlinedIcon
-                        color={
-                          decision.optionNotes[option] ? "primary" : "disabled"
-                        }
-                      /> */}
-                    {/* </ListItemIcon> */}
                     <ListItemText
-                      primary={option}
+                      primary={option.name}
                       secondary={
-                        decision.optionNotes[option] ?
-                          decision.optionNotes[option].slice(0, 80)
+                        option.notes ?
+                          option.notes.slice(0, 80)
                         : "No notes"
                       }
                     />
@@ -239,10 +250,10 @@ function OptionsEditor({
       </Paper>
 
       <TextField
-        label={selectedOption ? `Notes for ${selectedOption}` : "Option notes"}
-        value={
-          selectedOption ? (decision.optionNotes[selectedOption] ?? "") : ""
+        label={
+          selectedOption ? `Notes for ${selectedOption.name}` : "Option notes"
         }
+        value={selectedOption?.notes ?? ""}
         onChange={(event) =>
           setOptionNote(selectedOptionIndex, event.target.value)
         }
@@ -271,6 +282,7 @@ export default function Options() {
     reorderOptions,
     renameOption,
     setOptionNote,
+    setOptionHidden,
   } = useDecisions()
   const decision = selectedIndex != null ? decisions[selectedIndex] : null
 
@@ -289,6 +301,7 @@ export default function Options() {
           reorderOptions={reorderOptions}
           renameOption={renameOption}
           setOptionNote={setOptionNote}
+          setOptionHidden={setOptionHidden}
         />
       }
     </Box>

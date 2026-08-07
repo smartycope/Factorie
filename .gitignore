@@ -493,3 +493,5 @@ dist-ssr
 *.njsproj
 *.sln
 *.sw?
+
+.~lock*

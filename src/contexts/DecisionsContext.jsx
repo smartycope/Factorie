@@ -142,6 +142,10 @@ export function DecisionsProvider({ children }) {
     modifyCurrentDecision((d) => d.setOptionNote(optionIndex, note))
   }
 
+  function setOptionHidden(optionIndex, hidden) {
+    modifyCurrentDecision((d) => d.setOptionHidden(optionIndex, hidden))
+  }
+
   function renameFactor(factorIndex, name) {
     return editFactor(factorIndex, { name })
   }
@@ -175,6 +179,7 @@ export function DecisionsProvider({ children }) {
     setAnswer,
     renameOption,
     setOptionNote,
+    setOptionHidden,
     renameFactor,
     renameDecision,
     addFactorPack,

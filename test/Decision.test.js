@@ -4,6 +4,7 @@ import test from "node:test"
 import Answer from "../src/models/Answer.js"
 import Decision from "../src/models/Decision.js"
 import Factor from "../src/models/Factor.js"
+import Option from "../src/models/Option.js"
 
 function createCompleteDecision() {
   const decision = new Decision("Dinner")
@@ -79,6 +80,7 @@ test("Decision owns Factor and Answer instances", () => {
   const decision = createCompleteDecision()
 
   assert.ok(decision.factors.every((factor) => factor instanceof Factor))
+  assert.ok(decision.options.every((option) => option instanceof Option))
   assert.ok(
     decision.answers.every((row) =>
       row.every((answer) => answer instanceof Answer),
@@ -113,6 +115,10 @@ test("factor reordering keeps answer columns aligned", () => {
     ["Cost", "Taste"],
   )
   assert.deepEqual(
+    decision.factors.map((factor) => factor.weight),
+    [0.5, 1],
+  )
+  assert.deepEqual(
     decision.answers.map((row) => row.map((answer) => answer.min)),
     [[8, 10], [4, 7]],
   )
@@ -125,7 +131,10 @@ test("option reordering keeps answer rows and notes aligned", () => {
 
   decision.reorderOptions([1, 0])
 
-  assert.deepEqual(decision.options, ["Soup", "Tacos"])
+  assert.deepEqual(
+    decision.options.map((option) => option.name),
+    ["Soup", "Tacos"],
+  )
   assert.deepEqual(
     decision.answers.map((row) => row.map((answer) => answer.min)),
     [
@@ -133,17 +142,17 @@ test("option reordering keeps answer rows and notes aligned", () => {
       [10, 8],
     ],
   )
-  assert.deepEqual(decision.optionNotes, {
-    Tacos: "Taco note",
-    Soup: "Soup note",
-  })
+  assert.deepEqual(
+    decision.options.map((option) => option.notes),
+    ["Soup note", "Taco note"],
+  )
   assert.throws(
     () => decision.reorderOptions([0, 0]),
     /Option order must contain every option index exactly once/,
   )
 })
 
-test("Decision serialization uses Factor objects and copy is independent", () => {
+test("Decision serialization uses Factor and Option objects and copy is independent", () => {
   const decision = createCompleteDecision()
   decision.setOptionNote("Tacos", "Open late and has outdoor seating.")
   const serialized = JSON.parse(decision.serialize())
@@ -157,19 +166,22 @@ test("Decision serialization uses Factor objects and copy is independent", () =>
     min: 0,
     max: 10,
   })
-  assert.deepEqual(serialized.optionNotes, {
-    Tacos: "Open late and has outdoor seating.",
+  assert.deepEqual(serialized.options[0], {
+    name: "Tacos",
+    notes: "Open late and has outdoor seating.",
+    hidden: false,
   })
 
   const copy = decision.copy()
   assert.ok(copy.factors[0] instanceof Factor)
+  assert.ok(copy.options[0] instanceof Option)
   assert.ok(copy.answers[0][0] instanceof Answer)
   copy.editFactor(0, { name: "Flavor" })
   copy.setAnswer(0, 0, 5)
   copy.setOptionNote("Tacos", "Different note")
   assert.equal(decision.factors[0].name, "Taste")
   assert.equal(decision.answers[0][0].min, 10)
-  assert.equal(decision.optionNotes.Tacos, "Open late and has outdoor seating.")
+  assert.equal(decision.options[0].notes, "Open late and has outdoor seating.")
 })
 
 test("clearing a factor's answers preserves the other answer columns", () => {
@@ -199,24 +211,63 @@ test("tentative answers survive serialization without changing legacy answers", 
   assert.equal(copy.getAnswer("Tacos", "Taste").tentative, false)
 })
 
-test("option notes follow renames, are removed with options, and migrate safely", () => {
+test("option metadata follows renames and is removed with options", () => {
   const decision = createCompleteDecision()
   decision.setOptionNote(0, "Try the al pastor")
 
   decision.renameOption(0, "Street tacos")
-  assert.deepEqual(decision.optionNotes, {
-    "Street tacos": "Try the al pastor",
-  })
+  assert.equal(decision.options[0].name, "Street tacos")
+  assert.equal(decision.options[0].notes, "Try the al pastor")
 
   decision.setOptionNote("Street tacos", "")
-  assert.deepEqual(decision.optionNotes, {})
+  assert.equal(decision.options[0].notes, "")
 
   decision.setOptionNote("Soup", "Good on cold days")
   decision.removeOption("Soup")
-  assert.deepEqual(decision.optionNotes, {})
+  assert.deepEqual(decision.options.map((option) => option.name), [
+    "Street tacos",
+  ])
 
   const legacy = Decision.deserialize(JSON.parse(decision.serialize()))
-  assert.deepEqual(legacy.optionNotes, {})
+  assert.equal(legacy.options[0].notes, "")
+})
+
+test("legacy option names and notes migrate to Option objects", () => {
+  const decision = Decision.deserialize({
+    name: "Legacy options",
+    factors: [],
+    options: ["Shown", "Hidden later"],
+    optionNotes: { Shown: "Legacy note", Extra: "Ignored" },
+    answers: [[], []],
+  })
+
+  assert.ok(decision.options.every((option) => option instanceof Option))
+  assert.deepEqual(
+    decision.options.map((option) => option.serialize()),
+    [
+      { name: "Shown", notes: "Legacy note", hidden: false },
+      { name: "Hidden later", notes: "", hidden: false },
+    ],
+  )
+})
+
+test("hidden options persist and are excluded from validation and calculations", () => {
+  const decision = createCompleteDecision()
+  decision.setOptionHidden("Soup", true)
+  decision.setAnswer("Soup", "Taste", new Answer())
+  decision.setAnswer("Soup", "Cost", new Answer())
+
+  assert.deepEqual(
+    decision.getVisibleOptions().map((option) => option.name),
+    ["Tacos"],
+  )
+  assert.equal(decision.isInvalid(), null)
+
+  const copy = decision.copy()
+  assert.equal(copy.options[1].hidden, true)
+  const calculation = copy.calculateAll({ numSamples: 1 })
+  assert.equal(calculation.mean.normalized_answers.length, 1)
+  assert.equal(calculation.best.is, "Tacos")
 })
 
 test("Min and Max optimals serialize and resolve from answers", () => {
@@ -377,7 +428,7 @@ test("legacy object-of-arrays decisions migrate to Factor objects", () => {
   )
   assert.equal(decision.getAnswer("Tacos", "Cost").toString(), "7 - 8")
   assert.deepEqual([...decision.factorPacks], ["Choosing Dinner"])
-  assert.deepEqual(decision.optionNotes, {})
+  assert.ok(decision.options.every((option) => option instanceof Option))
   assert.ok(Array.isArray(JSON.parse(decision.serialize()).factors))
 })
 

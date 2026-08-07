@@ -138,6 +138,9 @@ function DecisionEditTableTransposed_MuiTable() {
   const { toast } = useToast()
 
   if (!decision) return null
+  const visibleOptionEntries = decision.options
+    .map((option, index) => ({ option, index }))
+    .filter(({ option }) => !option.hidden)
 
   function factorIndexFromRowId(id) {
     const separatorIndex = `${id}`.lastIndexOf("__")
@@ -188,9 +191,9 @@ function DecisionEditTableTransposed_MuiTable() {
         )
       },
     },
-    ...decision.options.map((option, i) => ({
-      field: option + "__" + i,
-      headerName: option,
+    ...visibleOptionEntries.map(({ option, index }) => ({
+      field: option.name + "__" + index,
+      headerName: option.name,
       renderHeader: (params) => (
         <Box
           sx={{
@@ -231,9 +234,9 @@ function DecisionEditTableTransposed_MuiTable() {
     id: factor.name + "__" + fi,
     factor: factor.name,
     ...Object.fromEntries(
-      decision.options.map((opt, oi) => [
-        opt + "__" + oi,
-        decision.getAnswer(opt, factor.name).toString(),
+      visibleOptionEntries.map(({ option, index }) => [
+        option.name + "__" + index,
+        decision.getAnswer(index, factor.name).toString(),
       ]),
     ),
   }))
@@ -358,9 +361,10 @@ function DecisionEditTableTransposed_MuiTable() {
               const cleanOldRow = Object.fromEntries(
                 Object.entries(oldRow).map(([k, v]) => [k.split("__")[0], v]),
               )
-              const option = decision.options.find(
-                (opt) => cleanNewRow[opt] !== cleanOldRow[opt],
-              )
+              const option = visibleOptionEntries.find(
+                ({ option: candidate }) =>
+                  cleanNewRow[candidate.name] !== cleanOldRow[candidate.name],
+              )?.option.name
 
               // If they're trying to name the factor, let them
               if (newRow['factor'] !== oldRow['factor']){

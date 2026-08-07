@@ -236,6 +236,20 @@ function parseOptionNotes(sheet, decision, onWarning) {
     if (cellText(sheet, address) !== header)
       spreadsheetError(`Could not parse option notes: ${address} must say "${header}".`)
   })
+  const hiddenHeader = cellText(sheet, "C1")
+  if (hiddenHeader && hiddenHeader !== "Hidden")
+    spreadsheetError('Could not parse options: C1 must say "Hidden".')
+
+  function parseHidden(value, address) {
+    if (value == null || value === "") return false
+    if (typeof value === "boolean") return value
+    const normalized = String(value).trim().toLowerCase()
+    if (["true", "yes", "1"].includes(normalized)) return true
+    if (["false", "no", "0"].includes(normalized)) return false
+    spreadsheetError(
+      `Could not parse options: ${address} must be TRUE or FALSE.`,
+    )
+  }
 
   const notes = new Map()
   const range = XLSX.utils.decode_range(sheet["!ref"] ?? "A1")
@@ -244,10 +258,14 @@ function parseOptionNotes(sheet, decision, onWarning) {
   for (let row = 1; row <= range.e.r; row += 1) {
     const optionAddress = XLSX.utils.encode_cell({ r: row, c: 0 })
     const notesAddress = XLSX.utils.encode_cell({ r: row, c: 1 })
+    const hiddenAddress = XLSX.utils.encode_cell({ r: row, c: 2 })
     const option = cellText(sheet, optionAddress)
     const noteValue = cellValue(sheet, notesAddress)
+    const hiddenValue = cellValue(sheet, hiddenAddress)
     const rowHasValues =
-      cellValue(sheet, optionAddress) != null || noteValue != null
+      cellValue(sheet, optionAddress) != null ||
+      noteValue != null ||
+      hiddenValue != null
 
     if (!option) {
       if (rowHasValues)
@@ -265,22 +283,29 @@ function parseOptionNotes(sheet, decision, onWarning) {
     if (notes.has(option))
       spreadsheetError(`Could not parse option notes: "${option}" is listed more than once.`)
 
-    notes.set(option, noteValue == null ? "" : String(noteValue))
+    notes.set(option, {
+      notes: noteValue == null ? "" : String(noteValue),
+      hidden: parseHidden(hiddenValue, hiddenAddress),
+    })
   }
 
   const extraOptions = [...notes.keys()].filter(
-    (option) => !decision.options.includes(option),
+    (optionName) =>
+      !decision.options.some((option) => option.name === optionName),
   )
   if (extraOptions.length) {
     onWarning(
       "The Options sheet contains options that are not in the Decision sheet. " +
-        "Their notes were ignored:\n" +
+        "Their metadata was ignored:\n" +
         extraOptions.map((option) => `- ${option}`).join("\n"),
     )
   }
 
   decision.options.forEach((option, index) => {
-    if (notes.has(option)) decision.setOptionNote(index, notes.get(option))
+    const metadata = notes.get(option.name)
+    if (!metadata) return
+    decision.setOptionNote(index, metadata.notes)
+    decision.setOptionHidden(index, metadata.hidden)
   })
 }
 
@@ -347,7 +372,7 @@ export function createDecisionSpreadsheet(decision) {
     ["Factor Packs:", Array.from(decision.factorPacks ?? []).join(", ")],
     [],
     [undefined, "Options"],
-    ["Factors", ...decision.options],
+    ["Factors", ...decision.options.map((option) => option.name)],
     ...decision.factors.map((factor, factorIndex) => [
       factor.name,
       ...decision.options.map((_, optionIndex) =>
@@ -358,7 +383,9 @@ export function createDecisionSpreadsheet(decision) {
   const sheet = XLSX.utils.aoa_to_sheet(rows)
   sheet["!cols"] = [
     { wch: Math.max(12, ...decision.factors.map(({ name }) => name.length + 2)) },
-    ...decision.options.map((option) => ({ wch: Math.max(12, option.length + 2) })),
+    ...decision.options.map((option) => ({
+      wch: Math.max(12, option.name.length + 2),
+    })),
   ]
 
   const headerCells = [
@@ -401,27 +428,34 @@ export function createDecisionSpreadsheet(decision) {
   })
   XLSX.utils.book_append_sheet(workbook, factorSheet, "Factors")
   const optionSheet = XLSX.utils.aoa_to_sheet([
-    ["Option", "Notes"],
+    ["Option", "Notes", "Hidden"],
     ...decision.options.map((option) => [
-      option,
-      decision.optionNotes?.[option] ?? "",
+      option.name,
+      option.notes,
+      option.hidden,
     ]),
   ])
   optionSheet["!cols"] = [
-    { wch: Math.max(12, ...decision.options.map((option) => option.length + 2)) },
+    {
+      wch: Math.max(
+        12,
+        ...decision.options.map((option) => option.name.length + 2),
+      ),
+    },
     {
       wch: Math.min(
         80,
         Math.max(
           24,
           ...decision.options.map(
-            (option) => String(decision.optionNotes?.[option] ?? "").length + 2,
+            (option) => String(option.notes).length + 2,
           ),
         ),
       ),
     },
+    { wch: 12 },
   ]
-  const optionSheetHeaderCells = ["A1", "B1"]
+  const optionSheetHeaderCells = ["A1", "B1", "C1"]
   optionSheetHeaderCells.forEach((address) => {
     if (optionSheet[address])
       optionSheet[address].s = { font: { bold: true } }

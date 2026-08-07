@@ -1,5 +1,6 @@
 import Answer from "./Answer.js"
 import Factor from "./Factor.js"
+import Option from "./Option.js"
 
 // TODO: remove the threshold member (it doesn't do anything anymore)
 
@@ -10,7 +11,6 @@ export default class Decision {
     this.name = name
     this.factors = []
     this.options = []
-    this.optionNotes = {}
     // answers: array of shape [numOptions][numFactors] initialized as empty, filled with Answers
     this.answers = []
     this.threshold = 0
@@ -19,20 +19,21 @@ export default class Decision {
 
   // Returns an index is index=true, otherwise returns the name
   _parseOptionParam(name_or_index, index = true) {
+    const optionNames = this.options.map((option) => option.name)
     let rtn
     if (typeof name_or_index === "string") {
-      rtn = index ? this.options.indexOf(name_or_index) : name_or_index
+      rtn = index ? optionNames.indexOf(name_or_index) : name_or_index
     } else if (typeof name_or_index === "number") {
-      rtn = index ? name_or_index : this.options[name_or_index]
+      rtn = index ? name_or_index : this.options[name_or_index]?.name
     } else throw new Error(`Invalid option type: ${typeof name_or_index}`)
     // Verify the option is valid
-    if (index == false && !this.options.includes(name_or_index))
+    if (index == false && !optionNames.includes(rtn))
       throw new Error(
-        `Option not found: "${name_or_index}". Valid options are: "${this.options.join('", "')}"`,
+        `Option not found: "${name_or_index}". Valid options are: "${optionNames.join('", "')}"`,
       )
     if (index == true && (rtn < 0 || rtn >= this.options.length))
       throw new Error(
-        `Option not found: "${name_or_index}". Valid options are: "${this.options.join('", "')}"`,
+        `Option not found: "${name_or_index}". Valid options are: "${optionNames.join('", "')}"`,
       )
     return rtn
   }
@@ -65,12 +66,16 @@ export default class Decision {
       return `Answers length (${this.answers.length}) does not match options length (${this.options.length})`
     if (this.answers.some((row) => row.length !== this.factors.length))
       return `Answers length (likely ${this.answers[0].length}) does not match factors length (${this.factors.length})`
+    const visibleOptionIndexes = this.options
+      .map((option, index) => (option.hidden ? null : index))
+      .filter((index) => index !== null)
+    if (visibleOptionIndexes.length === 0) return "No visible options"
     // const invalidAnswers = this.factors.filter((row) =>
     // row.some((ans) => ans.isInvalid(this, )),
     // )
     let invalidAnswers = []
     for (let i = 0; i < this.factors.length; i++) {
-      for (let j = 0; j < this.options.length; j++) {
+      for (const j of visibleOptionIndexes) {
         const ans = this.answers[j][i]
         if (ans.isInvalid(this, i)) invalidAnswers.push([ans])
       }
@@ -81,9 +86,11 @@ export default class Decision {
 
     if (
       !allowUnanswered &&
-      this.answers.some((row) => row.some((ans) => !ans.isAnswered()))
+      visibleOptionIndexes.some((index) =>
+        this.answers[index].some((ans) => !ans.isAnswered()),
+      )
     )
-      return `Not all answers are filled: ${this.answers.filter((row) => row.some((ans) => !ans.isAnswered())).length} answers are not filled`
+      return `Not all answers are filled: ${visibleOptionIndexes.filter((index) => this.answers[index].some((ans) => !ans.isAnswered())).length} answers are not filled`
 
     if (this.factors.some((_, i) => !!this.isFactorValid(i)))
       return (
@@ -179,8 +186,8 @@ export default class Decision {
     this.answers = this.answers.map((row) => order.map((index) => row[index]))
   }
 
-  addOption(name) {
-    this.options.push(name)
+  addOption(option) {
+    this.options.push(Option.deserialize(option))
     const row = []
     for (let i = 0; i < this.factors.length; i++) row.push(new Answer())
     this.answers.push(row)
@@ -204,25 +211,25 @@ export default class Decision {
   removeOption(option) {
     const idx = this._parseOptionParam(option)
     if (idx === -1) return
-    delete this.optionNotes[this.options[idx]]
     this.options.splice(idx, 1)
     this.answers.splice(idx, 1)
   }
 
   renameOption(option, name) {
     const idx = this._parseOptionParam(option)
-    const oldName = this.options[idx]
-    this.options[idx] = name
-    if (oldName !== name && Object.hasOwn(this.optionNotes, oldName)) {
-      this.optionNotes[name] = this.optionNotes[oldName]
-      delete this.optionNotes[oldName]
-    }
+    this.options[idx].name = name
   }
 
   setOptionNote(option, note) {
-    const name = this.options[this._parseOptionParam(option)]
-    if (note) this.optionNotes[name] = note
-    else delete this.optionNotes[name]
+    this.options[this._parseOptionParam(option)].notes = note ?? ""
+  }
+
+  setOptionHidden(option, hidden) {
+    this.options[this._parseOptionParam(option)].hidden = Boolean(hidden)
+  }
+
+  getVisibleOptions() {
+    return this.options.filter((option) => !option.hidden)
   }
 
   // Throws an error if it fails
@@ -268,8 +275,7 @@ export default class Decision {
     return JSON.stringify({
       name: this.name,
       factors: this.factors.map((factor) => factor.serialize()),
-      options: this.options,
-      optionNotes: this.optionNotes,
+      options: this.options.map((option) => option.serialize()),
       answers: this.answers.map((row) => row.map((ans) => ans.serialize())),
       threshold: this.threshold,
       factorPacks: Array.from(this.factorPacks),
@@ -294,13 +300,18 @@ export default class Decision {
         }),
       )
     }
-    d.options = obj.options
-    d.optionNotes = Object.fromEntries(
-      Object.entries(obj.optionNotes ?? {}).filter(
-        ([option, note]) =>
-          d.options.includes(option) && typeof note === "string",
-      ),
-    )
+    const legacyOptionNotes = obj.optionNotes ?? {}
+    d.options = (obj.options ?? []).map((option) => {
+      const parsed = Option.deserialize(option)
+      const hasEmbeddedNotes =
+        option && typeof option === "object" && Object.hasOwn(option, "notes")
+      if (
+        !hasEmbeddedNotes &&
+        typeof legacyOptionNotes?.[parsed.name] === "string"
+      )
+        parsed.notes = legacyOptionNotes[parsed.name]
+      return parsed
+    })
     d.answers = obj.answers.map((row) => row.map((ans) => new Answer(...ans)))
     d.threshold = obj.threshold
     d.factorPacks = new Set(obj.factorPacks || [])
@@ -314,10 +325,16 @@ export default class Decision {
   // Returns an array of factors that have non-finite ranges, given the currently answered answers.
   // For example, if there's a non-finite factor, but all answers are finite, it won't be returned
   getPracticalNonFiniteFactors() {
+    const visibleOptionIndexes = this.options
+      .map((option, index) => (option.hidden ? null : index))
+      .filter((index) => index !== null)
     return this.factors.filter(
       (factor, factorIndex) =>
         !factor.isFinite() &&
-        this.answers.some((row) => !row[factorIndex].isAnswered()),
+        visibleOptionIndexes.some(
+          (optionIndex) =>
+            !this.answers[optionIndex][factorIndex].isAnswered(),
+        ),
     )
   }
 
@@ -333,7 +350,8 @@ export default class Decision {
       const [overrideMin, overrideMax] = overrideFactorRanges[factor.name] ?? []
       const min = overrideMin ?? factor.min
       const max = overrideMax ?? factor.max
-      copy.answers.forEach((row) => {
+      copy.answers.forEach((row, optionIndex) => {
+        if (copy.options[optionIndex].hidden) return
         const ans = row[factorIndex]
         if (ans.isAnswered()) return
         ans.min = min
@@ -511,6 +529,12 @@ export default class Decision {
   calculateAll(
     options = { numSamples: Decision.numSamples, method: "extremes", minThresh: null, maxThresh: null },
   ) {
+    if (this.options.some((option) => option.hidden)) {
+      const visibleCopy = this.copy()
+      for (let index = visibleCopy.options.length - 1; index >= 0; index -= 1)
+        if (visibleCopy.options[index].hidden) visibleCopy.removeOption(index)
+      return visibleCopy.calculateAll(options)
+    }
     const numSamples = options.numSamples || Decision.numSamples
     const method = options.method || "extremes"
     const minThresh = options.minThresh
@@ -634,7 +658,7 @@ export default class Decision {
       if (weighted[i] < weighted[bestIdx]) bestIdx = i
       if (weighted[i] > weighted[worstIdx]) worstIdx = i
     }
-    const options = this.options.slice()
+    const options = this.getVisibleOptions().map((option) => option.name)
     const contrib = calc.delta_vectors_normalized.map((row) =>
       row.map((v) => Math.abs(v)),
     )

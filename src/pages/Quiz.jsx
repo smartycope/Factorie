@@ -118,8 +118,9 @@ function answerHasProblem(decision, optionIndex, factorIndex) {
 }
 
 function factorHasProblem(decision, factorIndex) {
-  return decision.options.some((_, optionIndex) =>
-    answerHasProblem(decision, optionIndex, factorIndex),
+  return decision.options.some(
+    (option, optionIndex) =>
+      !option.hidden && answerHasProblem(decision, optionIndex, factorIndex),
   )
 }
 
@@ -139,7 +140,8 @@ function optionIndexesForMode(
     .map((_, index) => index)
     .filter(
       (index) =>
-        (!focusedOption || decision.options[index] === focusedOption) &&
+        !decision.options[index].hidden &&
+        (!focusedOption || decision.options[index].name === focusedOption) &&
         (!onlyShowUnanswered || optionHasProblem(decision, index)),
     )
 }
@@ -153,7 +155,9 @@ function factorIndexesForMode(
   if (!decision) return []
   const query = factorSearch.trim().toLowerCase()
   const focusedOptionIndex =
-    focusedOption ? decision.options.indexOf(focusedOption) : -1
+    focusedOption ?
+      decision.options.findIndex((option) => option.name === focusedOption)
+    : -1
   return decision.factors
     .map((_, index) => index)
     .filter(
@@ -229,7 +233,7 @@ function AnswersTable({
           </TableHead>
           <TableBody>
             {visibleOptionIndexes.map((r) => {
-              const opt = decision.options[r]
+              const opt = decision.options[r].name
               return (
                 <TableRow key={r}>
                   <TableCell>{opt}</TableCell>
@@ -324,7 +328,7 @@ function TransposedAnswersTable({
                   }}></TableCell>
                 {optionIndexes.map((r) => (
                   <TableCell key={r} sx={{ whiteSpace: "nowrap" }}>
-                    {decision.options[r]}
+                    {decision.options[r].name}
                   </TableCell>
                 ))}
               </TableRow>
@@ -409,10 +413,13 @@ export default function Quiz() {
   const [maxInputText, setMaxInputText] = useState(null)
   const valueInputRef = useRef(null)
 
-  const decisionOptionCount = decision?.options.length ?? 0
+  const visibleOptions = decision?.getVisibleOptions() ?? []
+  const decisionOptionCount = visibleOptions.length
   const decisionFactorCount = decision?.factors.length ?? 0
   const activeFocusedOption =
-    decision?.options.includes(focusedOption) ? focusedOption : ALL_OPTIONS
+    visibleOptions.some((option) => option.name === focusedOption) ?
+      focusedOption
+    : ALL_OPTIONS
   const traversalOptionIndexes = optionIndexesForMode(
     decision,
     onlyShowUnanswered,
@@ -434,7 +441,8 @@ export default function Quiz() {
       [traversalOptionIndexes[0], traversalFactorIndexes[0]]
     : selectedCell
 
-  const option = hasVisibleQuizCells ? decision?.options[optionIdx] || "" : ""
+  const option =
+    hasVisibleQuizCells ? decision?.options[optionIdx]?.name || "" : ""
   const factor =
     hasVisibleQuizCells ? decision?.factors[factorIdx]?.name || "" : ""
   const unit =
@@ -780,8 +788,8 @@ export default function Quiz() {
       <Box sx={{ flex: 1, minWidth: 0, p: 2 }}>
         <Typography variant="h4">Quiz</Typography>
         <Typography>
-          Add an option on the <Link to="/options">Options</Link> page to take
-          the quiz.
+          Add or show an option on the <Link to="/options">Options</Link> page
+          to take the quiz.
         </Typography>
       </Box>
     )
@@ -846,9 +854,9 @@ export default function Quiz() {
             label="Focus option"
             onChange={handleFocusedOptionChange}>
             <MenuItem value={ALL_OPTIONS}>All</MenuItem>
-            {decision.options.map((optionName) => (
-              <MenuItem key={optionName} value={optionName}>
-                {optionName}
+            {visibleOptions.map((option) => (
+              <MenuItem key={option.name} value={option.name}>
+                {option.name}
               </MenuItem>
             ))}
           </Select>

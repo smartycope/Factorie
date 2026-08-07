@@ -265,8 +265,8 @@ function computePca2D(X) {
 function GoodnessPlot({ decision, goodness, goodnessConf }) {
   const plot = useMemo(() => {
     if (!decision) return null
-    const rows = decision.options.map((opt, i) => ({
-      option: opt,
+    const rows = decision.options.map((option, i) => ({
+      option: option.name,
       value: goodness[i],
       conf: goodnessConf[i],
     }))
@@ -507,7 +507,7 @@ function HeatmapPlot({
       layout: {
         xaxis: {
           tickvals: Array.from({ length: nRows }, (_, i) => i),
-          ticktext: decision?.options,
+          ticktext: decision?.options.map((option) => option.name),
           showgrid: false,
           zeroline: false,
           scaleanchor: square ? "y" : undefined,
@@ -942,17 +942,24 @@ export default function Results() {
     _setSimulationRanges(to)
   }
   const [simulationRun, setSimulationRun] = useState(0)
-  const invalid = decision?.isInvalid() || ""
+  const visibleDecision = useMemo(() => {
+    if (!decision) return null
+    const copy = decision.copy()
+    for (let index = copy.options.length - 1; index >= 0; index -= 1)
+      if (copy.options[index].hidden) copy.removeOption(index)
+    return copy
+  }, [decision])
+  const invalid = visibleDecision?.isInvalid() || ""
   const hasUnansweredAnswers = invalid.startsWith("Not all answers are filled")
   const canUseSimulatedValues =
-    Boolean(decision) &&
+    Boolean(visibleDecision) &&
     hasUnansweredAnswers &&
-    decision.isInvalid(true) === null
+    visibleDecision.isInvalid(true) === null
 
   const nonFiniteFactors = useMemo(
     () =>
-      canUseSimulatedValues ? decision.getPracticalNonFiniteFactors() : [],
-    [canUseSimulatedValues, decision],
+      canUseSimulatedValues ? visibleDecision.getPracticalNonFiniteFactors() : [],
+    [canUseSimulatedValues, visibleDecision],
   )
 
   const pendingOverrideFactorRanges = useMemo(
@@ -975,11 +982,11 @@ export default function Results() {
     submittedSimulationRanges !== null
 
   const calculationDecision = useMemo(() => {
-    if (!decision) return null
+    if (!visibleDecision) return null
     if (simulationReady)
-      return decision.uncertainCopy(submittedSimulationRanges)
-    return invalid ? null : decision
-  }, [decision, invalid, submittedSimulationRanges, simulationReady])
+      return visibleDecision.uncertainCopy(submittedSimulationRanges)
+    return invalid ? null : visibleDecision
+  }, [visibleDecision, invalid, submittedSimulationRanges, simulationReady])
 
   const calc = useMemo(() => {
     if (!calculationDecision || calculationDecision.isInvalid()) return null
@@ -990,9 +997,13 @@ export default function Results() {
   }, [calculationDecision, simulationRun])
 
   const labels = useMemo(() => {
-    if (!decision) return []
-    return [...decision.options, "Theoretical Best", "Theoretical Worst"]
-  }, [decision])
+    if (!visibleDecision) return []
+    return [
+      ...visibleDecision.options.map((option) => option.name),
+      "Theoretical Best",
+      "Theoretical Worst",
+    ]
+  }, [visibleDecision])
 
   const {
     results,
@@ -1027,9 +1038,9 @@ export default function Results() {
     const optimal = calculationDecision.optimalNormalized()
     const worstOpt = optimal.map((v) => (Math.round(v) === 0 ? 1 : 0))
     const normalized_weighted_dists = calc.mean.badness || []
-    const resultsRows = calculationDecision.options.map((opt, i) => ({
+    const resultsRows = calculationDecision.options.map((option, i) => ({
       score: normalized_weighted_dists[i],
-      option: opt,
+      option: option.name,
       percentage: (normalized_weighted_dists[i] || 0) * 100,
     }))
     resultsRows.sort((a, b) => a.score - b.score)
@@ -1103,7 +1114,9 @@ export default function Results() {
   else if (invalid === "No options added")
     err = (
       <Typography variant="body2">
-        No options added! Head over to the{" "}
+        {decision.options.length ?
+          "All options are hidden!"
+        : "No options added!"} Head over to the{" "}
         <Link component={RouterLink} to="/options">
           Options
         </Link>{" "}
