@@ -293,7 +293,7 @@ function GoodnessPlot({ decision, goodness, goodnessConf }) {
           range: [0, 1],
           tickformat: ".0%",
         },
-        margin: { t: 60, b: 40, l: 50, r: 20 },
+        margin: { t: 60, b: 100, l: 50, r: 20 },
       },
     }
   }, [decision, goodness, goodnessConf])
