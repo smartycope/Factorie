@@ -545,6 +545,8 @@ export default function Factors() {
     const [min, max] = getSuggestedUnitMinMax(unit)
     setAddMin(min)
     setAddMax(max)
+    setAddMinUnbounded(false)
+    setAddMaxUnbounded(false)
     setUnitMenuAnchorEl(null)
   }
 
