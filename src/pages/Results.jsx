@@ -315,7 +315,7 @@ function GoodnessPlot({ decision, goodness, goodnessConf }) {
 }
 
 // "Usefulness of each factor"
-function EntropyPlot({ factorNames, answers, weights }) {
+function EntropyPlot({ factorNames, normalizedAnswers, weights }) {
   const theme = useTheme()
   const [topCount, setTopCount] = useState(10)
   const visibleCount =
@@ -325,12 +325,13 @@ function EntropyPlot({ factorNames, answers, weights }) {
         factorNames.length,
         Math.max(1, Math.floor(Number(topCount) || 1)),
       )
+  // TODO: move calculating entropies into the decision
   const plot = useMemo(() => {
     const rows = factorNames
       .map((factor, factorIndex) => ({
         factor,
         entropy:
-          stdDev(answers.map((row) => row[factorIndex])) * weights[factorIndex],
+          stdDev(normalizedAnswers.map((row) => row[factorIndex])) * weights[factorIndex],
         weight: weights[factorIndex],
       }))
       .sort((a, b) => b.entropy - a.entropy)
@@ -363,16 +364,16 @@ function EntropyPlot({ factorNames, answers, weights }) {
         xaxis: {
           showticklabels: true,
           showgrid: true,
-          title: { text: "Factors" },
+          title: { text: "Factors (width = weight of each factor)" },
         },
         yaxis: {
-          title: { text: "How much each factor contributed to the decision" },
+          title: { text: "How much each factor was different for each option" },
           showticklabels: false,
         },
         margin: { t: 60, b: 100, l: 50, r: 20 },
       },
     }
-  }, [factorNames, answers, weights, theme, visibleCount])
+  }, [factorNames, normalizedAnswers, weights, theme, visibleCount])
 
   return (
     <HelpOverlay helpText={texts.results.entropy}>
@@ -412,9 +413,8 @@ function HeatmapPlot({
   calc,
 }) {
   const theme = useTheme()
-  const [showText, setShowText] = useState(
-    () => (decision?.factors.length ?? 0) < 20,
-  )
+  const [showText, setShowText] = useState(false)
+    // () => (decision?.factors.length ?? 0) < 20,
   const [square, setSquare] = useState(true)
   const [topCount, setTopCount] = useState(10)
   const visibleCount =
@@ -427,11 +427,12 @@ function HeatmapPlot({
   const plot = useMemo(() => {
     const colorscale = ["#9B1127", "rgba(255, 255, 191, 0)", "#195695"]
     const nRows = normalizedAnswers.length
+    // TODO: move calculating entropies into the decision
     const factorIndexes = factorNames
       .map((_, factorIndex) => ({
         factorIndex,
         entropy:
-          stdDev(answers.map((row) => row[factorIndex])) * weights[factorIndex],
+          stdDev(normalizedAnswers.map((row) => row[factorIndex])) * weights[factorIndex],
       }))
       .sort((a, b) => b.entropy - a.entropy)
       .slice(0, visibleCount)
@@ -484,6 +485,7 @@ function HeatmapPlot({
         textColors.push(weight > 0.3 ? "black" : theme.palette.text.primary)
       }
     }
+    console.log(textLabels)
     return {
       data: [
         {
@@ -491,9 +493,14 @@ function HeatmapPlot({
           mode: "text",
           x: textX,
           y: textY,
-          text: showText ? textLabels : undefined,
-          textfont: { color: textColors, size: 12 },
-          hoverinfo: "skip",
+          // Why we have to make the text invisible instead of not drawing it, I don't know.
+          // But it solves both problems of it being out of sync with the checkbox, and
+          // not showing the additional text in the hover.
+          // text: showText ? textLabels : undefined,
+          text: textLabels,
+          textfont: { color: showText ? textColors : '#00000000', size: 12 },
+          // Apparently this a bool, not an array
+          hoverinfo: true,
           showlegend: false,
         },
       ],
@@ -1202,7 +1209,7 @@ export default function Results() {
 
         <EntropyPlot
           factorNames={factorNames}
-          answers={answers}
+          normalizedAnswers={normalizedAnswers}
           weights={weights}
         />
 
