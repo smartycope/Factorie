@@ -6,6 +6,22 @@ import Decision from "../src/models/Decision.js"
 import Factor from "../src/models/Factor.js"
 import Option from "../src/models/Option.js"
 
+test("Google Drive file metadata is local-only and survives copies", () => {
+  const decision = new Decision("Drive decision")
+  decision.googleDriveFileId = "drive-file-id"
+
+  assert.equal(JSON.parse(decision.serialize()).localMetadata, undefined)
+  assert.deepEqual(
+    JSON.parse(decision.serialize({ includeLocalMetadata: true })).localMetadata,
+    { googleDriveFileId: "drive-file-id" },
+  )
+  assert.equal(decision.copy().googleDriveFileId, "drive-file-id")
+  assert.equal(
+    Decision.deserialize(JSON.parse(decision.serialize())).googleDriveFileId,
+    null,
+  )
+})
+
 function createCompleteDecision() {
   const decision = new Decision("Dinner")
   decision.addFactor({
