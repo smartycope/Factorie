@@ -120,8 +120,22 @@ function SimulationControls({
           />
         }
         sx={{ justifyContent: "space-between" }}>
-        Calculation settings ({activeMode.label})
+        How to deal with uncertainty {/* ({activeMode.label}) */}
       </Button>
+      {requiresUnansweredRanges && (
+        <>
+          <br />
+          <FormControlLabel
+            control={
+              <Checkbox
+                checked={enabled}
+                onChange={(event) => onEnabledChange(event.target.checked)}
+              />
+            }
+            label="Fill unanswered entries from their full possible ranges"
+          />
+        </>
+      )}
       <Collapse in={expanded}>
         <TextField
           select
@@ -142,20 +156,6 @@ function SimulationControls({
           <Typography variant="body2" color="warning.main" sx={{ mt: 1 }}>
             Run the calculation to apply this setting to the results.
           </Typography>
-        )}
-        {requiresUnansweredRanges && (
-          <>
-            <br />
-            <FormControlLabel
-              control={
-                <Checkbox
-                  checked={enabled}
-                  onChange={(event) => onEnabledChange(event.target.checked)}
-                />
-              }
-              label="Fill unanswered entries from their full possible ranges"
-            />
-          </>
         )}
         {(!requiresUnansweredRanges || enabled) && (
           <Stack spacing={2} sx={{ mt: 1 }}>
