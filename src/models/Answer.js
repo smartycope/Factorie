@@ -139,7 +139,7 @@ export default class Answer {
       if (m)
         return new Answer(
           parseFloat(m[1]),
-          m[3] ? parseFloat(m[3]) : parseFloat(m[1]),
+          m[2] ? parseFloat(m[2]) : parseFloat(m[1]),
           Boolean(m.groups?.tentative),
           factor,
           option,

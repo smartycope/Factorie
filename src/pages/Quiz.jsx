@@ -37,9 +37,9 @@ const persistedQuizFilters = {
 }
 
 // TODO: negative values don't work well with this right now
-function cloneDecision(decision) {
-  return Decision.deserialize(decision.serialize())
-}
+// function cloneDecision(decision) {
+//   return Decision.deserialize(decision.serialize())
+// }
 
 function formatAnswer(cell) {
   return cell?.toString() ?? ""
@@ -386,7 +386,7 @@ function TransposedAnswersTable({
 }
 
 export default function Quiz() {
-  const { decisions, setDecisions, selectedIndex, decision, modifyCurrentDecision:updateDecision } = useDecisions()
+  const { decision, modifyCurrentDecision:updateDecision } = useDecisions()
 
   // UI state (unconditional hooks)
   const [precise, setPrecise] = useState(false)
