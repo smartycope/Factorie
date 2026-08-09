@@ -172,14 +172,26 @@ export async function pickGoogleDriveSpreadsheet(
       .setIncludeFolders(false)
       .setSelectFolderEnabled(false)
       .setMimeTypes(SPREADSHEET_MIME_TYPE)
+      .setMode(picker.DocsViewMode.LIST)
 
-    const pickerInstance = new picker.PickerBuilder()
+    let pickerInstance
+    pickerInstance = new picker.PickerBuilder()
       .setAppId(config.appId)
       .setOAuthToken(accessToken)
       .setDeveloperKey(config.apiKey)
       .addView(view)
       .setCallback((data) => {
         const action = data[picker.Response.ACTION]
+        if (action === picker.Action.ERROR) {
+          console.error("Google Picker reported an error", data)
+          pickerInstance?.setVisible(false)
+          reject(
+            new GoogleDriveError("Google Picker encountered an error.", {
+              code: "picker_error",
+            }),
+          )
+          return
+        }
         if (action === picker.Action.CANCEL) {
           reject(
             new GoogleDriveError("Google Drive file selection was cancelled.", {
