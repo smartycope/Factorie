@@ -39,14 +39,14 @@ test("factor and option colors round-trip as spreadsheet cell fills", () => {
   )
 })
 
-test("spreadsheet import accepts case-insensitive discrete answer labels", () => {
+function importDiscreteAnswer(value) {
   const decision = new Decision("Discrete labels")
   decision.addFactor({
     name: "Size",
-    unit: "0: Small, 1: Medium, 2: Large",
+    unit: "1: label, 2: other label",
     optimal: 2,
     weight: 1,
-    min: 0,
+    min: 1,
     max: 2,
   })
   decision.addOption("Choice")
@@ -55,13 +55,27 @@ test("spreadsheet import accepts case-insensitive discrete answer labels", () =>
   const workbook = XLSX.read(createDecisionSpreadsheet(decision), {
     type: "array",
   })
-  workbook.Sheets.Decision.B6 = { t: "s", v: "mEdIuM" }
-  const imported = parseDecisionSpreadsheet(
+  workbook.Sheets.Decision.B6 = { t: "s", v: value }
+  return parseDecisionSpreadsheet(
     XLSX.write(workbook, { type: "array", bookType: "xlsx" }),
   )
+}
+
+test("spreadsheet import accepts case-insensitive discrete answer labels", () => {
+  const imported = importDiscreteAnswer("LaBeL")
 
   expect(imported.getAnswer("Choice", "Size").serialize()).toEqual([
-    "Medium",
-    "Medium",
+    "label",
+    "label",
   ])
+})
+
+test.each([
+  ["label?", ["label", "label", true]],
+  ["label-other label", ["label", "other label"]],
+  ["label-other label?", ["label", "other label", true]],
+])("spreadsheet import parses discrete answer %s", (value, expected) => {
+  const imported = importDiscreteAnswer(value)
+
+  expect(imported.getAnswer("Choice", "Size").serialize()).toEqual(expected)
 })

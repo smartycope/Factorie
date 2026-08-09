@@ -128,20 +128,40 @@ export default class Answer {
       if (answer.trim() === "")
         return new Answer(null, null, false, factor, option)
 
-      const discreteValue = factor
-        ?.discreteValues()
-        .find(
-          ({ name }) =>
-            name.toLowerCase() === answer.trim().toLowerCase(),
-        )
+      const trimmedAnswer = answer.trim()
+      const tentative = trimmedAnswer.endsWith("?")
+      const discreteAnswer =
+        tentative ? trimmedAnswer.slice(0, -1).trim() : trimmedAnswer
+      const normalizedDiscreteAnswer = discreteAnswer
+        .toLowerCase()
+        .replace(/\s*-\s*/g, "-")
+      const discreteValues = factor?.discreteValues?.() ?? []
+      const discreteValue = discreteValues.find(
+        ({ name }) => name.toLowerCase() === normalizedDiscreteAnswer,
+      )
       if (discreteValue)
         return new Answer(
           discreteValue.number,
           discreteValue.number,
-          false,
+          tentative,
           factor,
           option,
         )
+      for (const min of discreteValues) {
+        for (const max of discreteValues) {
+          const range = `${min.name}-${max.name}`
+            .toLowerCase()
+            .replace(/\s*-\s*/g, "-")
+          if (range === normalizedDiscreteAnswer)
+            return new Answer(
+              min.number,
+              max.number,
+              tentative,
+              factor,
+              option,
+            )
+        }
+      }
 
       const m = answer.match(
         // LLM translated version
