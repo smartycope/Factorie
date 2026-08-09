@@ -5,7 +5,6 @@ import {
   authorizeGoogleDrive,
   downloadGoogleDriveFile,
   isGoogleDriveConfigured,
-  pickGoogleDriveSpreadsheet,
   uploadGoogleDriveSpreadsheet,
 } from "../src/utils/googleDrive.js"
 
@@ -78,129 +77,6 @@ test("authorization turns popup closure into a Drive error", async () => {
       code: "popup_closed",
     })
   } finally {
-    globalThis.window = originalWindow
-  }
-})
-
-test("Picker selects exactly one xlsx file", async () => {
-  const originalWindow = globalThis.window
-  let configuredMimeType
-  class DocsView {
-    setIncludeFolders() { return this }
-    setSelectFolderEnabled() { return this }
-    setMimeTypes(value) {
-      configuredMimeType = value
-      return this
-    }
-    setMode(value) {
-      assert.equal(value, "list")
-      return this
-    }
-  }
-  class PickerBuilder {
-    setAppId(value) { assert.equal(value, config.appId); return this }
-    setOAuthToken(value) { assert.equal(value, "access-token"); return this }
-    setDeveloperKey(value) { assert.equal(value, config.apiKey); return this }
-    addView() { return this }
-    setCallback(callback) { this.callback = callback; return this }
-    build() {
-      return {
-        setVisible: () => this.callback({
-          action: "picked",
-          documents: [{ id: "file-id", name: "Decision.xlsx" }],
-        }),
-      }
-    }
-  }
-  globalThis.window = {
-    gapi: { load: () => {} },
-    google: {
-      picker: {
-        DocsView,
-        PickerBuilder,
-        ViewId: { DOCS: "docs" },
-        Response: { ACTION: "action", DOCUMENTS: "documents" },
-        Document: { ID: "id", NAME: "name" },
-        Action: { PICKED: "picked", CANCEL: "cancel", ERROR: "error" },
-        DocsViewMode: { LIST: "list" },
-      },
-    },
-  }
-
-  try {
-    assert.deepEqual(
-      await pickGoogleDriveSpreadsheet("access-token", config),
-      { id: "file-id", name: "Decision.xlsx" },
-    )
-    assert.equal(configuredMimeType, SPREADSHEET_MIME_TYPE)
-  } finally {
-    globalThis.window = originalWindow
-  }
-})
-
-test("Picker errors close the dialog, log details, and reject", async () => {
-  const originalWindow = globalThis.window
-  const originalConsoleError = console.error
-  const loggedErrors = []
-  let visible = true
-
-  class DocsView {
-    setIncludeFolders() { return this }
-    setSelectFolderEnabled() { return this }
-    setMimeTypes() { return this }
-    setMode() { return this }
-  }
-  class PickerBuilder {
-    setAppId() { return this }
-    setOAuthToken() { return this }
-    setDeveloperKey() { return this }
-    addView() { return this }
-    setCallback(callback) { this.callback = callback; return this }
-    build() {
-      return {
-        setVisible: (nextVisible) => {
-          visible = nextVisible
-          if (nextVisible)
-            queueMicrotask(() => this.callback({
-              action: "error",
-              error: "selection_failed",
-            }))
-        },
-      }
-    }
-  }
-  globalThis.window = {
-    gapi: { load: () => {} },
-    google: {
-      picker: {
-        DocsView,
-        PickerBuilder,
-        ViewId: { DOCS: "docs" },
-        Response: { ACTION: "action", DOCUMENTS: "docs" },
-        Document: { ID: "id", NAME: "name" },
-        Action: { PICKED: "picked", CANCEL: "cancel", ERROR: "error" },
-        DocsViewMode: { LIST: "list" },
-      },
-    },
-  }
-  console.error = (...args) => loggedErrors.push(args)
-
-  try {
-    await expect(
-      pickGoogleDriveSpreadsheet("access-token", config),
-    ).rejects.toMatchObject({
-      name: "GoogleDriveError",
-      code: "picker_error",
-    })
-    assert.equal(visible, false)
-    assert.equal(loggedErrors.length, 1)
-    assert.equal(loggedErrors[0][0], "Google Picker reported an error")
-    assert.deepEqual(loggedErrors[0][1], {
-      action: "error",
-      error: "selection_failed",
-    })
-  } finally {
-    console.error = originalConsoleError
     globalThis.window = originalWindow
   }
 })

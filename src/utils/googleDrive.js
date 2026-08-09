@@ -3,7 +3,6 @@ export const SPREADSHEET_MIME_TYPE =
 
 const DRIVE_SCOPE = "https://www.googleapis.com/auth/drive.file"
 const GIS_SCRIPT_URL = "https://accounts.google.com/gsi/client"
-const GOOGLE_API_SCRIPT_URL = "https://apis.google.com/js/api.js"
 
 let tokenClient = null
 let tokenClientId = null
@@ -80,21 +79,6 @@ async function loadIdentityServices() {
   )
 }
 
-async function loadPicker() {
-  await loadScript(GOOGLE_API_SCRIPT_URL, () => Boolean(window.gapi?.load))
-  if (window.google?.picker) return
-  await new Promise((resolve, reject) => {
-    window.gapi.load("picker", {
-      callback: resolve,
-      onerror: () =>
-        reject(new GoogleDriveError("Unable to initialize Google Picker.")),
-      timeout: 10000,
-      ontimeout: () =>
-        reject(new GoogleDriveError("Google Picker took too long to load.")),
-    })
-  })
-}
-
 export async function authorizeGoogleDrive(
   config = getGoogleDriveConfig(),
 ) {
@@ -156,64 +140,6 @@ export async function authorizeGoogleDrive(
     tokenClient.requestAccessToken({
       prompt: hasAuthorizedSession ? "" : "consent",
     })
-  })
-}
-
-export async function pickGoogleDriveSpreadsheet(
-  accessToken,
-  config = getGoogleDriveConfig(),
-) {
-  requireGoogleDriveConfig(config)
-  await loadPicker()
-
-  return new Promise((resolve, reject) => {
-    const picker = window.google.picker
-    const view = new picker.DocsView(picker.ViewId.DOCS)
-      .setIncludeFolders(false)
-      .setSelectFolderEnabled(false)
-      .setMimeTypes(SPREADSHEET_MIME_TYPE)
-      .setMode(picker.DocsViewMode.LIST)
-
-    let pickerInstance
-    pickerInstance = new picker.PickerBuilder()
-      .setAppId(config.appId)
-      .setOAuthToken(accessToken)
-      .setDeveloperKey(config.apiKey)
-      .addView(view)
-      .setCallback((data) => {
-        const action = data[picker.Response.ACTION]
-        if (action === picker.Action.ERROR) {
-          console.error("Google Picker reported an error", data)
-          pickerInstance?.setVisible(false)
-          reject(
-            new GoogleDriveError("Google Picker encountered an error.", {
-              code: "picker_error",
-            }),
-          )
-          return
-        }
-        if (action === picker.Action.CANCEL) {
-          reject(
-            new GoogleDriveError("Google Drive file selection was cancelled.", {
-              code: "picker_cancelled",
-            }),
-          )
-          return
-        }
-        if (action !== picker.Action.PICKED) return
-        const document = data[picker.Response.DOCUMENTS]?.[0]
-        const id = document?.[picker.Document.ID]
-        if (!id) {
-          reject(new GoogleDriveError("Google Picker did not return a file."))
-          return
-        }
-        resolve({
-          id,
-          name: document[picker.Document.NAME] ?? "Decision.xlsx",
-        })
-      })
-      .build()
-    pickerInstance.setVisible(true)
   })
 }
 

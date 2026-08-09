@@ -32,11 +32,11 @@ import DialogTitle from "@mui/material/DialogTitle"
 import {downloadedFilename} from "../utils/misc";
 import xlsxTemplate from "../assets/Decision template.xlsx"
 import {useToast} from "../contexts/UseToast";
+import GoogleDriveSpreadsheetPicker from "../components/GoogleDriveSpreadsheetPicker";
 import {
   authorizeGoogleDrive,
   downloadGoogleDriveFile,
   getGoogleDriveConfig,
-  pickGoogleDriveSpreadsheet,
   uploadGoogleDriveSpreadsheet,
 } from "../utils/googleDrive";
 
@@ -56,6 +56,7 @@ export default function Dashboard() {
   const [isImportDialogOpen, setImportDialogOpen] = React.useState(false);
   const [spreadsheetFeedback, setSpreadsheetFeedback] = React.useState(null)
   const [driveAction, setDriveAction] = React.useState(null);
+  const [drivePickerSession, setDrivePickerSession] = React.useState(null);
   const googleDriveConfig = getGoogleDriveConfig();
 
   function addExamples() {
@@ -269,13 +270,21 @@ export default function Dashboard() {
     setDriveAction({ type: "load" })
     try {
       const accessToken = await authorizeGoogleDrive(googleDriveConfig)
-      const file = await pickGoogleDriveSpreadsheet(
-        accessToken,
-        googleDriveConfig,
-      )
+      setDrivePickerSession({ accessToken })
+    } catch (error) {
+      showDriveError("Load from Google Drive", error)
+      setDriveAction(null)
+    }
+  }
+
+  async function handleDriveFilePicked(file) {
+    try {
       const warnings = []
       const importedDecision = parseDecisionSpreadsheet(
-        await downloadGoogleDriveFile({ accessToken, fileId: file.id }),
+        await downloadGoogleDriveFile({
+          accessToken: drivePickerSession.accessToken,
+          fileId: file.id,
+        }),
         { onWarning: (warning) => warnings.push(warning) },
       )
       importedDecision.googleDriveFileId = file.id
@@ -289,8 +298,20 @@ export default function Dashboard() {
     } catch (error) {
       showDriveError("Load from Google Drive", error)
     } finally {
+      setDrivePickerSession(null)
       setDriveAction(null)
     }
+  }
+
+  function handleDrivePickerCanceled() {
+    setDrivePickerSession(null)
+    setDriveAction(null)
+  }
+
+  function handleDrivePickerError(error) {
+    showDriveError("Load from Google Drive", error)
+    setDrivePickerSession(null)
+    setDriveAction(null)
   }
 
   function downloadSpreadsheet(decision) {
@@ -304,6 +325,15 @@ export default function Dashboard() {
 
   return (
     <Box sx={{ width: "100%" }}>
+      {drivePickerSession && (
+        <GoogleDriveSpreadsheetPicker
+          accessToken={drivePickerSession.accessToken}
+          config={googleDriveConfig}
+          onPicked={handleDriveFilePicked}
+          onCanceled={handleDrivePickerCanceled}
+          onError={handleDrivePickerError}
+        />
+      )}
       <Box
         sx={{
           display: "flex",
