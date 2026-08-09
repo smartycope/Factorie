@@ -122,21 +122,21 @@ function SimulationControls({
         sx={{ justifyContent: "space-between" }}>
         How to deal with uncertainty {/* ({activeMode.label}) */}
       </Button>
+      <Collapse in={expanded}>
       {requiresUnansweredRanges && (
         <>
-          <br />
           <FormControlLabel
             control={
-              <Checkbox
+                <Checkbox
                 checked={enabled}
                 onChange={(event) => onEnabledChange(event.target.checked)}
-              />
+                />
             }
             label="Fill unanswered entries from their full possible ranges"
           />
+            <br />
         </>
       )}
-      <Collapse in={expanded}>
         <TextField
           select
           fullWidth
@@ -428,7 +428,7 @@ function EntropyPlot({ decision, factorNames, entropy, usefulness, weights }) {
         xaxis: {
           showticklabels: true,
           showgrid: true,
-          title: { text: "Factors (width = weight of each factor)" },
+          title: { text: "Factors (width = weight)" },
         },
         yaxis: {
           title: { text: "How much each factor was different for each option" },
@@ -1399,14 +1399,14 @@ export default function Results() {
     err = (
       <Typography variant="body2">
         Not all answers are filled! Head over to the{" "}
-        <Link component={RouterLink} to="/decisions">
+        {/* <Link component={RouterLink} to="/decisions">
           Overview
-        </Link>{" "}
-        page or the{" "}
+        </Link>{" "} */}
+        {/* page or the{" "} */}
         <Link component={RouterLink} to="/quiz">
           Quiz
         </Link>{" "}
-        page to add them.
+        page to add them, or simulate the unanswered values below.
       </Typography>
     )
   else if (invalid.startsWith("Invalid factors:"))
