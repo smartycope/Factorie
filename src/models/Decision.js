@@ -35,6 +35,7 @@ export default class Decision {
 
   constructor(name) {
     this.name = name
+    this.googleDriveFileId = null
     this.factors = []
     this.options = []
     // answers: array of shape [numOptions][numFactors] initialized as empty, filled with Answers
@@ -315,8 +316,8 @@ export default class Decision {
       for (const factor of pack.factors) this.removeFactor(factor.name)
   }
 
-  serialize() {
-    return JSON.stringify({
+  serialize({ includeLocalMetadata = false } = {}) {
+    const serialized = {
       name: this.name,
       factors: this.factors.map((factor) => factor.serialize()),
       options: this.options.map((option) => option.serialize()),
@@ -325,12 +326,21 @@ export default class Decision {
       ),
       threshold: this.threshold,
       factorPacks: Array.from(this.factorPacks),
-    })
+    }
+    if (includeLocalMetadata && this.googleDriveFileId)
+      serialized.localMetadata = {
+        googleDriveFileId: this.googleDriveFileId,
+      }
+    return JSON.stringify(serialized)
   }
 
   static deserialize(data) {
     const obj = typeof data === "string" ? JSON.parse(data) : data
     const d = new Decision(obj.name)
+    d.googleDriveFileId =
+      typeof obj.localMetadata?.googleDriveFileId === "string" ?
+        obj.localMetadata.googleDriveFileId
+      : null
     if (Array.isArray(obj.factors)) {
       d.factors = obj.factors.map((factor) => Factor.deserialize(factor))
     } else {
@@ -373,7 +383,7 @@ export default class Decision {
   }
 
   copy() {
-    return Decision.deserialize(this.serialize())
+    return Decision.deserialize(this.serialize({ includeLocalMetadata: true }))
   }
 
   // Returns an array of factors that have non-finite ranges, given the currently answered answers.

@@ -5,6 +5,7 @@ import { ThemeProvider, createTheme } from "@mui/material/styles"
 import { MemoryRouter } from "react-router-dom"
 
 import { DecisionsProvider } from "../src/contexts/DecisionsContext.jsx"
+import { ToastProvider } from "../src/contexts/ToastContext.jsx"
 import Decision from "../src/models/Decision.js"
 import Dashboard from "../src/pages/Dashboard.jsx"
 
@@ -39,9 +40,11 @@ function renderDashboard() {
     <MemoryRouter
       future={{ v7_startTransition: true, v7_relativeSplatPath: true }}>
       <ThemeProvider theme={createTheme()}>
-        <DecisionsProvider>
-          <Dashboard />
-        </DecisionsProvider>
+        <ToastProvider>
+          <DecisionsProvider>
+            <Dashboard />
+          </DecisionsProvider>
+        </ToastProvider>
       </ThemeProvider>
     </MemoryRouter>,
   )

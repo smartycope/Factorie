@@ -18,6 +18,27 @@ npm run build
 And then
 Push to the repo should work, it's hosted on github pages.
 
+## Google Drive Setup
+
+The Dashboard can save and load one decision spreadsheet at a time without a
+backend. In a Google Cloud project:
+
+1. Enable the Google Drive API and Google Picker API.
+2. Configure the OAuth consent screen with the non-sensitive
+   `https://www.googleapis.com/auth/drive.file` scope.
+3. Create a Web OAuth client. Add `https://smartycope.github.io` and
+   `http://localhost:5173` as authorized JavaScript origins.
+4. Create a browser API key restricted to the Google Picker API and to the
+   production and localhost HTTP referrers.
+5. Copy `.env.example` to `.env.local` for local development and fill in the
+   OAuth client ID, API key, and Cloud project number (the Drive App ID).
+6. Add the same values as GitHub Actions repository variables named
+   `VITE_GOOGLE_CLIENT_ID`, `VITE_GOOGLE_API_KEY`, and `VITE_GOOGLE_APP_ID`.
+
+These browser identifiers are embedded in the built app, so the API key's
+referrer and API restrictions are required. Do not add a client secret or store
+Google access tokens; the app keeps each short-lived token in memory only.
+
 ---
 
 

@@ -16,6 +16,8 @@ import DeleteIcon from "@mui/icons-material/Delete";
 import UploadFileIcon from "@mui/icons-material/UploadFile";
 import DownloadIcon from "@mui/icons-material/Download";
 import TableViewIcon from "@mui/icons-material/TableView";
+import CloudDownloadIcon from "@mui/icons-material/CloudDownload";
+import CloudUploadIcon from "@mui/icons-material/CloudUpload";
 import LaunchIcon from '@mui/icons-material/Launch';
 import examplePack from "../factor-packs/example.json"
 import {
@@ -29,6 +31,14 @@ import DialogContentText from "@mui/material/DialogContentText"
 import DialogTitle from "@mui/material/DialogTitle"
 import {downloadedFilename} from "../utils/misc";
 import xlsxTemplate from "../assets/Decision template.xlsx"
+import {useToast} from "../contexts/UseToast";
+import {
+  authorizeGoogleDrive,
+  downloadGoogleDriveFile,
+  getGoogleDriveConfig,
+  pickGoogleDriveSpreadsheet,
+  uploadGoogleDriveSpreadsheet,
+} from "../utils/googleDrive";
 
 export default function Dashboard() {
   const {
@@ -39,11 +49,14 @@ export default function Dashboard() {
     createDecision,
     removeDecision,
   } = useDecisions();
+  const { toast } = useToast();
   const navigate = useNavigate();
   const decFileInputRef = React.useRef(null);
   const spreadsheetFileInputRef = React.useRef(null);
   const [isImportDialogOpen, setImportDialogOpen] = React.useState(false);
   const [spreadsheetFeedback, setSpreadsheetFeedback] = React.useState(null)
+  const [driveAction, setDriveAction] = React.useState(null);
+  const googleDriveConfig = getGoogleDriveConfig();
 
   function addExamples() {
     const ex1 = JSON.parse(
@@ -110,6 +123,7 @@ export default function Dashboard() {
       const txt = await f.text();
       const obj = JSON.parse(txt);
       const d = Decision.deserialize(obj);
+      d.googleDriveFileId = null;
       // ensure a unique name: if duplicate, append numeric suffix
       let baseName = d.name || "Imported Decision";
       let uniqueName = baseName;
@@ -145,36 +159,12 @@ export default function Dashboard() {
         await file.arrayBuffer(),
         { onWarning: (warning) => warnings.push(warning) },
       )
-      if (warnings.length)
+      importedDecision.googleDriveFileId = null
+      if (installSpreadsheetDecision(importedDecision) && warnings.length)
         setSpreadsheetFeedback({
           title: "Spreadsheet imported with warnings",
           message: warnings.join("\n\n"),
         })
-      const existingIndex = decisions.findIndex(
-        (decision) => decision.name.toLowerCase() === importedDecision.name.toLowerCase(),
-      )
-      if (
-        existingIndex !== -1 &&
-        !window.confirm(
-          `A decision named "${importedDecision.name}" already exists. Do you want to overwrite it?`,
-        )
-      )
-        return
-
-      setDecisions((previous) => {
-        const next = [...previous]
-        const index = next.findIndex(
-          (decision) => decision.name.toLowerCase() === importedDecision.name.toLowerCase(),
-        )
-        if (index === -1) {
-          next.push(importedDecision)
-          setSelectedIndex(next.length - 1)
-        } else {
-          next[index] = importedDecision
-          setSelectedIndex(index)
-        }
-        return next
-      })
     } catch (error) {
       console.error("Spreadsheet import failed", error)
       setSpreadsheetFeedback({
@@ -183,6 +173,123 @@ export default function Dashboard() {
       })
     } finally {
       e.target.value = null
+    }
+  }
+
+  function installSpreadsheetDecision(importedDecision) {
+    const existingIndex = decisions.findIndex(
+      (decision) =>
+        decision.name.toLowerCase() === importedDecision.name.toLowerCase(),
+    )
+    if (
+      existingIndex !== -1 &&
+      !window.confirm(
+        `A decision named "${importedDecision.name}" already exists. Do you want to overwrite it?`,
+      )
+    )
+      return false
+
+    setDecisions((previous) => {
+      const next = [...previous]
+      const index = next.findIndex(
+        (decision) =>
+          decision.name.toLowerCase() === importedDecision.name.toLowerCase(),
+      )
+      if (index === -1) {
+        next.push(importedDecision)
+        setSelectedIndex(next.length - 1)
+      } else {
+        next[index] = importedDecision
+        setSelectedIndex(index)
+      }
+      return next
+    })
+    return true
+  }
+
+  function showDriveError(action, error) {
+    console.error(`Google Drive ${action} failed`, error)
+    setSpreadsheetFeedback({
+      title: `${action} failed`,
+      message: error.message || "An unknown error occurred.",
+    })
+  }
+
+  async function saveSpreadsheetToDrive(decision, index) {
+    setDriveAction({ type: "save", index })
+    try {
+      const accessToken = await authorizeGoogleDrive(googleDriveConfig)
+      const filename = downloadedFilename(decision.name, "xlsx")
+      const data = createDecisionSpreadsheet(decision)
+      let savedFile
+      try {
+        savedFile = await uploadGoogleDriveSpreadsheet({
+          accessToken,
+          fileId: decision.googleDriveFileId,
+          filename,
+          data,
+        })
+      } catch (error) {
+        const linkedFileUnavailable =
+          decision.googleDriveFileId && [403, 404].includes(error.status)
+        if (
+          !linkedFileUnavailable ||
+          !window.confirm(
+            "The linked Drive file is unavailable. Do you want to create a new Drive file instead?",
+          )
+        )
+          throw error
+        savedFile = await uploadGoogleDriveSpreadsheet({
+          accessToken,
+          filename,
+          data,
+        })
+      }
+
+      setDecisions((previous) => {
+        const currentIndex = previous.findIndex(
+          (candidate) => candidate === decision,
+        )
+        if (currentIndex === -1) return previous
+        const next = [...previous]
+        const updatedDecision = previous[currentIndex].copy()
+        updatedDecision.googleDriveFileId = savedFile.id
+        next[currentIndex] = updatedDecision
+        return next
+      })
+      toast(`Saved "${decision.name}" to Google Drive`)
+    } catch (error) {
+      showDriveError("Save to Google Drive", error)
+    } finally {
+      setDriveAction(null)
+    }
+  }
+
+  async function loadSpreadsheetFromDrive() {
+    setDriveAction({ type: "load" })
+    try {
+      const accessToken = await authorizeGoogleDrive(googleDriveConfig)
+      const file = await pickGoogleDriveSpreadsheet(
+        accessToken,
+        googleDriveConfig,
+      )
+      const warnings = []
+      const importedDecision = parseDecisionSpreadsheet(
+        await downloadGoogleDriveFile({ accessToken, fileId: file.id }),
+        { onWarning: (warning) => warnings.push(warning) },
+      )
+      importedDecision.googleDriveFileId = file.id
+      if (!installSpreadsheetDecision(importedDecision)) return
+      if (warnings.length)
+        setSpreadsheetFeedback({
+          title: "Spreadsheet imported with warnings",
+          message: warnings.join("\n\n"),
+        })
+      toast(`Loaded "${importedDecision.name}" from Google Drive`)
+    } catch (error) {
+      showDriveError("Load from Google Drive", error)
+    } finally {
+      setDriveAction(null)
     }
   }
 
@@ -206,7 +313,7 @@ export default function Dashboard() {
         }}
       >
         <Typography variant="h4">Dashboard</Typography>
-        <Box sx={{ display: "flex", gap: 1 }}>
+        <Box sx={{ display: "flex", gap: 1, flexWrap: "wrap", justifyContent: "flex-end" }}>
           <Button variant="contained" onClick={createDecision}>
             New Decision
           </Button>
@@ -216,6 +323,15 @@ export default function Dashboard() {
             startIcon={<UploadFileIcon />}
           >
             Import
+          </Button>
+          <Button
+            variant="outlined"
+            onClick={loadSpreadsheetFromDrive}
+            startIcon={<CloudDownloadIcon />}
+            disabled={driveAction !== null}
+            title="Load one spreadsheet (.xlsx) from Google Drive"
+          >
+            Load from Drive
           </Button>
           {/* <Button onClick={downloadTemplate}>
             Download Template
@@ -283,6 +399,21 @@ export default function Dashboard() {
                         title="Download as a spreadsheet (.xlsx)"
                       >
                         <TableViewIcon />
+                      </IconButton>
+                      <IconButton
+                        edge="end"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          saveSpreadsheetToDrive(d, i);
+                        }}
+                        disabled={driveAction !== null}
+                        title={
+                          d.googleDriveFileId ?
+                            "Update the linked spreadsheet in Google Drive"
+                          : "Save as a spreadsheet in Google Drive"
+                        }
+                      >
+                        <CloudUploadIcon />
                       </IconButton>
                       <IconButton
                         edge="end"

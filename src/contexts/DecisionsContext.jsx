@@ -25,7 +25,9 @@ export function DecisionsProvider({ children }) {
   useEffect(() => {
     try {
       const raw = JSON.stringify(
-        decisions.map((d) => JSON.parse(d.serialize())),
+        decisions.map((d) =>
+          JSON.parse(d.serialize({ includeLocalMetadata: true })),
+        ),
       )
       localStorage.setItem(STORAGE_KEY, raw)
     } catch (e) {

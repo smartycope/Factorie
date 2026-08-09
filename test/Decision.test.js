@@ -13,6 +13,22 @@ const assert = {
   throws: (callback, expected) => expect(callback).toThrow(expected),
 }
 
+test("Google Drive file metadata is local-only and survives copies", () => {
+  const decision = new Decision("Drive decision")
+  decision.googleDriveFileId = "drive-file-id"
+
+  assert.equal(JSON.parse(decision.serialize()).localMetadata, undefined)
+  assert.deepEqual(
+    JSON.parse(decision.serialize({ includeLocalMetadata: true })).localMetadata,
+    { googleDriveFileId: "drive-file-id" },
+  )
+  assert.equal(decision.copy().googleDriveFileId, "drive-file-id")
+  assert.equal(
+    Decision.deserialize(JSON.parse(decision.serialize())).googleDriveFileId,
+    null,
+  )
+})
+
 function createCompleteDecision() {
   const decision = new Decision("Dinner")
   decision.addFactor({
