@@ -170,7 +170,8 @@ function DecisionEditTableTransposed_MuiTable() {
       field: "factor",
       headerName: "Factor",
       headerClassName: "pinned-column",
-      cellClassName: "pinned-column factor-name-cell",
+      cellClassName: (params) =>
+        `pinned-column factor-name-cell${params.row.factorColor ? ` factor-color-${params.row.factorIndex}` : ""}`,
       sortable: true,
       editable: true,
       type: "longText",
@@ -194,6 +195,7 @@ function DecisionEditTableTransposed_MuiTable() {
     ...visibleOptionEntries.map(({ option, index }) => ({
       field: option.name + "__" + index,
       headerName: option.name,
+      headerClassName: option.color ? `option-color-${index}` : "",
       renderHeader: (params) => (
         <Box
           sx={{
@@ -233,6 +235,8 @@ function DecisionEditTableTransposed_MuiTable() {
   const rows = decision.factors.map((factor, fi) => ({
     id: factor.name + "__" + fi,
     factor: factor.name,
+    factorIndex: fi,
+    factorColor: factor.color,
     ...Object.fromEntries(
       visibleOptionEntries.map(({ option, index }) => [
         option.name + "__" + index,
@@ -351,6 +355,22 @@ function DecisionEditTableTransposed_MuiTable() {
                 alignItems: "flex-start",
                 py: 1,
               },
+              ...Object.fromEntries(
+                rows
+                  .filter((row) => row.factorColor)
+                  .map((row) => [
+                    `& .MuiDataGrid-cell.factor-color-${row.factorIndex}`,
+                    { backgroundColor: row.factorColor },
+                  ]),
+              ),
+              ...Object.fromEntries(
+                visibleOptionEntries
+                  .filter(({ option }) => option.color)
+                  .map(({ option, index }) => [
+                    `& .MuiDataGrid-columnHeader.option-color-${index}`,
+                    { backgroundColor: option.color },
+                  ]),
+              ),
             }}
             onProcessRowUpdateError={(error) => toast(error.message)}
             processRowUpdate={(newRow, oldRow, obj) => {

@@ -44,6 +44,7 @@ const DEFAULTS = {
   maxUnbounded: false,
   min: null,
   max: null,
+  color: null,
 }
 
 function factorNameText(value) {
@@ -69,6 +70,7 @@ function factorRows(decision) {
       weight: factor.weight,
       min: factor.min,
       max: factor.max,
+      color: factor.color,
     }
   })
 }
@@ -262,7 +264,10 @@ const FactorsDataGrid = React.memo(function FactorsDataGrid({
   )
   const getRowClassName = useCallback(
     (params) =>
-      params.row.index === editFactorIndex ? "selected-factor-row" : "",
+      [
+        params.row.index === editFactorIndex ? "selected-factor-row" : "",
+        params.row.color ? `factor-color-${params.row.index}` : "",
+      ].filter(Boolean).join(" "),
     [editFactorIndex],
   )
   const columns = useMemo(
@@ -367,7 +372,17 @@ const FactorsDataGrid = React.memo(function FactorsDataGrid({
         initialState={factorsDataGridInitialState}
         onRowClick={handleRowClick}
         getRowClassName={getRowClassName}
-        sx={factorsDataGridSx}
+        sx={(theme) => ({
+          ...factorsDataGridSx(theme),
+          ...Object.fromEntries(
+            rows
+              .filter((row) => row.color)
+              .map((row) => [
+                `& .MuiDataGrid-row.factor-color-${row.index} .MuiDataGrid-cell`,
+                { backgroundColor: row.color },
+              ]),
+          ),
+        })}
       />
     </Paper>
   )
@@ -394,10 +409,13 @@ export default function Factors() {
   const [addMaxUnbounded, setAddMaxUnbounded] = useState(DEFAULTS.maxUnbounded)
   const [addMin, setAddMin] = useState(DEFAULTS.min)
   const [addMax, setAddMax] = useState(DEFAULTS.max)
+  const [addColor, setAddColor] = useState(DEFAULTS.color)
 
   // Edit state tracks which factor (by index) is being modified. We reuse the add form fields while editing.
   const [editFactorIndex, setEditFactorIndex] = useState(null)
   const [clearExistingAnswers, setClearExistingAnswers] = useState(true)
+  const [markExistingAnswersTentative, setMarkExistingAnswersTentative] =
+    useState(false)
   const [showOnlyUnfinished, setShowOnlyUnfinished] = useState(false)
   const [factorSearch, setFactorSearch] = useState("")
   const [unitMenuAnchorEl, setUnitMenuAnchorEl] = useState(null)
@@ -415,7 +433,9 @@ export default function Factors() {
     setAddMaxUnbounded(DEFAULTS.maxUnbounded)
     setAddMin(DEFAULTS.min)
     setAddMax(DEFAULTS.max)
+    setAddColor(DEFAULTS.color)
     setClearExistingAnswers(true)
+    setMarkExistingAnswersTentative(false)
   }, [])
 
   useEffect(() => {
@@ -448,7 +468,9 @@ export default function Factors() {
       setAddMaxUnbounded(factor.max == null)
       setAddMin(factor.min ?? DEFAULTS.min)
       setAddMax(factor.max ?? DEFAULTS.max)
+      setAddColor(factor.color ?? DEFAULTS.color)
       setClearExistingAnswers(true)
+      setMarkExistingAnswersTentative(false)
     }, 0)
     return () => clearTimeout(t)
   }, [editFactorIndex, decision])
@@ -512,11 +534,17 @@ export default function Factors() {
           null
         : Number(addMax),
       unit: addUnit || undefined,
+      color: addColor,
     }
 
     if (editFactorIndex != null) {
       // modify existing factor, including the name
-      editFactor(editFactorIndex, newFactor, clearExistingAnswers)
+      editFactor(
+        editFactorIndex,
+        newFactor,
+        clearExistingAnswers,
+        markExistingAnswersTentative,
+      )
       // exit edit mode
       setEditFactorIndex(null)
       // reset add form
@@ -779,23 +807,58 @@ export default function Factors() {
                 </Box>
               </HelpOverlay>
 
+              <Box sx={{ display: "flex", alignItems: "center", gap: 1, mb: 1 }}>
+                <TextField
+                  label="Color"
+                  type="color"
+                  value={addColor ?? "#FFFFFF"}
+                  onChange={(event) => setAddColor(event.target.value)}
+                  size="small"
+                  slotProps={{ htmlInput: { "aria-label": "Factor color" } }}
+                  sx={{ width: 130 }}
+                />
+                <Button
+                  size="small"
+                  disabled={!addColor}
+                  onClick={() => setAddColor(null)}>
+                  Clear color
+                </Button>
+              </Box>
+
               {addError && (
                 <Typography color="error" sx={{ mt: 1 }}>
                   {addError}
                 </Typography>
               )}
               {editFactorIndex != null && (
-                <FormControlLabel
-                  control={
-                    <Checkbox
-                      checked={clearExistingAnswers}
-                      onChange={(event) =>
-                        setClearExistingAnswers(event.target.checked)
-                      }
-                    />
-                  }
-                  label="Clear existing answers"
-                />
+                <>
+                  <FormControlLabel
+                    control={
+                      <Checkbox
+                        checked={clearExistingAnswers}
+                        onChange={(event) => {
+                          setClearExistingAnswers(event.target.checked)
+                          if (event.target.checked)
+                            setMarkExistingAnswersTentative(false)
+                        }}
+                      />
+                    }
+                    label="Clear existing answers"
+                  />
+                  <FormControlLabel
+                    control={
+                      <Checkbox
+                        checked={markExistingAnswersTentative}
+                        onChange={(event) => {
+                          setMarkExistingAnswersTentative(event.target.checked)
+                          if (event.target.checked)
+                            setClearExistingAnswers(false)
+                        }}
+                      />
+                    }
+                    label="Mark existing answers as tentative"
+                  />
+                </>
               )}
               <Box sx={{ mt: 1 }}>
                 {editFactorIndex != null ?

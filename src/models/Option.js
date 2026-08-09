@@ -1,8 +1,11 @@
+import { normalizeColor } from "./color.js"
+
 export default class Option {
-  constructor({ name = "", notes = "", hidden = false } = {}) {
+  constructor({ name = "", notes = "", hidden = false, color = null } = {}) {
     this.name = name
     this.notes = notes
     this.hidden = Boolean(hidden)
+    this.color = normalizeColor(color)
   }
 
   serialize() {
@@ -10,6 +13,7 @@ export default class Option {
       name: this.name,
       notes: this.notes,
       hidden: this.hidden,
+      ...(this.color ? { color: this.color } : {}),
     }
   }
 

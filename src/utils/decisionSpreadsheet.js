@@ -135,6 +135,18 @@ function serializeOptimal(optimal) {
   return optimal ?? ""
 }
 
+function spreadsheetColor(color) {
+  return color ? `FF${color.slice(1)}` : null
+}
+
+function cellBackgroundColor(sheet, address) {
+  const fill = sheet[address]?.s?.fill
+  const rgb = fill?.fgColor?.rgb ?? fill?.bgColor?.rgb
+  return typeof rgb === "string" && /^[0-9a-f]{8}$/i.test(rgb) ?
+      `#${rgb.slice(-6)}`
+    : null
+}
+
 function parseFactorSpecifications(sheet, decisionFactorNames) {
   if (!sheet)
     spreadsheetError('Could not parse factors: the workbook must contain a sheet named "Factors".')
@@ -181,6 +193,7 @@ function parseFactorSpecifications(sheet, decisionFactorNames) {
       weight: parseNumber(sheet, XLSX.utils.encode_cell({ r: row, c: 3 }), `weight for "${name}"`, true),
       min: parseNumber(sheet, XLSX.utils.encode_cell({ r: row, c: 4 }), `minimum for "${name}"`, true),
       max: parseNumber(sheet, XLSX.utils.encode_cell({ r: row, c: 5 }), `maximum for "${name}"`, true),
+      color: cellBackgroundColor(sheet, factorAddress),
     }
 
     if (
@@ -286,6 +299,7 @@ function parseOptionNotes(sheet, decision, onWarning) {
     notes.set(option, {
       notes: noteValue == null ? "" : String(noteValue),
       hidden: parseHidden(hiddenValue, hiddenAddress),
+      color: cellBackgroundColor(sheet, optionAddress),
     })
   }
 
@@ -306,6 +320,7 @@ function parseOptionNotes(sheet, decision, onWarning) {
     if (!metadata) return
     decision.setOptionNote(index, metadata.notes)
     decision.setOptionHidden(index, metadata.hidden)
+    decision.setOptionColor(index, metadata.color)
   })
 }
 
@@ -426,6 +441,12 @@ export function createDecisionSpreadsheet(decision) {
   factorSheetHeaderCells.forEach((address) => {
     if (factorSheet[address]) factorSheet[address].s = { font: { bold: true } }
   })
+  decision.factors.forEach((factor, index) => {
+    if (factor.color)
+      factorSheet[XLSX.utils.encode_cell({ r: index + 1, c: 0 })].s = {
+        fill: { patternType: "solid", fgColor: { rgb: spreadsheetColor(factor.color) } },
+      }
+  })
   XLSX.utils.book_append_sheet(workbook, factorSheet, "Factors")
   const optionSheet = XLSX.utils.aoa_to_sheet([
     ["Option", "Notes", "Hidden"],
@@ -459,6 +480,12 @@ export function createDecisionSpreadsheet(decision) {
   optionSheetHeaderCells.forEach((address) => {
     if (optionSheet[address])
       optionSheet[address].s = { font: { bold: true } }
+  })
+  decision.options.forEach((option, index) => {
+    if (option.color)
+      optionSheet[XLSX.utils.encode_cell({ r: index + 1, c: 0 })].s = {
+        fill: { patternType: "solid", fgColor: { rgb: spreadsheetColor(option.color) } },
+      }
   })
   XLSX.utils.book_append_sheet(workbook, optionSheet, "Options")
   return XLSX.write(workbook, { bookType: "xlsx", type: "array" })

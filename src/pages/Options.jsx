@@ -28,6 +28,7 @@ function OptionsEditor({
   renameOption,
   setOptionNote,
   setOptionHidden,
+  setOptionColor,
 }) {
   const [selectedOptionIndex, setSelectedOptionIndex] = useState(null)
   const [draggedOptionIndex, setDraggedOptionIndex] = useState(null)
@@ -224,7 +225,11 @@ function OptionsEditor({
                   <ListItemButton
                     selected={selectedOptionIndex === index}
                     onClick={() => selectOption(index)}
-                    sx={{ pr: 12, opacity: option.hidden ? 0.6 : 1 }}>
+                    sx={{
+                      pr: 12,
+                      opacity: option.hidden ? 0.6 : 1,
+                      backgroundColor: option.color ?? undefined,
+                    }}>
                     <ListItemIcon
                       draggable
                       title={`Drag to reorder ${option.name}`}
@@ -269,6 +274,26 @@ function OptionsEditor({
         fullWidth
         sx={{ mt: 3 }}
       />
+      <Box sx={{ display: "flex", alignItems: "center", gap: 1, mt: 2 }}>
+        <TextField
+          label={selectedOption ? `Color for ${selectedOption.name}` : "Option color"}
+          type="color"
+          value={selectedOption?.color ?? "#FFFFFF"}
+          onChange={(event) =>
+            setOptionColor(selectedOptionIndex, event.target.value)
+          }
+          disabled={!selectedOption}
+          size="small"
+          slotProps={{ htmlInput: { "aria-label": "Option color" } }}
+          sx={{ width: 190 }}
+        />
+        <Button
+          size="small"
+          disabled={!selectedOption?.color}
+          onClick={() => setOptionColor(selectedOptionIndex, null)}>
+          Clear color
+        </Button>
+      </Box>
     </>
   )
 }
@@ -283,6 +308,7 @@ export default function Options() {
     renameOption,
     setOptionNote,
     setOptionHidden,
+    setOptionColor,
   } = useDecisions()
   const decision = selectedIndex != null ? decisions[selectedIndex] : null
 
@@ -302,6 +328,7 @@ export default function Options() {
           renameOption={renameOption}
           setOptionNote={setOptionNote}
           setOptionHidden={setOptionHidden}
+          setOptionColor={setOptionColor}
         />
       }
     </Box>

@@ -56,14 +56,21 @@ export function DecisionsProvider({ children }) {
         weight: patch.weight ?? 0.0,
         min: patch.min ?? null,
         max: patch.max ?? null,
+        color: patch.color ?? null,
       }),
     )
   }
 
-  function editFactor(idx, patch, clearExistingAnswers = false) {
+  function editFactor(
+    idx,
+    patch,
+    clearExistingAnswers = false,
+    markExistingAnswersTentative = false,
+  ) {
     modifyCurrentDecision((d) => {
       d.editFactor(idx, patch)
       if (clearExistingAnswers) d.clearFactorAnswers(idx)
+      else if (markExistingAnswersTentative) d.markFactorAnswersTentative(idx)
     })
   }
 
@@ -146,6 +153,10 @@ export function DecisionsProvider({ children }) {
     modifyCurrentDecision((d) => d.setOptionHidden(optionIndex, hidden))
   }
 
+  function setOptionColor(optionIndex, color) {
+    modifyCurrentDecision((d) => d.setOptionColor(optionIndex, color))
+  }
+
   function renameFactor(factorIndex, name) {
     return editFactor(factorIndex, { name })
   }
@@ -180,6 +191,7 @@ export function DecisionsProvider({ children }) {
     renameOption,
     setOptionNote,
     setOptionHidden,
+    setOptionColor,
     renameFactor,
     renameDecision,
     addFactorPack,

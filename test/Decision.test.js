@@ -271,6 +271,20 @@ test("clearing a factor's answers preserves the other answer columns", () => {
   assert.equal(decision.getAnswer("Soup", "Cost").min, 4)
 })
 
+test("marking a factor's answers tentative preserves their values", () => {
+  const decision = createCompleteDecision()
+
+  decision.markFactorAnswersTentative("Taste")
+
+  assert.deepEqual(decision.getAnswer("Tacos", "Taste").serialize(), [10, 10, true])
+  assert.deepEqual(decision.getAnswer("Soup", "Taste").serialize(), [7, 7, true])
+  assert.deepEqual(decision.getAnswer("Tacos", "Cost").serialize(), [8, 8])
+
+  decision.clearFactorAnswers("Taste")
+  decision.markFactorAnswersTentative("Taste")
+  assert.equal(decision.getAnswer("Tacos", "Taste").tentative, false)
+})
+
 test("tentative answers survive serialization without changing legacy answers", () => {
   const decision = createCompleteDecision()
   decision.setAnswer("Tacos", "Taste", new Answer(9, 10, true))

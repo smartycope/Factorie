@@ -97,6 +97,7 @@ function SimulationControls({
   rangeMode,
   activeRangeMode,
   onRangeModeChange,
+  canRerunSimulation,
   canRun,
   onRun,
 }) {
@@ -214,7 +215,7 @@ function SimulationControls({
               }}
               sx={{ alignSelf: "flex-start" }}>
               {rangeMode === Answer.rangeModes.MONTE_CARLO ?
-                "Run simulation"
+                canRerunSimulation ? "Rerun simulation" : "Run simulation"
               : "Calculate results"}
             </Button>
           </Stack>
@@ -268,6 +269,11 @@ function sampleColorscale(colors, t) {
   const i = Math.floor(seg)
   const local = seg - i
   return interpolateColor(colors[i], colors[i + 1], local)
+}
+
+function coloredPlotLabel(label, color) {
+  if (!color) return label
+  return `<span style="color:${color}">${label}</span>`
 }
 
 function radarColorForLabel(label) {
@@ -325,12 +331,14 @@ function computePca2D(X) {
 
 // "How good each option is"
 function GoodnessPlot({ decision, goodness, goodnessConf }) {
+  const theme = useTheme()
   const plot = useMemo(() => {
     if (!decision) return null
     const rows = decision.options.map((option, i) => ({
       option: option.name,
       value: goodness[i],
       conf: goodnessConf[i],
+      color: option.color,
     }))
     rows.sort((a, b) => b.value - a.value)
     return {
@@ -347,6 +355,9 @@ function GoodnessPlot({ decision, goodness, goodnessConf }) {
           },
           text: rows.map((r) => r.value),
           texttemplate: "%{text:.0%}",
+          marker: {
+            color: rows.map((r) => r.color ?? theme.palette.primary.main),
+          },
         },
       ],
       layout: {
@@ -358,7 +369,7 @@ function GoodnessPlot({ decision, goodness, goodnessConf }) {
         margin: { t: 60, b: 100, l: 50, r: 20 },
       },
     }
-  }, [decision, goodness, goodnessConf])
+  }, [decision, goodness, goodnessConf, theme])
 
   if (!plot) return null
   return (
@@ -377,7 +388,7 @@ function GoodnessPlot({ decision, goodness, goodnessConf }) {
 }
 
 // "Usefulness of each factor"
-function EntropyPlot({ factorNames, normalizedAnswers, weights }) {
+function EntropyPlot({ decision, factorNames, normalizedAnswers, weights }) {
   const theme = useTheme()
   const [topCount, setTopCount] = useState(10)
   const visibleCount =
@@ -395,6 +406,7 @@ function EntropyPlot({ factorNames, normalizedAnswers, weights }) {
         entropy:
           stdDev(normalizedAnswers.map((row) => row[factorIndex])) * weights[factorIndex],
         weight: weights[factorIndex],
+        color: decision?.factors[factorIndex]?.color,
       }))
       .sort((a, b) => b.entropy - a.entropy)
       .slice(0, visibleCount)
@@ -407,13 +419,7 @@ function EntropyPlot({ factorNames, normalizedAnswers, weights }) {
           y: rows.map((row) => row.entropy),
           width: rows.map((row) => row.weight),
           marker: {
-            // color: weights.map((x) => 1 - x),
-            colorscale: [
-              ["0.0", "#08326e"],
-              ["1.0", theme.palette.background.paper],
-            ],
-            cmin: 0,
-            cmax: 1,
+            color: rows.map((row) => row.color ?? theme.palette.primary.main),
             line: {
               color: theme.palette.background.paper,
               width: 2,
@@ -435,7 +441,7 @@ function EntropyPlot({ factorNames, normalizedAnswers, weights }) {
         margin: { t: 60, b: 100, l: 50, r: 20 },
       },
     }
-  }, [factorNames, normalizedAnswers, weights, theme, visibleCount])
+  }, [decision, factorNames, normalizedAnswers, weights, theme, visibleCount])
 
   return (
     <HelpOverlay helpText={texts.results.entropy}>
@@ -569,14 +575,21 @@ function HeatmapPlot({
       layout: {
         xaxis: {
           tickvals: Array.from({ length: nRows }, (_, i) => i),
-          ticktext: decision?.options.map((option) => option.name),
+          ticktext: decision?.options.map((option) =>
+            coloredPlotLabel(option.name, option.color),
+          ),
           showgrid: false,
           zeroline: false,
           scaleanchor: square ? "y" : undefined,
         },
         yaxis: {
           tickvals: Array.from({ length: nCols }, (_, i) => i),
-          ticktext: visibleFactorNames,
+          ticktext: factorIndexes.map((factorIndex) =>
+            coloredPlotLabel(
+              factorNames[factorIndex],
+              decision?.factors[factorIndex]?.color,
+            ),
+          ),
           showgrid: false,
           zeroline: false,
           autorange: "reversed",
@@ -663,7 +676,7 @@ function SingleLinePlot({ results }) {
         y: isAbove ? 0.08 : -0.08,
         text: `${r.option} (${r.percentage.toFixed(1)}%)`,
         showarrow: false,
-        font: { color: theme.palette.text.primary, size: 15 },
+        font: { color: r.color ?? theme.palette.text.primary, size: 15 },
         xanchor: "left",
         yanchor: isAbove ? "bottom" : "top",
         textangle: isAbove ? -45 : 45,
@@ -833,6 +846,8 @@ function RadarPlot({
   labels,
   best,
   setIncludedRadar,
+  factorColors,
+  optionColors,
 }) {
   useEffect(() => {
     if (!best || !labels.length) return
@@ -851,7 +866,9 @@ function RadarPlot({
       .map((v, i) => [v, i])
       .sort((a, b) => a[0] - b[0])
       .map((p) => p[1])
-    const sortedDimLabels = sortedIndices.map((i) => factorNames[i])
+    const sortedDimLabels = sortedIndices.map((i) =>
+      coloredPlotLabel(factorNames[i], factorColors[i]),
+    )
     const sortedData = data.map((row) => sortedIndices.map((i) => row[i]))
     const traces = []
     for (let i = 0; i < sortedData.length; i++) {
@@ -866,7 +883,7 @@ function RadarPlot({
         fill: "toself",
         fillcolor: color.fill,
         line: { color: color.line },
-        name: label,
+        name: coloredPlotLabel(label, optionColors[i]),
       })
     }
     return {
@@ -882,8 +899,10 @@ function RadarPlot({
     optimalNormalized,
     worstPossibleOptionNormalized,
     factorNames,
+    factorColors,
     includedRadar,
     labels,
+    optionColors,
   ])
 
   return (
@@ -1115,6 +1134,7 @@ export default function Results() {
       score: normalized_weighted_dists[i],
       option: option.name,
       percentage: (normalized_weighted_dists[i] || 0) * 100,
+      color: option.color,
     }))
     resultsRows.sort((a, b) => a.score - b.score)
     return {
@@ -1178,6 +1198,11 @@ export default function Results() {
         rangeMode={rangeMode}
         activeRangeMode={activeRangeMode}
         onRangeModeChange={handleRangeModeChange}
+        canRerunSimulation={
+          Boolean(calc) &&
+          rangeMode === Answer.rangeModes.MONTE_CARLO &&
+          activeRangeMode === Answer.rangeModes.MONTE_CARLO
+        }
         canRun={
           !canUseSimulatedValues ||
           (useSimulatedValues && simulationRangesAreValid)
@@ -1282,22 +1307,7 @@ export default function Results() {
   return (
     <Box sx={{ flex: 1, p: 3, minWidth: 0 }}>
       <Stack spacing={3}>
-        <Box
-          sx={{
-            display: "flex",
-            justifyContent: "space-between",
-            alignItems: "center",
-            gap: 2,
-          }}>
-          <Typography variant="h5">Results</Typography>
-          <Button
-            variant="outlined"
-            onClick={() => setSimulationRun((run) => run + 1)}>
-            {activeRangeMode === Answer.rangeModes.MONTE_CARLO ?
-              "Rerun simulation"
-            : "Recalculate results"}
-          </Button>
-        </Box>
+        <Typography variant="h5">Results</Typography>
         {simulationControls}
 
         <Summary
@@ -1315,6 +1325,7 @@ export default function Results() {
         />
 
         <EntropyPlot
+          decision={calculationDecision}
           factorNames={factorNames}
           normalizedAnswers={normalizedAnswers}
           weights={weights}
@@ -1347,6 +1358,8 @@ export default function Results() {
           best={best}
           includedRadar={includedRadar}
           setIncludedRadar={setIncludedRadar}
+          factorColors={calculationDecision.factors.map((factor) => factor.color)}
+          optionColors={calculationDecision.options.map((option) => option.color)}
         />
       </Stack>
     </Box>

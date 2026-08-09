@@ -1,4 +1,6 @@
 // pattern = options("global") + group(int_or_float, name="number") + ow + ":" + group(at_least_one(any_char_except(",")), name="name")
+import { normalizeColor } from "./color.js"
+
 const discreteRegex = /(?<number>(?:(?:(?:-|\+))?(?:\d*\.\d+|\d+\.\d*)(?:e(?:-|\+)\d+)?|(?:(?:-|\+))?\d+(?:e(?:-|\+)\d+)?))\s*:(?<name>(?:[^,])+)/g
 
 export default class Factor {
@@ -9,6 +11,7 @@ export default class Factor {
     weight = null,
     min = null,
     max = null,
+    color = null,
   } = {}) {
     this.name = name
     this.unit = unit
@@ -16,6 +19,7 @@ export default class Factor {
     this.weight = weight
     this.min = min
     this.max = max
+    this.color = normalizeColor(color)
   }
 
   serialize() {
@@ -29,6 +33,7 @@ export default class Factor {
       weight: this.weight,
       min: this.min,
       max: this.max,
+      ...(this.color ? { color: this.color } : {}),
     }
   }
 

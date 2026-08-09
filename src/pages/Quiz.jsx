@@ -222,7 +222,9 @@ function AnswersTable({
             <TableRow>
               <TableCell></TableCell>
               {visibleFactorIndexes.map((factorIndex) => (
-                <TableCell key={factorIndex}>
+                <TableCell
+                  key={factorIndex}
+                  sx={{ backgroundColor: decision.factors[factorIndex].color ?? undefined }}>
                   {decision.factors[factorIndex].name}
                 </TableCell>
               ))}
@@ -233,7 +235,9 @@ function AnswersTable({
               const opt = decision.options[r].name
               return (
                 <TableRow key={r}>
-                  <TableCell>{opt}</TableCell>
+                  <TableCell sx={{ backgroundColor: decision.options[r].color ?? undefined }}>
+                    {opt}
+                  </TableCell>
                   {visibleFactorIndexes.map((c) => {
                     const cell = decision.answers[r]?.[c]
                     const text = formatAnswer(cell)
@@ -324,7 +328,12 @@ function TransposedAnswersTable({
                     backgroundColor: "background.paper",
                   }}></TableCell>
                 {optionIndexes.map((r) => (
-                  <TableCell key={r} sx={{ whiteSpace: "nowrap" }}>
+                  <TableCell
+                    key={r}
+                    sx={{
+                      whiteSpace: "nowrap",
+                      backgroundColor: decision.options[r].color ?? undefined,
+                    }}>
                     {decision.options[r].name}
                   </TableCell>
                 ))}
@@ -339,7 +348,7 @@ function TransposedAnswersTable({
                         position: "sticky",
                         left: 0,
                         zIndex: 2,
-                        backgroundColor: "background.paper",
+                        backgroundColor: decision.factors[c].color ?? "background.paper",
                       }}>
                       {decision.factors[c].name}
                     </TableCell>
@@ -445,6 +454,8 @@ export default function Quiz() {
     hasVisibleQuizCells ? decision?.factors[factorIdx]?.unit || "" : ""
   const factorDefinition =
     hasVisibleQuizCells ? decision?.factors[factorIdx] : null
+  const optionDefinition =
+    hasVisibleQuizCells ? decision?.options[optionIdx] : null
   const currentAnswer =
     hasVisibleQuizCells ?
       copyAnswer(decision.getAnswer(optionIdx, factorIdx))
@@ -876,9 +887,22 @@ export default function Quiz() {
       {hasVisibleQuizCells ?
         <Card sx={{ mb: 2 }}>
           <CardContent>
-            <Typography variant="h6">
-              {factor ? `${factor}: ${option}` : "Choose a factor/option"}
-            </Typography>
+            {factor ?
+              <Box sx={{ display: "flex", gap: 1, flexWrap: "wrap", mb: 1 }}>
+                <Typography
+                  variant="h6"
+                  component="span"
+                  sx={{ backgroundColor: factorDefinition?.color ?? undefined, px: 0.5 }}>
+                  {factor}
+                </Typography>
+                <Typography
+                  variant="h6"
+                  component="span"
+                  sx={{ backgroundColor: optionDefinition?.color ?? undefined, px: 0.5 }}>
+                  {option}
+                </Typography>
+              </Box>
+            : <Typography variant="h6">Choose a factor/option</Typography>}
 
             <FormControlLabel
               control={

@@ -1,6 +1,7 @@
 import Answer from "./Answer.js"
 import Factor from "./Factor.js"
 import Option from "./Option.js"
+import { normalizeColor } from "./color.js"
 import { percentile } from "../utils/misc.js"
 
 // TODO: remove the threshold member (it doesn't do anything anymore)
@@ -163,6 +164,7 @@ export default class Decision {
       weight = undefined,
       min = undefined,
       max = undefined,
+      color = undefined,
     } = {},
   ) {
     const idx = this._parseFactorParam(factor)
@@ -174,11 +176,18 @@ export default class Decision {
     if (weight !== undefined) currentFactor.weight = weight
     if (min !== undefined) currentFactor.min = min
     if (max !== undefined) currentFactor.max = max
+    if (color !== undefined) currentFactor.color = normalizeColor(color)
   }
 
   clearFactorAnswers(factor) {
     const idx = this._parseFactorParam(factor)
     for (const row of this.answers) row[idx].clear()
+  }
+
+  markFactorAnswersTentative(factor) {
+    const idx = this._parseFactorParam(factor)
+    for (const row of this.answers)
+      if (row[idx].isAnswered()) row[idx].tentative = true
   }
 
   removeFactor(factor) {
@@ -253,6 +262,10 @@ export default class Decision {
 
   setOptionHidden(option, hidden) {
     this.options[this._parseOptionParam(option)].hidden = Boolean(hidden)
+  }
+
+  setOptionColor(option, color) {
+    this.options[this._parseOptionParam(option)].color = normalizeColor(color)
   }
 
   getVisibleOptions() {
