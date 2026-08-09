@@ -621,7 +621,7 @@ export default function Factors() {
         <Typography>Please select or create a decision first.</Typography>
       </Box>
     : <Box sx={{ flex: 1 }}>
-        <Typography variant="h4">Factors</Typography>
+        <Typography variant="h4">{decision.factors.length} Factors</Typography>
 
         <Box sx={{ display: "flex", justifyContent: "center", gap: 2, mt: 2 }}>
           <Paper sx={{ p: 2, width: 700 }}>

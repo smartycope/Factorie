@@ -64,7 +64,7 @@ function SortableOption({
       ref={setNodeRef}
       disablePadding
       style={{ transform: CSS.Transform.toString(transform), transition }}
-      sx={{ zIndex: isDragging ? 1 : "auto", opacity: isDragging ? 0.55 : 1 }}
+      sx={{ zIndex: isDragging ? 1 : "auto", opacity: isDragging ? 0.55 : 1, backgroundColor: option.color ?? undefined,}}
       secondaryAction={
         <Box sx={{ display: "flex", alignItems: "center", gap: 0.25 }}>
           <Tooltip title={`Move ${option.name} up`}>
@@ -141,7 +141,6 @@ function SortableOption({
           pr: 27,
           pl: 1,
           opacity: option.hidden ? 0.6 : 1,
-          backgroundColor: option.color ?? undefined,
         }}>
         <ListItemText
           primary={option.name}
@@ -250,7 +249,7 @@ function OptionsEditor({
           gap: 2,
         }}>
         <Box>
-          <Typography variant="h4">Options</Typography>
+          <Typography variant="h4">{decision.options.length} Options</Typography>
           <Typography color="text.secondary" sx={{ mt: 0.5 }}>
             Select an option to rename it or add notes. Use Ctrl+Enter to add a new option after submitting the current one.
           </Typography>
