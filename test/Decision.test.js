@@ -606,3 +606,116 @@ test("bestWorst supports extremes and threshold explanations", () => {
     /Invalid method: unknown/,
   )
 })
+
+test("Decision validates its structure, factors, and visible options", () => {
+  const decision = new Decision("Validation")
+
+  expect(decision.isInvalid()).toBe("No factors added")
+
+  decision.addFactor({ name: "Score" })
+  expect(decision.isInvalid()).toBe("No options added")
+  expect(decision.isFactorValid("Score")).toBe(
+    "Factor Score must have an optimal and weight",
+  )
+
+  decision.editFactor("Score", {
+    optimal: 10,
+    weight: 1.2,
+    min: 0,
+    max: 10,
+  })
+  expect(decision.isFactorValid(0)).toBe(
+    "Factor Score must have a weight between 0 and 1",
+  )
+
+  decision.editFactor("Score", { weight: 1, min: 10, max: 10 })
+  expect(decision.isFactorValid("Score")).toBe(
+    "Factor Score must have a min less than their max",
+  )
+
+  decision.editFactor("Score", { min: 0, max: 10 })
+  decision.addOption("Only option")
+  expect(decision.isInvalid()).toBe("Not all answers are filled: 1 answers are not filled")
+  expect(decision.isInvalid(true)).toBeNull()
+
+  decision.setOptionHidden("Only option", true)
+  expect(decision.isInvalid()).toBe("No visible options")
+})
+
+test("Decision parses answer input, rejects invalid ranges, and supports indexes", () => {
+  const decision = new Decision("Input")
+  decision.addFactor({
+    name: "Score",
+    optimal: 10,
+    weight: 1,
+    min: 0,
+    max: 10,
+  })
+  decision.addOption("Option")
+
+  expect(() => decision.setAnswer("Option", "Score", "not a number")).toThrow(
+    "Unable to parse answer",
+  )
+  expect(() => decision.setAnswer("Option", "Score", "9 - 3")).toThrow(
+    "Answer min is greater than max",
+  )
+  expect(() => decision.setAnswer("Option", "Score", 11)).toThrow(
+    "Answer out of bounds",
+  )
+  expect(() => decision.getAnswer("Missing", "Score")).toThrow(
+    'Option not found: "Missing"',
+  )
+
+  decision.setAnswer(0, 0, "3 - 7?")
+  expect(decision.getAnswer("Option", "Score").serialize()).toEqual([3, 7, true])
+})
+
+test("Decision answer helpers interpolate ranges and clear every answer", () => {
+  const decision = new Decision("Ranges")
+  decision.addFactor({
+    name: "Score",
+    optimal: 10,
+    weight: 1,
+    min: 0,
+    max: 10,
+  })
+  decision.addOption("A")
+  decision.addOption("B")
+  decision.setAnswer("A", "Score", [2, 6])
+  decision.setAnswer("B", "Score", [4, 8])
+
+  expect(decision.minAnswers()).toEqual([[2], [4]])
+  expect(decision.maxAnswers()).toEqual([[6], [8]])
+  expect(decision.weightedAnswers(0.25)).toEqual([[3], [5]])
+  expect(decision.stdAnswers()).toEqual([[2], [2]])
+
+  decision.clearAllAnswers()
+  expect(decision.minAnswers()).toEqual([[null], [null]])
+  expect(decision.maxAnswers()).toEqual([[null], [null]])
+})
+
+test("hidden options do not require non-finite simulation ranges", () => {
+  const decision = new Decision("Simulation visibility")
+  decision.addFactor({
+    name: "Cost",
+    optimal: -Infinity,
+    weight: 1,
+    min: null,
+    max: null,
+  })
+  decision.addOption("Visible")
+  decision.addOption("Hidden")
+  decision.setAnswer("Visible", "Cost", 25)
+  decision.setOptionHidden("Hidden", true)
+
+  expect(decision.getPracticalNonFiniteFactors()).toEqual([])
+
+  decision.setAnswer("Visible", "Cost", "")
+  expect(decision.getPracticalNonFiniteFactors().map((factor) => factor.name)).toEqual([
+    "Cost",
+  ])
+
+  const simulated = decision.uncertainCopy({ Cost: [0, 100] })
+  expect(simulated.getAnswer("Visible", "Cost").serialize()).toEqual([0, 100])
+  expect(simulated.getAnswer("Hidden", "Cost").isAnswered()).toBe(false)
+})

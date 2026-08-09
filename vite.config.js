@@ -7,7 +7,23 @@ export default defineConfig({
   base: '/factorie/',
   assetsInclude: ["**/*.xlsx"],
   test: {
-    environment: 'node',
-    include: ['test/**/*.test.js'],
+    projects: [
+      {
+        extends: true,
+        test: {
+          name: 'unit',
+          environment: 'node',
+          include: ['test/**/*.test.js'],
+        },
+      },
+      {
+        extends: true,
+        test: {
+          name: 'pages',
+          environment: 'jsdom',
+          include: ['test/**/*.test.jsx'],
+        },
+      },
+    ],
   },
 })
