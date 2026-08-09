@@ -6,14 +6,14 @@ import Tooltip from "@mui/material/Tooltip"
 import FormatColorResetIcon from '@mui/icons-material/FormatColorReset';
 
 const ENTITY_COLORS = [
-  "#F8FAFC",
-  "#FDE2E2",
-  "#FCE8D5",
-  "#FFF3BF",
   "#E3F6D5",
+  "#FDE2E2",
   "#D8F3EA",
+  "#FFF3BF",
+  "#FCE8D5",
   "#DDEEFF",
   "#E8E2FF",
+  "#f3fcc0",
   "#F6DDF1",
 ]
 
