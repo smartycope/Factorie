@@ -451,31 +451,30 @@ export default function Factors() {
     return () => clearTimeout(t)
   }, [selectedIndex, resetFormFields])
 
-  // when choosing factor to edit, populate fields
-  useEffect(() => {
-    if (editFactorIndex == null || !decision) return
-    const idx = editFactorIndex
-    if (idx < 0 || idx >= decision.factors.length) return
-    const factor = decision.factors[idx]
-    const t = setTimeout(() => {
-      // fill the add form with the selected factor's values
-      setAddName(factorNameText(factor.name) || DEFAULTS.name)
-      setAddUnit(factor.unit ?? DEFAULTS.unit)
-      setAddOptimal(factor.optimal ?? DEFAULTS.optimal)
-      setAddWeight(
-        Number.isFinite(factor.weight) ? factor.weight : DEFAULTS.weight,
-      )
-      // TODO: should this use !! instead?
-      setAddMinUnbounded(factor.min == null)
-      setAddMaxUnbounded(factor.max == null)
-      setAddMin(factor.min ?? DEFAULTS.min)
-      setAddMax(factor.max ?? DEFAULTS.max)
-      setAddColor(factor.color ?? DEFAULTS.color)
-      setClearExistingAnswers(true)
-      setMarkExistingAnswersTentative(false)
-    }, 0)
-    return () => clearTimeout(t)
-  }, [editFactorIndex, decision])
+  function beginEditingFactor(index) {
+    const factor = decision?.factors[index]
+    if (!factor) return
+    setEditFactorIndex(index)
+    setAddName(factorNameText(factor.name) || DEFAULTS.name)
+    setAddUnit(factor.unit ?? DEFAULTS.unit)
+    setAddOptimal(factor.optimal ?? DEFAULTS.optimal)
+    setAddWeight(
+      Number.isFinite(factor.weight) ? factor.weight : DEFAULTS.weight,
+    )
+    setAddMinUnbounded(factor.min == null)
+    setAddMaxUnbounded(factor.max == null)
+    setAddMin(factor.min ?? DEFAULTS.min)
+    setAddMax(factor.max ?? DEFAULTS.max)
+    setAddColor(factor.color ?? DEFAULTS.color)
+    setClearExistingAnswers(true)
+    setMarkExistingAnswersTentative(false)
+  }
+
+  function handleColorChange(color) {
+    setAddColor(color)
+    if (editFactorIndex != null)
+      editFactor(editFactorIndex, { color })
+  }
 
   function isFormInvalid() {
     if (!factorNameText(addName).trim()) {
@@ -642,7 +641,7 @@ export default function Factors() {
                 </Box>
                 <ColorSelector
                   value={addColor}
-                  onChange={setAddColor}
+                  onChange={handleColorChange}
                   label="factor color"
                 />
               </Box>
@@ -926,7 +925,7 @@ export default function Factors() {
           <FactorsDataGrid
             decision={decision}
             editFactorIndex={editFactorIndex}
-            setEditFactorIndex={setEditFactorIndex}
+            setEditFactorIndex={beginEditingFactor}
             handleRemove={handleRemove}
             showOnlyUnfinished={showOnlyUnfinished}
             factorSearch={factorSearch}

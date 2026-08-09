@@ -14,10 +14,15 @@ function seedDecision() {
   for (const name of ["Alpha", "Bravo", "Charlie"])
     decision.addFactor({ name, optimal: 10, weight: 1, min: 0, max: 10 })
   decision.addOption("Option")
+  decision.setAnswer("Option", "Alpha", 7)
   localStorage.setItem(
     STORAGE_KEY,
     JSON.stringify([JSON.parse(decision.serialize())]),
   )
+}
+
+function savedDecision() {
+  return JSON.parse(localStorage.getItem(STORAGE_KEY))[0]
 }
 
 function savedFactorNames() {
@@ -54,4 +59,32 @@ test("factor move controls remain draft-only until Apply", async () => {
   await waitFor(() =>
     expect(savedFactorNames()).toEqual(["Bravo", "Charlie", "Alpha"]),
   )
+})
+
+test("editing an existing factor color saves immediately without applying other drafts", async () => {
+  seedDecision()
+  const user = userEvent.setup()
+  render(
+    <ThemeProvider theme={createTheme()}>
+      <DecisionsProvider>
+        <Factors />
+      </DecisionsProvider>
+    </ThemeProvider>,
+  )
+
+  await user.click(screen.getByRole("row", { name: /Alpha/ }))
+  const nameInput = screen.getByRole("textbox", { name: "Factor" })
+  await user.clear(nameInput)
+  await user.type(nameInput, "Draft Alpha")
+  await user.click(screen.getByRole("button", { name: "Choose factor color" }))
+  await user.click(
+    screen.getByRole("button", {
+      name: "Set factor color to #FDE2E2",
+    }),
+  )
+
+  await waitFor(() => expect(savedDecision().factors[0].color).toBe("#FDE2E2"))
+  expect(savedDecision().factors[0].name).toBe("Alpha")
+  expect(savedDecision().answers[0][0]).toEqual([7, 7])
+  expect(nameInput.value).toBe("Draft Alpha")
 })

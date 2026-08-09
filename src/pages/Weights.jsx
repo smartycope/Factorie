@@ -574,6 +574,8 @@ export default function Weights() {
             </Box>
           </Box>
         </Paper>
+        {/* I don't think we really use this anymore */}
+        {/*
         <Box sx={{ display: "flex", alignItems: "center", gap: 2, mt: 1 }}>
           <FormControlLabel
             control={
@@ -602,13 +604,13 @@ export default function Weights() {
             />
           )}
         </Box>
-        {showRadar ?
+         {showRadar ?
           <Box>
             <Plot data={radarData} layout={radarLayout} />
           </Box>
         : <Box>
             <Plot data={barData} layout={barLayout} />
           </Box>
-        }
+        } */}
       </Box>
 }
