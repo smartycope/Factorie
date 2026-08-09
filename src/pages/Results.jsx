@@ -13,7 +13,7 @@ import Checkbox from "@mui/material/Checkbox"
 import FormControlLabel from "@mui/material/FormControlLabel"
 import Collapse from "@mui/material/Collapse"
 import ExpandMoreIcon from "@mui/icons-material/ExpandMore"
-import { useTheme } from "@mui/material/styles"
+import { darken, emphasize, useTheme } from "@mui/material/styles"
 import Plot from "react-plotly.js"
 import * as PCAImport from "pca-js"
 import texts from "../assets/texts.json"
@@ -273,7 +273,7 @@ function sampleColorscale(colors, t) {
 
 function coloredPlotLabel(label, color) {
   if (!color) return label
-  return `<span style="color:${color}">${label}</span>`
+  return `<span style="color:${darken(color, 0.2)}">${label}</span>`
 }
 
 function radarColorForLabel(label) {
@@ -676,7 +676,10 @@ function SingleLinePlot({ results }) {
         y: isAbove ? 0.08 : -0.08,
         text: `${r.option} (${r.percentage.toFixed(1)}%)`,
         showarrow: false,
-        font: { color: r.color ?? theme.palette.text.primary, size: 15 },
+        font: {
+          color: r.color ? darken(r.color, 0.2) : theme.palette.text.primary,
+          size: 15,
+        },
         xanchor: "left",
         yanchor: isAbove ? "bottom" : "top",
         textangle: isAbove ? -45 : 45,
