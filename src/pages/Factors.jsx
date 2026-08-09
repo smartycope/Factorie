@@ -760,9 +760,11 @@ export default function Factors() {
                         label="Min"
                         type="number"
                         value={addMin ?? ""}
-                        onChange={(e) => setAddMin(e.target.value)}
+                        onChange={(e) => {
+                          setAddMin(e.target.value)
+                          if (e.target.value !== "") setAddMinUnbounded(false)
+                        }}
                         size="small"
-                        disabled={addMinUnbounded}
                         fullWidth
                         sx={{ mt: 1 }}
                       />
@@ -770,9 +772,10 @@ export default function Factors() {
                         control={
                           <Checkbox
                             checked={addMinUnbounded}
-                            onChange={(e) =>
+                            onChange={(e) => {
                               setAddMinUnbounded(e.target.checked)
-                            }
+                              if (e.target.checked) setAddMin(null)
+                            }}
                           />
                         }
                         label="Calculate the Min from the answers"
@@ -783,9 +786,11 @@ export default function Factors() {
                         label="Max"
                         type="number"
                         value={addMax ?? ""}
-                        onChange={(e) => setAddMax(e.target.value)}
+                        onChange={(e) => {
+                          setAddMax(e.target.value)
+                          if (e.target.value !== "") setAddMaxUnbounded(false)
+                        }}
                         size="small"
-                        disabled={addMaxUnbounded}
                         fullWidth
                         sx={{ mt: 1 }}
                       />
@@ -793,9 +798,10 @@ export default function Factors() {
                         control={
                           <Checkbox
                             checked={addMaxUnbounded}
-                            onChange={(e) =>
+                            onChange={(e) => {
                               setAddMaxUnbounded(e.target.checked)
-                            }
+                              if (e.target.checked) setAddMax(null)
+                            }}
                           />
                         }
                         label="Calculate the Max from the answers"

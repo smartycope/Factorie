@@ -88,3 +88,37 @@ test("editing an existing factor color saves immediately without applying other 
   expect(savedDecision().answers[0][0]).toEqual([7, 7])
   expect(nameInput.value).toBe("Draft Alpha")
 })
+
+test("factor scale inputs and calculated bounds clear each other", async () => {
+  seedDecision()
+  const user = userEvent.setup()
+  render(
+    <ThemeProvider theme={createTheme()}>
+      <DecisionsProvider>
+        <Factors />
+      </DecisionsProvider>
+    </ThemeProvider>,
+  )
+
+  await user.click(screen.getByRole("row", { name: /Alpha/ }))
+
+  const minInput = screen.getByRole("spinbutton", { name: "Min" })
+  const calculateMin = screen.getByRole("checkbox", {
+    name: "Calculate the Min from the answers",
+  })
+  await user.click(calculateMin)
+  expect(minInput.value).toBe("")
+  expect(minInput.disabled).toBe(false)
+  await user.type(minInput, "2")
+  expect(calculateMin.checked).toBe(false)
+
+  const maxInput = screen.getByRole("spinbutton", { name: "Max" })
+  const calculateMax = screen.getByRole("checkbox", {
+    name: "Calculate the Max from the answers",
+  })
+  await user.click(calculateMax)
+  expect(maxInput.value).toBe("")
+  expect(maxInput.disabled).toBe(false)
+  await user.type(maxInput, "9")
+  expect(calculateMax.checked).toBe(false)
+})
