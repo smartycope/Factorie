@@ -17,9 +17,10 @@ const pages = [
   ["Factors", "factors", 3],
   ["Fine Tune Weights", "weights", 4],
   ["Quiz", "quiz", 5],
-  ["Overview", "decisions", 6],
-  ["Results", "results", 7],
-//   ['Import/Export', '/save', null],
+  // I haven't used this in a while, I don't think it's that useful anymore
+  // ["Overview", "decisions", 6],
+  ["Results", "results", 6],
+  // ['Import/Export', '/save', null],
   ["Explanation", "explanation", null],
 ]
 
@@ -48,8 +49,7 @@ export default function TopNav() {
         width: { xs: "100%", md: "fit-content" },
         maxWidth: "100%",
         mx: "auto",
-      }}
-    >
+      }}>
       <Toolbar
         sx={{
           width: { xs: "100%", md: "auto" },
@@ -58,8 +58,7 @@ export default function TopNav() {
           justifyContent: "center",
           gap: { xs: 1, md: 2 },
           py: 1,
-        }}
-      >
+        }}>
         <IconButton
           component={NavLink}
           to="/"
@@ -78,8 +77,7 @@ export default function TopNav() {
             "&:hover, &.active:hover": {
               backgroundColor: "action.hover",
             },
-          }}
-        >
+          }}>
           <Box
             component="img"
             src={icon}
@@ -103,8 +101,7 @@ export default function TopNav() {
             alignItems: "center",
             gap: 0.75,
             minWidth: 0,
-          }}
-        >
+          }}>
           {pageRows.map((row, index) => (
             <Box
               key={index === 0 ? "primary-row" : "secondary-row"}
@@ -113,8 +110,7 @@ export default function TopNav() {
                 justifyContent: "center",
                 gap: 0.75,
                 minWidth: 0,
-              }}
-            >
+              }}>
               {row.map(([label, path, order]) => (
                 <Button
                   key={path}
@@ -132,9 +128,10 @@ export default function TopNav() {
                       fontWeight: 700,
                     },
                     whiteSpace: "nowrap",
-                  }}
-                >
-                  {order}{order && ". "}{label}
+                  }}>
+                  {order}
+                  {order && ". "}
+                  {label}
                 </Button>
               ))}
             </Box>
@@ -149,8 +146,7 @@ export default function TopNav() {
             aria-expanded={menuOpen ? "true" : undefined}
             onClick={openMenu}
             color="inherit"
-            edge="end"
-          >
+            edge="end">
             <MenuIcon />
           </IconButton>
           <Menu
@@ -159,8 +155,7 @@ export default function TopNav() {
             open={menuOpen}
             onClose={closeMenu}
             anchorOrigin={{ vertical: "bottom", horizontal: "right" }}
-            transformOrigin={{ vertical: "top", horizontal: "right" }}
-          >
+            transformOrigin={{ vertical: "top", horizontal: "right" }}>
             {pages.map(([label, path, order]) => (
               <MenuItem
                 key={path}
@@ -173,8 +168,7 @@ export default function TopNav() {
                     backgroundColor: "action.hover",
                     fontWeight: 700,
                   },
-                }}
-              >
+                }}>
                 {order ? `${order}. ${label}` : label}
               </MenuItem>
             ))}
