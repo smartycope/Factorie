@@ -648,6 +648,34 @@ test("calculations return factor entropy and weighted usefulness", () => {
   expect(all.std.usefulness).toEqual([0, 0])
 })
 
+test("per-option contributions preserve signed factor direction", () => {
+  const decision = new Decision("Contributions")
+  decision.addFactor({
+    name: "Quality",
+    optimal: 10,
+    weight: 0.6,
+    min: 0,
+    max: 10,
+  })
+  decision.addFactor({
+    name: "Cost",
+    optimal: 0,
+    weight: 0.8,
+    min: 0,
+    max: 10,
+  })
+  decision.addOption("Mixed")
+  decision.setAnswer("Mixed", "Quality", 5)
+  decision.setAnswer("Mixed", "Cost", 5)
+
+  const calculation = decision.calculateAll({
+    rangeMode: Answer.rangeModes.MEDIAN,
+  })
+
+  expect(calculation.mean.per_option_contributions[0][0]).toBeCloseTo(-0.6)
+  expect(calculation.mean.per_option_contributions[0][1]).toBeCloseTo(0.8)
+})
+
 test("bestWorst supports extremes and threshold explanations", () => {
   const decision = new Decision("Explanations")
   for (const name of ["A", "B", "C"])

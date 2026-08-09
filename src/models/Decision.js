@@ -571,8 +571,11 @@ export default class Decision {
     // This is really num_options seperate vectors, but they're together for convenience
     // The sign indicates whether it was towrds or away from the optimal. Take the absolute value for the plain contribution
     // per_option_contributions = weighted_delta_vectors_normalized / weighted_delta_magnitudes[:, None]
-    const perOptionContributions = normalizedAnswers.map((row, i) =>
-      row.map((v, j) => v * tiledWeights[i][j]),
+    const perOptionContributions = weightedDeltaVectorsNormalized.map(
+      (row, optionIndex) => {
+        const magnitude = weightedDeltaMagnitudes[optionIndex] || 1
+        return row.map((value) => value / magnitude)
+      },
     )
 
     // objective_contributions = perOptionContributions / weightedDeltaMagnitudes[:, None]

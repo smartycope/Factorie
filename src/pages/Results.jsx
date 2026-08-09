@@ -21,7 +21,7 @@ import HelpOverlay from "../components/HelpOverlay"
 import Link from "@mui/material/Link"
 import MenuItem from "@mui/material/MenuItem"
 import { Link as RouterLink } from "react-router-dom"
-import {Tooltip} from "@mui/material";
+import { Tooltip } from "@mui/material"
 import Answer from "../models/Answer.js"
 import Decision from "../models/Decision.js"
 
@@ -144,15 +144,18 @@ function SimulationControls({
           </Typography>
         )}
         {requiresUnansweredRanges && (
-          <FormControlLabel
-            control={
-              <Checkbox
-                checked={enabled}
-                onChange={(event) => onEnabledChange(event.target.checked)}
-              />
-            }
-            label="Fill unanswered entries from their full possible ranges"
-          />
+          <>
+            <br />
+            <FormControlLabel
+              control={
+                <Checkbox
+                  checked={enabled}
+                  onChange={(event) => onEnabledChange(event.target.checked)}
+                />
+              }
+              label="Fill unanswered entries from their full possible ranges"
+            />
+          </>
         )}
         {(!requiresUnansweredRanges || enabled) && (
           <Stack spacing={2} sx={{ mt: 1 }}>
@@ -215,7 +218,9 @@ function SimulationControls({
               }}
               sx={{ alignSelf: "flex-start" }}>
               {rangeMode === Answer.rangeModes.MONTE_CARLO ?
-                canRerunSimulation ? "Rerun simulation" : "Run simulation"
+                canRerunSimulation ?
+                  "Rerun simulation"
+                : "Run simulation"
               : "Calculate results"}
             </Button>
           </Stack>
@@ -473,7 +478,7 @@ function HeatmapPlot({
 }) {
   const theme = useTheme()
   const [showText, setShowText] = useState(false)
-    // () => (decision?.factors.length ?? 0) < 20,
+  // () => (decision?.factors.length ?? 0) < 20,
   const [square, setSquare] = useState(true)
   const [topCount, setTopCount] = useState(10)
   const visibleCount =
@@ -556,7 +561,7 @@ function HeatmapPlot({
           // not showing the additional text in the hover.
           // text: showText ? textLabels : undefined,
           text: textLabels,
-          textfont: { color: showText ? textColors : '#00000000', size: 12 },
+          textfont: { color: showText ? textColors : "#00000000", size: 12 },
           // Apparently this a bool, not an array
           hoverinfo: true,
           showlegend: false,
@@ -646,6 +651,131 @@ function HeatmapPlot({
           data={plot.data}
           layout={plot.layout}
           style={{ width: "100%", height: 500 }}
+          useResizeHandler
+          config={{ displayModeBar: false }}
+        />
+      </Paper>
+    </HelpOverlay>
+  )
+}
+
+function FactorContributionPlot({ decision, best, contributions }) {
+  const theme = useTheme()
+  const optionNames = decision.options.map((option) => option.name)
+  const bestOptionIndex = Math.max(
+    0,
+    optionNames.findIndex((option) => option === best?.is),
+  )
+  const [selectedOptionIndex, setSelectedOptionIndex] =
+    useState(bestOptionIndex)
+  const maximumEvenCount = Math.max(
+    2,
+    decision.factors.length - (decision.factors.length % 2),
+  )
+  const [factorCount, setFactorCount] = useState(Math.min(10, maximumEvenCount))
+
+  const selectedOption = optionNames[selectedOptionIndex] ?? optionNames[0]
+  const visibleCount = Math.min(
+    maximumEvenCount,
+    factorCount === "" ? maximumEvenCount : (
+      Math.max(2, Math.floor(Number(factorCount) / 2) * 2 || 2)
+    ),
+  )
+  const rows = decision.factors
+    .map((factor, factorIndex) => ({
+      factor: factor.name,
+      contribution: contributions[selectedOptionIndex]?.[factorIndex] ?? 0,
+    }))
+    .sort((a, b) => b.contribution - a.contribution)
+  const halfCount = visibleCount / 2
+  const visibleRows =
+    visibleCount >= rows.length ?
+      rows
+    : [...rows.slice(0, halfCount), ...rows.slice(-halfCount)]
+  const maximumMagnitude = Math.max(
+    ...visibleRows.map(({ contribution }) => Math.abs(contribution)),
+    0.01,
+  )
+  const factorLabelAnnotations = visibleRows.map(
+    ({ factor, contribution }) => ({
+      x: factor,
+      y: contribution,
+      text: factor,
+      showarrow: false,
+      yanchor: contribution >= 0 ? "bottom" : "top",
+      yshift: contribution >= 0 ? 6 : -6,
+      font: { color: theme.palette.text.primary },
+    }),
+  )
+  const plot = {
+    data: [
+      {
+        type: "bar",
+        x: visibleRows.map(({ factor }) => factor),
+        y: visibleRows.map(({ contribution }) => contribution),
+        customdata: visibleRows.map(({ factor }) => factor),
+        hovertemplate: "%{customdata}: %{y:.0%}<extra></extra>",
+        marker: {
+          color: visibleRows.map(({ contribution }) =>
+            contribution >= 0 ?
+              theme.palette.success.main
+            : theme.palette.error.main,
+          ),
+        },
+      },
+    ],
+    layout: {
+      title: {
+        text: `The Deciding Factors for ${selectedOption}`,
+      },
+      xaxis: { showticklabels: false },
+      yaxis: {
+        range: [-maximumMagnitude * 1.25, maximumMagnitude * 1.25],
+        tickformat: ".0%",
+        zeroline: true,
+        zerolinecolor: theme.palette.text.primary,
+        zerolinewidth: 1,
+      },
+      annotations: factorLabelAnnotations,
+      margin: { t: 60, b: 40, l: 60, r: 20 },
+    },
+  }
+
+  return (
+    <HelpOverlay helpText={texts.results.factor_contributions}>
+      <Paper sx={{ p: 2 }}>
+        <Box sx={{ display: "flex", alignItems: "center", gap: 2 }}>
+          <TextField
+            select
+            label="Option"
+            size="small"
+            value={selectedOptionIndex}
+            onChange={(event) =>
+              setSelectedOptionIndex(Number(event.target.value))
+            }
+            sx={{ minWidth: 200 }}>
+            {optionNames.map((option, optionIndex) => (
+              <MenuItem key={optionIndex} value={optionIndex}>
+                {option}
+              </MenuItem>
+            ))}
+          </TextField>
+          <TextField
+            label="Factors shown"
+            type="number"
+            size="small"
+            value={factorCount}
+            onChange={(event) => setFactorCount(event.target.value)}
+            slotProps={{
+              htmlInput: { min: 2, max: maximumEvenCount, step: 2 },
+            }}
+            sx={{ width: 130 }}
+          />
+        </Box>
+        <Plot
+          data={plot.data}
+          layout={plot.layout}
+          style={{ width: "100%", height: 450 }}
           useResizeHandler
           config={{ displayModeBar: false }}
         />
@@ -969,8 +1099,13 @@ function Summary({ results, best, worst }) {
     <Box>
       <Box sx={{ mt: 1, whiteSpace: "pre-line" }}>
         The best option is
-        <Tooltip title={results.filter((r) => r.option === best.is)[0].percentage.toFixed(1) + "% badness"}>
-        <Chip label={best.is} color="success" {...chipProps} />
+        <Tooltip
+          title={
+            results
+              .filter((r) => r.option === best.is)[0]
+              .percentage.toFixed(1) + "% badness"
+          }>
+          <Chip label={best.is} color="success" {...chipProps} />
         </Tooltip>
         because of
         {formatChipList(best.because, "success")}
@@ -980,7 +1115,12 @@ function Summary({ results, best, worst }) {
         <br />
         <br />
         The worst option is
-        <Tooltip title={results.filter((r) => r.option === worst.is)[0].percentage.toFixed(1) + "% badness"}>
+        <Tooltip
+          title={
+            results
+              .filter((r) => r.option === worst.is)[0]
+              .percentage.toFixed(1) + "% badness"
+          }>
           <Chip label={worst.is} color="error" {...chipProps} />
         </Tooltip>
         because of
@@ -1042,7 +1182,9 @@ export default function Results() {
 
   const nonFiniteFactors = useMemo(
     () =>
-      canUseSimulatedValues ? visibleDecision.getPracticalNonFiniteFactors() : [],
+      canUseSimulatedValues ?
+        visibleDecision.getPracticalNonFiniteFactors()
+      : [],
     [canUseSimulatedValues, visibleDecision],
   )
 
@@ -1226,7 +1368,8 @@ export default function Results() {
       <Typography variant="body2">
         {decision.options.length ?
           "All options are hidden!"
-        : "No options added!"} Head over to the{" "}
+        : "No options added!"}{" "}
+        Head over to the{" "}
         <Link component={RouterLink} to="/options">
           Options
         </Link>{" "}
@@ -1303,11 +1446,7 @@ export default function Results() {
         <Typography variant="h5">Results</Typography>
         {simulationControls}
 
-        <Summary
-          results={results}
-          best={best}
-          worst={worst}
-        />
+        <Summary results={results} best={best} worst={worst} />
 
         <Divider />
 
@@ -1334,6 +1473,13 @@ export default function Results() {
           calc={calc}
         />
 
+        <FactorContributionPlot
+          key={`${calculationDecision.name}:${best?.is}:${calculationDecision.options.map((option) => option.name).join("|")}`}
+          decision={calculationDecision}
+          best={best}
+          contributions={calc.mean.per_option_contributions}
+        />
+
         <SingleLinePlot results={results} />
 
         <PcaPlot
@@ -1352,8 +1498,12 @@ export default function Results() {
           best={best}
           includedRadar={includedRadar}
           setIncludedRadar={setIncludedRadar}
-          factorColors={calculationDecision.factors.map((factor) => factor.color)}
-          optionColors={calculationDecision.options.map((option) => option.color)}
+          factorColors={calculationDecision.factors.map(
+            (factor) => factor.color,
+          )}
+          optionColors={calculationDecision.options.map(
+            (option) => option.color,
+          )}
         />
       </Stack>
     </Box>
