@@ -1,4 +1,5 @@
 import XLSX from "xlsx-js-style"
+import { strFromU8, strToU8, unzipSync, zipSync } from "fflate"
 import Decision from "../models/Decision"
 
 const factorPackModules = import.meta.glob("../factor-packs/*.json", {
@@ -137,6 +138,34 @@ function serializeOptimal(optimal) {
 
 function spreadsheetColor(color) {
   return color ? `FF${color.slice(1)}` : null
+}
+
+function cellFill(color) {
+  return {
+    patternType: "solid",
+    fgColor: { rgb: spreadsheetColor(color) },
+  }
+}
+
+function freezeDecisionPane(workbookData) {
+  const files = unzipSync(new Uint8Array(workbookData))
+  const worksheetPath = "xl/worksheets/sheet1.xml"
+  const worksheetXml = strFromU8(files[worksheetPath])
+  const frozenSheetView =
+    '<sheetView workbookViewId="0">' +
+    '<pane xSplit="1" ySplit="5" topLeftCell="B6" activePane="bottomRight" state="frozen"/>' +
+    '<selection pane="topRight" activeCell="B1" sqref="B1"/>' +
+    '<selection pane="bottomLeft" activeCell="A6" sqref="A6"/>' +
+    '<selection pane="bottomRight" activeCell="B6" sqref="B6"/>' +
+    "</sheetView>"
+  const frozenWorksheetXml = worksheetXml.replace(
+    '<sheetView workbookViewId="0"/>',
+    frozenSheetView,
+  )
+  if (frozenWorksheetXml === worksheetXml)
+    throw new Error("Could not freeze the Decision worksheet pane.")
+  files[worksheetPath] = strToU8(frozenWorksheetXml)
+  return zipSync(files, { level: 6 }).buffer
 }
 
 function cellBackgroundColor(sheet, address) {
@@ -416,6 +445,16 @@ export function createDecisionSpreadsheet(decision) {
   headerCells.forEach((address) => {
     if (sheet[address]) sheet[address].s = { font: { bold: true } }
   })
+  decision.options.forEach((option, index) => {
+    if (!option.color) return
+    const address = XLSX.utils.encode_cell({ r: 4, c: index + 1 })
+    sheet[address].s = { ...sheet[address].s, fill: cellFill(option.color) }
+  })
+  decision.factors.forEach((factor, index) => {
+    if (!factor.color) return
+    const address = XLSX.utils.encode_cell({ r: index + 5, c: 0 })
+    sheet[address].s = { ...sheet[address].s, fill: cellFill(factor.color) }
+  })
 
   const workbook = XLSX.utils.book_new()
   XLSX.utils.book_append_sheet(workbook, sheet, "Decision")
@@ -445,7 +484,7 @@ export function createDecisionSpreadsheet(decision) {
   decision.factors.forEach((factor, index) => {
     if (factor.color)
       factorSheet[XLSX.utils.encode_cell({ r: index + 1, c: 0 })].s = {
-        fill: { patternType: "solid", fgColor: { rgb: spreadsheetColor(factor.color) } },
+        fill: cellFill(factor.color),
       }
   })
   XLSX.utils.book_append_sheet(workbook, factorSheet, "Factors")
@@ -485,9 +524,11 @@ export function createDecisionSpreadsheet(decision) {
   decision.options.forEach((option, index) => {
     if (option.color)
       optionSheet[XLSX.utils.encode_cell({ r: index + 1, c: 0 })].s = {
-        fill: { patternType: "solid", fgColor: { rgb: spreadsheetColor(option.color) } },
+        fill: cellFill(option.color),
       }
   })
   XLSX.utils.book_append_sheet(workbook, optionSheet, "Options")
-  return XLSX.write(workbook, { bookType: "xlsx", type: "array" })
+  return freezeDecisionPane(
+    XLSX.write(workbook, { bookType: "xlsx", type: "array" }),
+  )
 }
