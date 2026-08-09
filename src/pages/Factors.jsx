@@ -123,7 +123,7 @@ function FactorNameText({ value }) {
   )
 }
 
-function SortableFactor({ factorIndex, name, position, count, onMove }) {
+function SortableFactor({ factorIndex, name, position, count, onMove, color=null }) {
   const {
     attributes,
     listeners,
@@ -160,6 +160,7 @@ function SortableFactor({ factorIndex, name, position, count, onMove }) {
         p: 1,
         zIndex: isDragging ? 1 : "auto",
         opacity: isDragging ? 0.55 : 1,
+        backgroundColor: color,
       }}>
       <IconButton
         ref={setActivatorNodeRef}
@@ -963,6 +964,7 @@ export default function Factors() {
                       name={factorNameText(
                         decision.factors[factorIndex]?.name,
                       )}
+                      color={decision.factors[factorIndex]?.color}
                       position={position}
                       count={factorOrder.length}
                       onMove={moveFactor}

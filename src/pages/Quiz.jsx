@@ -20,19 +20,27 @@ import CardContent from "@mui/material/CardContent"
 import FormControl from "@mui/material/FormControl"
 import InputLabel from "@mui/material/InputLabel"
 import MenuItem from "@mui/material/MenuItem"
+import Menu from "@mui/material/Menu"
 import Select from "@mui/material/Select"
 import IconButton from "@mui/material/IconButton"
 import InputAdornment from "@mui/material/InputAdornment"
 import CloseIcon from "@mui/icons-material/Close"
+import FilterListIcon from "@mui/icons-material/FilterList"
 import { TextField } from "@mui/material"
 import Answer from "../models/Answer"
 import { Link } from "react-router-dom"
 
 const TRANSPOSED = true
 const ALL_OPTIONS = ""
+const ANSWER_FILTERS = [
+  { value: "unanswered", label: "Unanswered" },
+  { value: "tentative", label: "Tentative" },
+  { value: "range", label: "Range" },
+  { value: "invalid", label: "Invalid" },
+]
 const persistedQuizFilters = {
   focusedOption: ALL_OPTIONS,
-  onlyShowUnanswered: false,
+  answerFilters: [],
   factorSearch: "",
 }
 
@@ -115,22 +123,49 @@ function answerHasProblem(decision, optionIndex, factorIndex) {
   )
 }
 
-function factorHasProblem(decision, factorIndex) {
+function answerMatchesFilters(
+  decision,
+  optionIndex,
+  factorIndex,
+  answerFilters,
+) {
+  const answer = decision.answers[optionIndex]?.[factorIndex]
+  return answerFilters.some((filter) => {
+    if (filter === "unanswered") return !answer?.isAnswered()
+    if (filter === "tentative") return Boolean(answer?.isTentative())
+    if (filter === "range") return answer?.isRanged() === true
+    if (filter === "invalid") return Boolean(answer?.isInvalid(true))
+    return false
+  })
+}
+
+function factorMatchesFilters(decision, factorIndex, answerFilters) {
   return decision.options.some(
     (option, optionIndex) =>
-      !option.hidden && answerHasProblem(decision, optionIndex, factorIndex),
+      !option.hidden &&
+      answerMatchesFilters(
+        decision,
+        optionIndex,
+        factorIndex,
+        answerFilters,
+      ),
   )
 }
 
-function optionHasProblem(decision, optionIndex) {
+function optionMatchesFilters(decision, optionIndex, answerFilters) {
   return decision.factors.some((_, factorIndex) =>
-    answerHasProblem(decision, optionIndex, factorIndex),
+    answerMatchesFilters(
+      decision,
+      optionIndex,
+      factorIndex,
+      answerFilters,
+    ),
   )
 }
 
 function optionIndexesForMode(
   decision,
-  onlyShowUnanswered,
+  answerFilters,
   focusedOption = ALL_OPTIONS,
 ) {
   if (!decision) return []
@@ -140,13 +175,14 @@ function optionIndexesForMode(
       (index) =>
         !decision.options[index].hidden &&
         (!focusedOption || decision.options[index].name === focusedOption) &&
-        (!onlyShowUnanswered || optionHasProblem(decision, index)),
+        (!answerFilters.length ||
+          optionMatchesFilters(decision, index, answerFilters)),
     )
 }
 
 function factorIndexesForMode(
   decision,
-  onlyShowUnanswered,
+  answerFilters,
   factorSearch = "",
   focusedOption = ALL_OPTIONS,
 ) {
@@ -162,10 +198,15 @@ function factorIndexesForMode(
       (index) =>
         (!query ||
           String(decision.factors[index].name).toLowerCase().includes(query)) &&
-        (!onlyShowUnanswered ||
+        (!answerFilters.length ||
           (focusedOptionIndex === -1 ?
-            factorHasProblem(decision, index)
-          : answerHasProblem(decision, focusedOptionIndex, index))),
+            factorMatchesFilters(decision, index, answerFilters)
+          : answerMatchesFilters(
+              decision,
+              focusedOptionIndex,
+              index,
+              answerFilters,
+            ))),
     )
 }
 
@@ -406,9 +447,10 @@ export default function Quiz() {
   const [focusedOption, setFocusedOption] = useState(
     persistedQuizFilters.focusedOption,
   )
-  const [onlyShowUnanswered, setOnlyShowUnanswered] = useState(
-    persistedQuizFilters.onlyShowUnanswered,
+  const [answerFilters, setAnswerFilters] = useState(
+    persistedQuizFilters.answerFilters,
   )
+  const [answerFilterAnchorEl, setAnswerFilterAnchorEl] = useState(null)
   const [factorSearch, setFactorSearch] = useState(
     persistedQuizFilters.factorSearch,
   )
@@ -430,12 +472,12 @@ export default function Quiz() {
     : ALL_OPTIONS
   const traversalOptionIndexes = optionIndexesForMode(
     decision,
-    onlyShowUnanswered,
+    answerFilters,
     activeFocusedOption,
   )
   const traversalFactorIndexes = factorIndexesForMode(
     decision,
-    onlyShowUnanswered,
+    answerFilters,
     factorSearch,
     activeFocusedOption,
   )
@@ -532,7 +574,7 @@ export default function Quiz() {
     setSelectedCell([newOptionIdx, newFactorIdx])
   }
 
-  function getNextUnanswered(
+  function getNextRelevantAnswer(
     currentlySelected,
     ignoredFactors,
     ignoredOptions,
@@ -559,7 +601,18 @@ export default function Quiz() {
       if (
         !ignoredOptionSet.has(sourceOptionIndex) &&
         !ignoredFactorSet.has(sourceFactorIndex) &&
-        answerHasProblem(sourceDecision, sourceOptionIndex, sourceFactorIndex)
+        (answerFilters.length ?
+          answerMatchesFilters(
+            sourceDecision,
+            sourceOptionIndex,
+            sourceFactorIndex,
+            answerFilters,
+          )
+        : answerHasProblem(
+            sourceDecision,
+            sourceOptionIndex,
+            sourceFactorIndex,
+          ))
       )
         return [sourceOptionIndex, sourceFactorIndex]
     }
@@ -568,19 +621,19 @@ export default function Quiz() {
 
   function visibleIndexes(
     sourceDecision = decision,
-    nextOnlyShowUnanswered = onlyShowUnanswered,
+    nextAnswerFilters = answerFilters,
     nextFactorSearch = factorSearch,
     nextFocusedOption = activeFocusedOption,
   ) {
     return [
       optionIndexesForMode(
         sourceDecision,
-        nextOnlyShowUnanswered,
+        nextAnswerFilters,
         nextFocusedOption,
       ),
       factorIndexesForMode(
         sourceDecision,
-        nextOnlyShowUnanswered,
+        nextAnswerFilters,
         nextFactorSearch,
         nextFocusedOption,
       ),
@@ -620,7 +673,7 @@ export default function Quiz() {
     })
     const [ignoredFactors, ignoredOptions] = ignoredIndexes(updatedDecision)
     changeCell(
-      getNextUnanswered(
+      getNextRelevantAnswer(
         [optionIdx, factorIdx],
         ignoredFactors,
         ignoredOptions,
@@ -637,7 +690,11 @@ export default function Quiz() {
   function handleSkip() {
     const [ignoredFactors, ignoredOptions] = ignoredIndexes()
     changeCell(
-      getNextUnanswered([optionIdx, factorIdx], ignoredFactors, ignoredOptions),
+      getNextRelevantAnswer(
+        [optionIdx, factorIdx],
+        ignoredFactors,
+        ignoredOptions,
+      ),
     )
   }
 
@@ -716,19 +773,19 @@ export default function Quiz() {
   }
 
   function changeFilters(
-    nextOnlyShowUnanswered,
+    nextAnswerFilters,
     nextFactorSearch,
     nextFocusedOption = activeFocusedOption,
     dontFocus = false,
   ) {
     const nextOptionIndexes = optionIndexesForMode(
       decision,
-      nextOnlyShowUnanswered,
+      nextAnswerFilters,
       nextFocusedOption,
     )
     const nextFactorIndexes = factorIndexesForMode(
       decision,
-      nextOnlyShowUnanswered,
+      nextAnswerFilters,
       nextFactorSearch,
       nextFocusedOption,
     )
@@ -746,11 +803,18 @@ export default function Quiz() {
     changeCell([nextOptionIdx, nextFactorIdx], decision, false, dontFocus)
   }
 
-  function handleOnlyShowUnansweredChange(event) {
-    const isChecked = event.target.checked
-    setOnlyShowUnanswered(isChecked)
-    persistedQuizFilters.onlyShowUnanswered = isChecked
-    changeFilters(isChecked, factorSearch)
+  function changeAnswerFilters(nextAnswerFilters) {
+    setAnswerFilters(nextAnswerFilters)
+    persistedQuizFilters.answerFilters = nextAnswerFilters
+    changeFilters(nextAnswerFilters, factorSearch, activeFocusedOption, true)
+  }
+
+  function toggleAnswerFilter(filter) {
+    const nextAnswerFilters =
+      answerFilters.includes(filter) ?
+        answerFilters.filter((current) => current !== filter)
+      : [...answerFilters, filter]
+    changeAnswerFilters(nextAnswerFilters)
   }
 
   function handleFactorSearchChange(event) {
@@ -762,7 +826,7 @@ export default function Quiz() {
     setFactorSearch(nextFactorSearch)
     persistedQuizFilters.factorSearch = nextFactorSearch
     changeFilters(
-      onlyShowUnanswered,
+      answerFilters,
       nextFactorSearch,
       activeFocusedOption,
       dontFocus,
@@ -774,7 +838,7 @@ export default function Quiz() {
     setFocusedOption(nextFocusedOption)
     persistedQuizFilters.focusedOption = nextFocusedOption
     setHistory([])
-    changeFilters(onlyShowUnanswered, factorSearch, nextFocusedOption)
+    changeFilters(answerFilters, factorSearch, nextFocusedOption)
   }
 
   const isRespInValid =
@@ -1110,15 +1174,37 @@ export default function Quiz() {
           }}
           sx={{ flex: 1, maxWidth: 400, mx: 2 }}
         />
-        <FormControlLabel
-          control={
-            <Checkbox
-              checked={onlyShowUnanswered}
-              onChange={handleOnlyShowUnansweredChange}
-            />
-          }
-          label="Only Show Unanswered"
-        />
+        <Button
+          variant={answerFilters.length ? "contained" : "outlined"}
+          size="small"
+          startIcon={<FilterListIcon />}
+          onClick={(event) => setAnswerFilterAnchorEl(event.currentTarget)}
+          aria-haspopup="true"
+          aria-expanded={Boolean(answerFilterAnchorEl)}>
+          Answer filters
+          {answerFilters.length ? ` (${answerFilters.length})` : ""}
+        </Button>
+        <Menu
+          anchorEl={answerFilterAnchorEl}
+          open={Boolean(answerFilterAnchorEl)}
+          onClose={() => setAnswerFilterAnchorEl(null)}>
+          {ANSWER_FILTERS.map(({ value: filter, label }) => (
+            <MenuItem key={filter} onClick={() => toggleAnswerFilter(filter)}>
+              <Checkbox
+                size="small"
+                checked={answerFilters.includes(filter)}
+                tabIndex={-1}
+                disableRipple
+              />
+              {label}
+            </MenuItem>
+          ))}
+          <MenuItem
+            disabled={!answerFilters.length}
+            onClick={() => changeAnswerFilters([])}>
+            Clear filters
+          </MenuItem>
+        </Menu>
       </Box>
       {!TRANSPOSED && (
         <AnswersTable
