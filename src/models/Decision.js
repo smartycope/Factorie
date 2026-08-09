@@ -516,10 +516,12 @@ export default class Decision {
     const numOptions = answers.length
     const numFactors = this.factors.length
     const weights = this.factors.map((factor) => factor.weight)
+    // Tile weights to match the shape of options
     const tiledWeights = Array.from({ length: numOptions }, () =>
       weights.slice(),
     )
     const optNorm = this.optimalNormalized()
+    // Tile normalized optimal values to match the shape of options
     const tiledOptimal = Array.from({ length: numOptions }, () =>
       optNorm.slice(),
     )
@@ -527,7 +529,7 @@ export default class Decision {
     const minsA = this.mins()
     const maxsA = this.maxs()
 
-    // normalized answers
+    // The answers normalized to the range [0, 1]
     const normalizedAnswers = answers.map((row) =>
       row.map(
         (v, j) => (v - minsA[j]) / (maxsA[j] - minsA[j] + Number.EPSILON),
@@ -543,34 +545,46 @@ export default class Decision {
         factorEntropy * weights[factorIndex],
     )
 
+    // The distance between each option and the optimal
     const deltaVectorsNormalized = normalizedAnswers.map((row) =>
       row.map((v, j) => v - tiledOptimal[0][j]),
     )
+    // The weighted delta vector between each option and the optimal
     const weightedDeltaVectorsNormalized = deltaVectorsNormalized.map(
       (row, i) => row.map((v, j) => v * tiledWeights[i][j]),
     )
 
+    // The magnitudes of the weighted delta vectors between each option and the optimal
     const weightedDeltaMagnitudes = weightedDeltaVectorsNormalized.map((row) =>
       Math.sqrt(row.reduce((s, x) => s + x * x, 0)),
     )
 
     const worstDist = this.worstPossibleDistance() || 1
+    // The normalized weighted distances between each option and the optimal
     const normalizedWeightedDists = weightedDeltaMagnitudes.map(
       (m) => m / worstDist,
     )
     const invertedNormalized = normalizedWeightedDists.map((v) => 1 - v)
 
     // per option contributions = normalizedAnswers * tiledWeights
+    // A percentage of how much each factor contributed to the total distance between the optimal and each option
+    // This is really num_options seperate vectors, but they're together for convenience
+    // The sign indicates whether it was towrds or away from the optimal. Take the absolute value for the plain contribution
+    // per_option_contributions = weighted_delta_vectors_normalized / weighted_delta_magnitudes[:, None]
     const perOptionContributions = normalizedAnswers.map((row, i) =>
       row.map((v, j) => v * tiledWeights[i][j]),
     )
 
     // objective_contributions = perOptionContributions / weightedDeltaMagnitudes[:, None]
+    // A percentage of how much each factor contributed to the distance from the optimal, divided by each option's distance
+    // I'm not sure how useful this is: probably just use per_option_contributions or weighted_delta_vectors instead
     const objectiveContributions = perOptionContributions.map((row, i) => {
       const denom = weightedDeltaMagnitudes[i] || 1
       return row.map((x) => x / denom)
     })
 
+    // The average percentage of how much each factor deviates from the optimal
+    // I'm about 85% sure this is correct
     const meanFactorRelevances = (() => {
       const sums = Array(numFactors).fill(0)
       for (let i = 0; i < numOptions; i++)
@@ -648,11 +662,15 @@ export default class Decision {
       if (weighted[i] > weighted[worstIdx]) worstIdx = i
     }
     const options = this.getVisibleOptions().map((option) => option.name)
+    // The abs is because 0 is the best, and if it's non-zero in either direction, + or -, it's still
+    // further away from the optimal.
     const contrib = calc.delta_vectors_normalized.map((row) =>
       row.map((v) => Math.abs(v)),
     )
     if (min_thresh == null) min_thresh = percentile(contrib.flat(), 20)
     if (max_thresh == null) max_thresh = percentile(contrib.flat(), 80)
+    // These need to be seperate, so that the weights actually apply to each
+    // (.9 * 0 is still 0)
     const tiledWeights = Array.from({ length: options.length }, () =>
       this.factors.map((factor) => factor.weight),
     )
