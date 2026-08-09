@@ -76,6 +76,23 @@ test("Factor leaves continuous and missing units non-discrete", () => {
   assert.equal(new Factor().isDiscrete(), false)
 })
 
+test("Answer serialization uses discrete labels and accepts legacy numbers", () => {
+  const factor = new Factor({
+    unit: "0: Small, 1: Medium, 2: Large",
+  })
+  const answer = new Answer(0, 2, true)
+
+  assert.deepEqual(answer.serialize(factor), ["Small", "Large", true])
+  assert.deepEqual(
+    Answer.deserialize('["Small", "Large", true]', factor).serialize(factor),
+    ["Small", "Large", true],
+  )
+
+  const legacyAnswer = Answer.deserialize([0, 2], factor)
+  assert.equal(legacyAnswer.min, 0)
+  assert.equal(legacyAnswer.max, 2)
+})
+
 test("Decision owns Factor and Answer instances", () => {
   const decision = createCompleteDecision()
 
@@ -209,6 +226,33 @@ test("tentative answers survive serialization without changing legacy answers", 
   assert.equal(new Answer(null, null, true).tentative, true)
   copy.getAnswer("Tacos", "Taste").clear()
   assert.equal(copy.getAnswer("Tacos", "Taste").tentative, false)
+})
+
+test("Decision round-trips discrete answer labels", () => {
+  const decision = new Decision("Sizes")
+  decision.addFactor({
+    name: "Size",
+    unit: "0: Small, 1: Medium, 2: Large",
+    optimal: 2,
+    weight: 1,
+    min: 0,
+    max: 2,
+  })
+  decision.addOption("Choice")
+  decision.setAnswer("Choice", "Size", new Answer(0, 2, true))
+
+  const serialized = JSON.parse(decision.serialize())
+  assert.deepEqual(serialized.answers, [[["Small", "Large", true]]])
+
+  const copy = Decision.deserialize(serialized)
+  assert.equal(copy.getAnswer("Choice", "Size").min, 0)
+  assert.equal(copy.getAnswer("Choice", "Size").max, 2)
+  assert.equal(copy.getAnswer("Choice", "Size").tentative, true)
+
+  serialized.answers = [[[0, 1]]]
+  const legacyCopy = Decision.deserialize(serialized)
+  assert.equal(legacyCopy.getAnswer("Choice", "Size").min, 0)
+  assert.equal(legacyCopy.getAnswer("Choice", "Size").max, 1)
 })
 
 test("option metadata follows renames and is removed with options", () => {
@@ -345,11 +389,17 @@ test("uncertain copies fill only unanswered cells and identify needed ranges", (
 
   const simulated = decision.uncertainCopy({ Cost: [0, 100] })
   assert.deepEqual(
-    simulated.getAnswer("Unknown", "Quality").serialize(),
+    simulated.getAnswer("Unknown", "Quality").serialize(simulated.factors[0]),
     [0, 10],
   )
-  assert.deepEqual(simulated.getAnswer("Unknown", "Cost").serialize(), [0, 100])
-  assert.deepEqual(simulated.getAnswer("Known", "Cost").serialize(), [25, 25])
+  assert.deepEqual(
+    simulated.getAnswer("Unknown", "Cost").serialize(simulated.factors[1]),
+    [0, 100],
+  )
+  assert.deepEqual(
+    simulated.getAnswer("Known", "Cost").serialize(simulated.factors[1]),
+    [25, 25],
+  )
   assert.equal(decision.getAnswer("Unknown", "Quality").isAnswered(), false)
   assert.equal(simulated.isInvalid(), null)
 

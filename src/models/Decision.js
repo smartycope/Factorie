@@ -1,7 +1,7 @@
 import Answer from "./Answer.js"
 import Factor from "./Factor.js"
 import Option from "./Option.js"
-import { percentile } from "../utils/misc"
+import { percentile } from "../utils/misc.js"
 
 // TODO: remove the threshold member (it doesn't do anything anymore)
 
@@ -78,12 +78,13 @@ export default class Decision {
     for (let i = 0; i < this.factors.length; i++) {
       for (const j of visibleOptionIndexes) {
         const ans = this.answers[j][i]
-        if (ans.isInvalid(this, i)) invalidAnswers.push([ans])
+        if (ans.isInvalid(this, i))
+          invalidAnswers.push({ answer: ans, factor: this.factors[i] })
       }
     }
     if (invalidAnswers.length)
       return `Not all answers are valid:
-        ${invalidAnswers.map((row) => row.map((ans) => ans.serialize()).join(", ")).join("\n")}`
+        ${invalidAnswers.map(({ answer, factor }) => answer.serialize(factor).join(", ")).join("\n")}`
 
     if (
       !allowUnanswered &&
@@ -277,7 +278,9 @@ export default class Decision {
       name: this.name,
       factors: this.factors.map((factor) => factor.serialize()),
       options: this.options.map((option) => option.serialize()),
-      answers: this.answers.map((row) => row.map((ans) => ans.serialize())),
+      answers: this.answers.map((row) =>
+        row.map((ans, factorIndex) => ans.serialize(this.factors[factorIndex])),
+      ),
       threshold: this.threshold,
       factorPacks: Array.from(this.factorPacks),
     })
@@ -313,7 +316,11 @@ export default class Decision {
         parsed.notes = legacyOptionNotes[parsed.name]
       return parsed
     })
-    d.answers = obj.answers.map((row) => row.map((ans) => new Answer(...ans)))
+    d.answers = obj.answers.map((row) =>
+      row.map((answer, factorIndex) =>
+        Answer.deserialize(answer, d.factors[factorIndex]),
+      ),
+    )
     d.threshold = obj.threshold
     d.factorPacks = new Set(obj.factorPacks || [])
     return d

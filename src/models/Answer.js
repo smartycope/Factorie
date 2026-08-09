@@ -1,4 +1,23 @@
-import {nully} from "../utils/misc"
+import {nully} from "../utils/misc.js"
+
+function discreteValuesFor(factor) {
+  if (!factor || typeof factor.discreteValues !== "function")
+    throw new TypeError("Answer serialization requires a factor")
+  return factor.discreteValues()
+}
+
+function serializeValue(value, discreteValues) {
+  return discreteValues.find(({number}) => number === value)?.name ?? value
+}
+
+function deserializeValue(value, discreteValues) {
+  if (typeof value !== "string") return value
+
+  const discreteValue = discreteValues.find(({name}) => name.toLowerCase() === value.toLowerCase())
+  if (!discreteValue)
+    throw new Error(`Unknown discrete answer label: "${value}"`)
+  return discreteValue.number
+}
 
 export default class Answer {
   constructor(min = null, max = min, tentative = false) {
@@ -39,14 +58,26 @@ export default class Answer {
   }
 
   // Returns an object, not a string
-  serialize() {
+  serialize(factor) {
+    const discreteValues = discreteValuesFor(factor)
+    const min = serializeValue(this.min, discreteValues)
+    const max = serializeValue(this.max, discreteValues)
     return this.tentative ?
-        [this.min, this.max, true]
-      : [this.min, this.max]
+        [min, max, true]
+      : [min, max]
   }
 
-  static deserialize(data) {
-    return new Answer(...JSON.parse(data))
+  static deserialize(data, factor) {
+    const serialized = typeof data === "string" ? JSON.parse(data) : data
+    if (!Array.isArray(serialized))
+      throw new TypeError("Serialized answer must be an array")
+
+    const discreteValues = discreteValuesFor(factor)
+    return new Answer(
+      deserializeValue(serialized[0], discreteValues),
+      deserializeValue(serialized[1], discreteValues),
+      serialized[2],
+    )
   }
 
   clear() {
