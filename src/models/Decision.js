@@ -5,6 +5,30 @@ import { percentile } from "../utils/misc.js"
 
 // TODO: remove the threshold member (it doesn't do anything anymore)
 
+function elementwiseMean(values) {
+  if (!values.length) return null
+  if (Array.isArray(values[0]))
+    return values[0].map((_, index) =>
+      elementwiseMean(values.map((value) => value[index])),
+    )
+  return values.reduce((sum, value) => sum + value, 0) / values.length
+}
+
+function elementwiseStd(values, mean = elementwiseMean(values)) {
+  if (!values.length) return null
+  if (Array.isArray(values[0]))
+    return values[0].map((_, index) =>
+      elementwiseStd(
+        values.map((value) => value[index]),
+        mean[index],
+      ),
+    )
+  const variance =
+    values.reduce((sum, value) => sum + Math.pow(value - mean, 2), 0) /
+    values.length
+  return Math.sqrt(variance)
+}
+
 export default class Decision {
   static numSamples = 100
 
@@ -384,20 +408,27 @@ export default class Decision {
     return JSON.parse(JSON.stringify(a))
   }
 
+  // TODO: there's a reason this isn't used. "optimism" isn't really accurate, because valueAt() uses
+  // naive range interpolation, while what's "best" or "worst" depends on what the optimal for each
+  // factor is. That could be done, but isn't implemented yet, and is more complicated.
   weightedAnswers(optimism = 0.5) {
-    const mins = this.minAnswers()
-    const maxs = this.maxAnswers()
-    const res = mins.map((row, i) =>
-      row.map((mn, j) => mn + (maxs[i][j] - mn) * optimism),
+    return this.answers.map((row) =>
+      row.map((answer) => answer.valueAt(optimism)),
     )
-    return res
   }
 
   stdAnswers() {
-    const mins = this.minAnswers()
-    const maxs = this.maxAnswers()
-    return mins.map((row, i) => row.map((mn, j) => (maxs[i][j] - mn) / 2))
+    return this.answers.map((row) =>
+      row.map((answer) => answer.rangeRadius()),
+    )
   }
+
+  answerValues(rangeMode = Answer.rangeModes.MEDIAN, random = Math.random) {
+    return this.answers.map((row) =>
+      row.map((answer) => answer.valueForRange(rangeMode, random)),
+    )
+  }
+
   minAnswers() {
     return this.answers.map((row) => row.map((ans) => ans.min))
   }
@@ -556,103 +587,24 @@ export default class Decision {
     const method = options.method || "extremes"
     const minThresh = options.minThresh
     const maxThresh = options.maxThresh
-    const results = {
-      normalized_answers: [],
-      delta_vectors_normalized: [],
-      weighted_delta_vectors_normalized: [],
-      weighted_delta_magnitudes: [],
-      per_option_contributions: [],
-      objective_contributions: [],
-      mean_factor_relevances: [],
-      badness: [],
-      goodness: [],
-    }
+    const rangeMode = options.rangeMode || Answer.rangeModes.MONTE_CARLO
+    const random = options.random || Math.random
+    if (!Object.values(Answer.rangeModes).includes(rangeMode))
+      throw new Error(`Invalid range mode: ${rangeMode}`)
 
-    const wa = this.weightedAnswers(0.5)
-    const sd = this.stdAnswers()
-    const numOptions = wa.length
-
-    function randn() {
-      let u = 0,
-        v = 0
-      while (u === 0) u = Math.random()
-      while (v === 0) v = Math.random()
-      return Math.sqrt(-2.0 * Math.log(u)) * Math.cos(2.0 * Math.PI * v)
-    }
-
-    for (let s = 0; s < numSamples; s++) {
-      // generate sample answers
-      const sample = []
-      for (let i = 0; i < numOptions; i++) {
-        const row = []
-        for (let j = 0; j < wa[i].length; j++) {
-          const mean = wa[i][j]
-          const st = sd[i][j]
-          const val = mean + randn() * st
-          row.push(val)
-        }
-        sample.push(row)
-      }
-      const calc = this._calculate(sample)
-      for (const k of Object.keys(results)) results[k].push(calc[k])
-    }
+    const sampleCount =
+      rangeMode === Answer.rangeModes.MONTE_CARLO ? numSamples : 1
+    const calculations = Array.from({ length: sampleCount }, () =>
+      this._calculate(this.answerValues(rangeMode, random)),
+    )
+    const resultKeys = Object.keys(calculations[0])
 
     const rtn = { std: {}, mean: {} }
-    for (const key of Object.keys(results)) {
-      // compute mean and std over samples; results[key] is array of length numSamples of arrays
-      const arr = results[key]
-      // mean
-      const mean = (() => {
-        if (!arr.length) return null
-        const first = arr[0]
-        if (Array.isArray(first)) {
-          // assume nested arrays numeric; compute element-wise mean
-          if (Array.isArray(first[0])) {
-            const rows = first.length
-            const cols = first[0].length
-            const sums = Array.from({ length: rows }, () => Array(cols).fill(0))
-            for (let i = 0; i < arr.length; i++)
-              for (let r = 0; r < rows; r++)
-                for (let c = 0; c < cols; c++) sums[r][c] += arr[i][r][c]
-            return sums.map((row) => row.map((v) => v / arr.length))
-          }
-          // 1D arrays
-          const n = first.length
-          const sums1 = Array(n).fill(0)
-          for (let i = 0; i < arr.length; i++)
-            for (let j = 0; j < n; j++) sums1[j] += arr[i][j]
-          return sums1.map((v) => v / arr.length)
-        }
-        return null
-      })()
-
-      const stdv = (() => {
-        if (!arr.length) return null
-        const first = arr[0]
-        if (Array.isArray(first)) {
-          if (Array.isArray(first[0])) {
-            const rows = first.length
-            const cols = first[0].length
-            const sums = Array.from({ length: rows }, () => Array(cols).fill(0))
-            const means = mean
-            for (let i = 0; i < arr.length; i++)
-              for (let r = 0; r < rows; r++)
-                for (let c = 0; c < cols; c++)
-                  sums[r][c] += Math.pow(arr[i][r][c] - means[r][c], 2)
-            return sums.map((row) => row.map((v) => Math.sqrt(v / arr.length)))
-          }
-          const n = first.length
-          const sums1 = Array(n).fill(0)
-          for (let i = 0; i < arr.length; i++)
-            for (let j = 0; j < n; j++)
-              sums1[j] += Math.pow(arr[i][j] - mean[j], 2)
-          return sums1.map((v) => Math.sqrt(v / arr.length))
-        }
-        return null
-      })()
-
-      rtn.mean[key] = mean
-      rtn.std[key] = stdv
+    for (const key of resultKeys) {
+      // Compute element-wise mean and standard deviation over calculations.
+      const values = calculations.map((calculation) => calculation[key])
+      rtn.mean[key] = elementwiseMean(values)
+      rtn.std[key] = elementwiseStd(values, rtn.mean[key])
     }
 
     const bestWorst = this.bestWorst(

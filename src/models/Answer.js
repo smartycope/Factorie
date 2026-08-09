@@ -20,6 +20,13 @@ function deserializeValue(value, discreteValues) {
 }
 
 export default class Answer {
+  static rangeModes = Object.freeze({
+    MONTE_CARLO: "monteCarlo",
+    HIGH: "high",
+    LOW: "low",
+    MEDIAN: "median",
+  })
+
   constructor(
     min = null,
     max = min,
@@ -158,6 +165,47 @@ export default class Answer {
   isRanged() {
     if (this.isAnswered()) return this.min !== this.max
     return null
+  }
+
+  valueAt(position) {
+    if (!this.isAnswered()) return null
+    return this.min + (this.max - this.min) * position
+  }
+
+  midpoint() {
+    return this.valueAt(0.5)
+  }
+
+  rangeRadius() {
+    if (!this.isAnswered()) return null
+    return (this.max - this.min) / 2
+  }
+
+  // Resolve this answer's range to one value for a results calculation.
+  // Monte Carlo intentionally preserves the existing normal distribution,
+  // centered on the range midpoint with half the range as its deviation.
+  valueForRange(mode = Answer.rangeModes.MEDIAN, random = Math.random) {
+    if (!this.isAnswered()) return null
+
+    switch (mode) {
+      case Answer.rangeModes.LOW:
+        return this.valueAt(0)
+      case Answer.rangeModes.HIGH:
+        return this.valueAt(1)
+      case Answer.rangeModes.MEDIAN:
+        return this.midpoint()
+      case Answer.rangeModes.MONTE_CARLO: {
+        let u = 0
+        let v = 0
+        while (u === 0) u = random()
+        while (v === 0) v = random()
+        const standardNormal =
+          Math.sqrt(-2 * Math.log(u)) * Math.cos(2 * Math.PI * v)
+        return this.midpoint() + standardNormal * this.rangeRadius()
+      }
+      default:
+        throw new Error(`Invalid range mode: ${mode}`)
+    }
   }
 
   // TODO: is this still accurate, with the new non-finite min/max system?

@@ -459,6 +459,14 @@ test("uncertain copies fill only unanswered cells and identify needed ranges", (
     simulated.getAnswer("Known", "Cost").serialize(),
     [25, 25],
   )
+  assert.deepEqual(simulated.answerValues(Answer.rangeModes.HIGH), [
+    [8, 25],
+    [10, 100],
+  ])
+  assert.deepEqual(simulated.answerValues(Answer.rangeModes.LOW), [
+    [8, 25],
+    [0, 0],
+  ])
   assert.equal(decision.getAnswer("Unknown", "Quality").isAnswered(), false)
   assert.equal(simulated.isInvalid(), null)
 
@@ -670,6 +678,29 @@ test("Decision parses answer input, rejects invalid ranges, and supports indexes
   expect(decision.getAnswer("Option", "Score").serialize()).toEqual([3, 7, true])
 })
 
+test("Answer resolves ranges as low, high, median, or a Monte Carlo sample", () => {
+  const answer = new Answer(2, 8)
+
+  expect(answer.valueAt(0.25)).toBe(3.5)
+  expect(answer.midpoint()).toBe(5)
+  expect(answer.rangeRadius()).toBe(3)
+  expect(answer.valueForRange(Answer.rangeModes.LOW)).toBe(2)
+  expect(answer.valueForRange(Answer.rangeModes.HIGH)).toBe(8)
+  expect(answer.valueForRange(Answer.rangeModes.MEDIAN)).toBe(5)
+
+  const randomValues = [Math.exp(-0.5), 1]
+  expect(
+    answer.valueForRange(
+      Answer.rangeModes.MONTE_CARLO,
+      () => randomValues.shift(),
+    ),
+  ).toBeCloseTo(8)
+  expect(() => answer.valueForRange("unknown")).toThrow(
+    "Invalid range mode: unknown",
+  )
+  expect(new Answer().valueForRange(Answer.rangeModes.HIGH)).toBeNull()
+})
+
 test("Decision answer helpers interpolate ranges and clear every answer", () => {
   const decision = new Decision("Ranges")
   decision.addFactor({
@@ -692,6 +723,62 @@ test("Decision answer helpers interpolate ranges and clear every answer", () => 
   decision.clearAllAnswers()
   expect(decision.minAnswers()).toEqual([[null], [null]])
   expect(decision.maxAnswers()).toEqual([[null], [null]])
+})
+
+test("Decision calculates deterministic low, high, and median range modes", () => {
+  const decision = new Decision("Range modes")
+  decision.addFactor({
+    name: "Score",
+    optimal: 10,
+    weight: 1,
+    min: 0,
+    max: 10,
+  })
+  decision.addOption("Ranged")
+  decision.addOption("Exact")
+  decision.setAnswer("Ranged", "Score", [2, 8])
+  decision.setAnswer("Exact", "Score", 5)
+
+  const expectations = [
+    [Answer.rangeModes.LOW, 0.2, "Exact"],
+    [Answer.rangeModes.HIGH, 0.8, "Ranged"],
+    [Answer.rangeModes.MEDIAN, 0.5, "Ranged"],
+  ]
+  for (const [rangeMode, rangedValue, bestOption] of expectations) {
+    const calculation = decision.calculateAll({ rangeMode, numSamples: 25 })
+    expect(calculation.mean.normalized_answers[0][0]).toBeCloseTo(rangedValue)
+    expect(calculation.mean.normalized_answers[1][0]).toBeCloseTo(0.5)
+    expect(calculation.std.normalized_answers).toEqual([[0], [0]])
+    expect(calculation.best.is).toBe(bestOption)
+  }
+
+  expect(() => decision.calculateAll({ rangeMode: "unknown" })).toThrow(
+    "Invalid range mode: unknown",
+  )
+})
+
+test("Decision averages Monte Carlo range samples", () => {
+  const decision = new Decision("Monte Carlo")
+  decision.addFactor({
+    name: "Score",
+    optimal: 10,
+    weight: 1,
+    min: 0,
+    max: 10,
+  })
+  decision.addOption("Ranged")
+  decision.setAnswer("Ranged", "Score", [2, 8])
+
+  const randomValues = [Math.exp(-0.5), 0.5, Math.exp(-0.5), 1]
+  const calculation = decision.calculateAll({
+    rangeMode: Answer.rangeModes.MONTE_CARLO,
+    numSamples: 2,
+    random: () => randomValues.shift(),
+  })
+
+  expect(calculation.mean.normalized_answers[0][0]).toBeCloseTo(0.5)
+  expect(calculation.std.normalized_answers[0][0]).toBeCloseTo(0.3)
+  expect(randomValues).toEqual([])
 })
 
 test("hidden options do not require non-finite simulation ranges", () => {

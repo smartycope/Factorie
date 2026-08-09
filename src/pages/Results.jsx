@@ -19,14 +19,45 @@ import * as PCAImport from "pca-js"
 import texts from "../assets/texts.json"
 import HelpOverlay from "../components/HelpOverlay"
 import Link from "@mui/material/Link"
+import MenuItem from "@mui/material/MenuItem"
 import { Link as RouterLink } from "react-router-dom"
 import {Tooltip} from "@mui/material";
+import Answer from "../models/Answer.js"
+import Decision from "../models/Decision.js"
 
 const PCA = PCAImport.default ?? PCAImport
 
 const persistedValues = {
   useSimulatedValues: false,
   simulationRanges: {},
+  rangeMode: Answer.rangeModes.MONTE_CARLO,
+}
+
+const RANGE_MODE_OPTIONS = [
+  {
+    value: Answer.rangeModes.MONTE_CARLO,
+    label: "Monte Carlo simulation",
+    description: `Average ${Decision.numSamples} random samples from each range.`,
+  },
+  {
+    value: Answer.rangeModes.HIGH,
+    label: "High",
+    description: "Use the highest value from every range.",
+  },
+  {
+    value: Answer.rangeModes.LOW,
+    label: "Low",
+    description: "Use the lowest value from every range.",
+  },
+  {
+    value: Answer.rangeModes.MEDIAN,
+    label: "Median",
+    description: "Use the midpoint of every range.",
+  },
+]
+
+function rangeModeOption(mode) {
+  return RANGE_MODE_OPTIONS.find((option) => option.value === mode)
 }
 
 function joinAnd(items, { oxford = false, ampersand = false } = {}) {
@@ -59,13 +90,19 @@ function resolvedRange(factor, ranges) {
 function SimulationControls({
   enabled,
   onEnabledChange,
+  requiresUnansweredRanges,
   factors,
   ranges,
   onRangeChange,
+  rangeMode,
+  activeRangeMode,
+  onRangeModeChange,
   canRun,
   onRun,
 }) {
   const [expanded, setExpanded] = useState(true)
+  const selectedMode = rangeModeOption(rangeMode)
+  const activeMode = rangeModeOption(activeRangeMode)
 
   return (
     <Paper variant="outlined" sx={{ p: 2, mt: 2 }}>
@@ -82,24 +119,48 @@ function SimulationControls({
           />
         }
         sx={{ justifyContent: "space-between" }}>
-        Simulation controls{enabled ? " (enabled)" : ""}
+        Calculation settings ({activeMode.label})
       </Button>
       <Collapse in={expanded}>
-        <FormControlLabel
-          control={
-            <Checkbox
-              checked={enabled}
-              onChange={(event) => onEnabledChange(event.target.checked)}
-            />
-          }
-          label="Run with simulated values"
-        />
-        {enabled && (
+        <TextField
+          select
+          fullWidth
+          size="small"
+          label="Range calculation"
+          value={rangeMode}
+          onChange={(event) => onRangeModeChange(event.target.value)}
+          helperText={selectedMode.description}
+          sx={{ mt: 2, maxWidth: 440 }}>
+          {RANGE_MODE_OPTIONS.map((option) => (
+            <MenuItem key={option.value} value={option.value}>
+              {option.label}
+            </MenuItem>
+          ))}
+        </TextField>
+        {rangeMode !== activeRangeMode && (
+          <Typography variant="body2" color="warning.main" sx={{ mt: 1 }}>
+            Run the calculation to apply this setting to the results.
+          </Typography>
+        )}
+        {requiresUnansweredRanges && (
+          <FormControlLabel
+            control={
+              <Checkbox
+                checked={enabled}
+                onChange={(event) => onEnabledChange(event.target.checked)}
+              />
+            }
+            label="Fill unanswered entries from their full possible ranges"
+          />
+        )}
+        {(!requiresUnansweredRanges || enabled) && (
           <Stack spacing={2} sx={{ mt: 1 }}>
-            <Typography variant="body2">
-              Unanswered entries will use the full possible range, representing
-              maximum uncertainty.
-            </Typography>
+            {requiresUnansweredRanges && (
+              <Typography variant="body2">
+                Unanswered entries will use the full possible range,
+                representing maximum uncertainty.
+              </Typography>
+            )}
             {factors.map((factor) => {
               const range = resolvedRange(factor, ranges)
               const minValue = rangeInputValue(factor, ranges, "min")
@@ -147,13 +208,14 @@ function SimulationControls({
             <Button
               variant="contained"
               disabled={!canRun}
-              // TODO: This doesn't seem to work?
               onClick={() => {
                 onRun()
                 setExpanded(false)
               }}
               sx={{ alignSelf: "flex-start" }}>
-              Run simulation
+              {rangeMode === Answer.rangeModes.MONTE_CARLO ?
+                "Run simulation"
+              : "Calculate results"}
             </Button>
           </Stack>
         )}
@@ -929,6 +991,10 @@ export default function Results() {
   const [simulationRanges, _setSimulationRanges] = useState(
     persistedValues.simulationRanges,
   )
+  const [rangeMode, _setRangeMode] = useState(persistedValues.rangeMode)
+  const [activeRangeMode, setActiveRangeMode] = useState(
+    persistedValues.rangeMode,
+  )
   const [submittedSimulationRanges, setSubmittedSimulationRanges] =
     useState(null)
   const setUseSimulatedValues = (to) => {
@@ -940,6 +1006,10 @@ export default function Results() {
     if (to instanceof Function) to = to(simulationRanges)
     persistedValues.simulationRanges = to
     _setSimulationRanges(to)
+  }
+  const setRangeMode = (to) => {
+    persistedValues.rangeMode = to
+    _setRangeMode(to)
   }
   const [simulationRun, setSimulationRun] = useState(0)
   const visibleDecision = useMemo(() => {
@@ -955,6 +1025,8 @@ export default function Results() {
     Boolean(visibleDecision) &&
     hasUnansweredAnswers &&
     visibleDecision.isInvalid(true) === null
+  const canConfigureCalculation =
+    Boolean(visibleDecision) && visibleDecision.isInvalid(true) === null
 
   const nonFiniteFactors = useMemo(
     () =>
@@ -992,9 +1064,10 @@ export default function Results() {
     if (!calculationDecision || calculationDecision.isInvalid()) return null
     return calculationDecision.calculateAll({
       method: "threshold",
+      rangeMode: activeRangeMode,
       run: simulationRun,
     })
-  }, [calculationDecision, simulationRun])
+  }, [activeRangeMode, calculationDecision, simulationRun])
 
   const labels = useMemo(() => {
     if (!visibleDecision) return []
@@ -1055,9 +1128,14 @@ export default function Results() {
       worst: calc.worst || null,
       weights: calculationDecision.factors.map((factor) => factor.weight),
       factorNames: calculationDecision.factors.map((factor) => factor.name),
-      answers: calculationDecision.weightedAnswers(0.5) || [],
+      answers:
+        calculationDecision.answerValues(
+          activeRangeMode === Answer.rangeModes.MONTE_CARLO ?
+            Answer.rangeModes.MEDIAN
+          : activeRangeMode,
+        ) || [],
     }
-  }, [calculationDecision, calc])
+  }, [activeRangeMode, calculationDecision, calc])
 
   function handleSimulationRangeChange(factorName, endpoint, value) {
     setSubmittedSimulationRanges(null)
@@ -1075,22 +1153,36 @@ export default function Results() {
     if (!enabled) setSubmittedSimulationRanges(null)
   }
 
-  function handleRunSimulation() {
-    if (!simulationRangesAreValid) return
-    setSubmittedSimulationRanges(pendingOverrideFactorRanges)
+  function handleRangeModeChange(mode) {
+    setRangeMode(mode)
+    if (canUseSimulatedValues) setSubmittedSimulationRanges(null)
+  }
+
+  function handleRunCalculation() {
+    if (canUseSimulatedValues && !simulationRangesAreValid) return
+    if (canUseSimulatedValues)
+      setSubmittedSimulationRanges(pendingOverrideFactorRanges)
+    setActiveRangeMode(rangeMode)
     setSimulationRun((run) => run + 1)
   }
 
   const simulationControls =
-    canUseSimulatedValues ?
+    canConfigureCalculation ?
       <SimulationControls
         enabled={useSimulatedValues}
         onEnabledChange={handleUseSimulatedValuesChange}
+        requiresUnansweredRanges={canUseSimulatedValues}
         factors={nonFiniteFactors}
         ranges={simulationRanges}
         onRangeChange={handleSimulationRangeChange}
-        canRun={simulationRangesAreValid}
-        onRun={handleRunSimulation}
+        rangeMode={rangeMode}
+        activeRangeMode={activeRangeMode}
+        onRangeModeChange={handleRangeModeChange}
+        canRun={
+          !canUseSimulatedValues ||
+          (useSimulatedValues && simulationRangesAreValid)
+        }
+        onRun={handleRunCalculation}
       />
     : null
 
@@ -1201,7 +1293,9 @@ export default function Results() {
           <Button
             variant="outlined"
             onClick={() => setSimulationRun((run) => run + 1)}>
-            Rerun simulation
+            {activeRangeMode === Answer.rangeModes.MONTE_CARLO ?
+              "Rerun simulation"
+            : "Recalculate results"}
           </Button>
         </Box>
         {simulationControls}
