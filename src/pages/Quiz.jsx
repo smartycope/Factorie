@@ -476,11 +476,16 @@ export default function Quiz() {
       }))
     : null
   const hasDiscreteButtons = Boolean(discreteAnswerOptions)
-  const scale =
+  const factorAnswers =
     hasVisibleQuizCells ?
-      [decision.mins()[factorIdx], decision.maxs()[factorIdx]]
+      decision.answers
+        .filter((_, index) => !decision.options[index].hidden)
+        .map((row) => row[factorIdx])
+    : []
+  const scale =
+    hasVisibleQuizCells ? factorDefinition.practicalRange(factorAnswers)
     : [null, null]
-  const hasSliderScale = decision.factors[factorIdx].isFinite()
+  const hasSliderScale = factorDefinition?.isFinite(factorAnswers) ?? false
 
   function focusValueInput() {
     requestAnimationFrame(() => valueInputRef.current?.focus())

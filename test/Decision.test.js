@@ -455,19 +455,21 @@ test("uncertain copies fill only unanswered cells and identify needed ranges", (
   decision.setAnswer("Known", "Quality", 8)
   decision.setAnswer("Known", "Cost", 25)
 
-  assert.deepEqual(
-    decision.getPracticalNonFiniteFactors().map((factor) => factor.name),
-    ["Cost"],
-  )
+  assert.deepEqual(decision.getPracticalNonFiniteFactors(), [])
 
-  const simulated = decision.uncertainCopy({ Cost: [0, 100] })
+  assert.deepEqual(decision.factors[1].practicalRange([
+    decision.getAnswer("Known", "Cost"),
+    decision.getAnswer("Unknown", "Cost"),
+  ]), [0, 25])
+
+  const simulated = decision.uncertainCopy()
   assert.deepEqual(
     simulated.getAnswer("Unknown", "Quality").serialize(),
     [0, 10],
   )
   assert.deepEqual(
     simulated.getAnswer("Unknown", "Cost").serialize(),
-    [0, 100],
+    [0, 25],
   )
   assert.deepEqual(
     simulated.getAnswer("Known", "Cost").serialize(),
@@ -475,7 +477,7 @@ test("uncertain copies fill only unanswered cells and identify needed ranges", (
   )
   assert.deepEqual(simulated.answerValues(Answer.rangeModes.HIGH), [
     [8, 25],
-    [10, 100],
+    [10, 25],
   ])
   assert.deepEqual(simulated.answerValues(Answer.rangeModes.LOW), [
     [8, 25],
@@ -487,6 +489,38 @@ test("uncertain copies fill only unanswered cells and identify needed ranges", (
   decision.setAnswer("Unknown", "Cost", 40)
   assert.deepEqual(decision.getPracticalNonFiniteFactors(), [])
 })
+
+test.each([
+  ["bounded minimum and ranged answer", 0, null, [[4, 5]], [0, 5], true],
+  ["bounded maximum and ranged answer", null, 10, [[4, 5]], [4, 10], true],
+  ["unbounded factor and ranged answer", null, null, [[4, 5]], [4, 5], true],
+  ["unbounded factor and point answer", null, null, [[5, 5]], [5, 5], false],
+  [
+    "unbounded factor and multiple answers",
+    null,
+    null,
+    [[4, 5], [3, 3]],
+    [3, 5],
+    true,
+  ],
+])(
+  "practical factor range: %s",
+  (_description, min, max, answerRanges, expectedRange, expectedFinite) => {
+    const factor = new Factor({
+      name: "Factor",
+      optimal: Infinity,
+      min,
+      max,
+    })
+    const answers = answerRanges.map(
+      ([answerMin, answerMax]) =>
+        new Answer(answerMin, answerMax, false, factor),
+    )
+
+    assert.deepEqual(factor.practicalRange(answers), expectedRange)
+    assert.equal(factor.isFinite(answers), expectedFinite)
+  },
+)
 
 test("Min and Max optimals rank the lowest and highest answers as best", () => {
   const decision = new Decision("Directions")

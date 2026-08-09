@@ -46,11 +46,37 @@ export default class Factor {
     return new Factor({ ...factor, optimal })
   }
 
-  isFinite() {
+  practicalRange(answers = []) {
+    const answerMins = answers
+      .map((answer) => answer?.min)
+      .filter(Number.isFinite)
+    const answerMaxs = answers
+      .map((answer) => answer?.max)
+      .filter(Number.isFinite)
+
+    if (Number.isFinite(this.optimal)) {
+      answerMins.push(this.optimal)
+      answerMaxs.push(this.optimal)
+    }
+
+    const min =
+      Number.isFinite(this.min) ? this.min
+      : answerMins.length ? Math.min(...answerMins)
+      : null
+    const max =
+      Number.isFinite(this.max) ? this.max
+      : answerMaxs.length ? Math.max(...answerMaxs)
+      : null
+
+    return [min, max]
+  }
+
+  isFinite(answers = []) {
+    const [min, max] = this.practicalRange(answers)
     return (
-      Number.isFinite(this.min) &&
-      Number.isFinite(this.max) &&
-      this.min < this.max
+      Number.isFinite(min) &&
+      Number.isFinite(max) &&
+      min < max
     )
   }
 

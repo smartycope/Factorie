@@ -383,12 +383,15 @@ export default class Decision {
       .map((option, index) => (option.hidden ? null : index))
       .filter((index) => index !== null)
     return this.factors.filter(
-      (factor, factorIndex) =>
-        !factor.isFinite() &&
-        visibleOptionIndexes.some(
-          (optionIndex) =>
-            !this.answers[optionIndex][factorIndex].isAnswered(),
-        ),
+      (factor, factorIndex) => {
+        const answers = visibleOptionIndexes.map(
+          (optionIndex) => this.answers[optionIndex][factorIndex],
+        )
+        return (
+          !factor.isFinite(answers) &&
+          answers.some((answer) => !answer.isAnswered())
+        )
+      },
     )
   }
 
@@ -402,8 +405,13 @@ export default class Decision {
     // Override the ranges of specific factors
     copy.factors.forEach((factor, factorIndex) => {
       const [overrideMin, overrideMax] = overrideFactorRanges[factor.name] ?? []
-      const min = overrideMin ?? factor.min
-      const max = overrideMax ?? factor.max
+      const visibleAnswers = copy.answers
+        .filter((_, optionIndex) => !copy.options[optionIndex].hidden)
+        .map((row) => row[factorIndex])
+      const [practicalMin, practicalMax] =
+        factor.practicalRange(visibleAnswers)
+      const min = overrideMin ?? practicalMin
+      const max = overrideMax ?? practicalMax
       copy.answers.forEach((row, optionIndex) => {
         if (copy.options[optionIndex].hidden) return
         const ans = row[factorIndex]
@@ -471,29 +479,17 @@ export default class Decision {
   }
 
   mins() {
-    const optimals = this.optimals()
-    return this.factors.map((factor, i) => {
-      if (factor.min != null) return factor.min
-
-      const values = this.answers
-        .map((row) => row[i]?.min)
-        .filter(Number.isFinite)
-      if (Number.isFinite(optimals[i])) values.push(optimals[i])
-      return values.length ? Math.min(...values) : null
-    })
+    return this.factors.map(
+      (factor, factorIndex) =>
+        factor.practicalRange(this.answers.map((row) => row[factorIndex]))[0],
+    )
   }
 
   maxs() {
-    const optimals = this.optimals()
-    return this.factors.map((factor, i) => {
-      if (factor.max != null) return factor.max
-
-      const values = this.answers
-        .map((row) => row[i]?.max)
-        .filter(Number.isFinite)
-      if (Number.isFinite(optimals[i])) values.push(optimals[i])
-      return values.length ? Math.max(...values) : null
-    })
+    return this.factors.map(
+      (factor, factorIndex) =>
+        factor.practicalRange(this.answers.map((row) => row[factorIndex]))[1],
+    )
   }
 
   optimalNormalized() {
