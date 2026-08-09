@@ -50,8 +50,9 @@ export default function Landing() {
           I find it's helpful to start with an example. If you go to the{" "}
           <Link component={RouterLink} to="/dashboard">
             dashboard
-          </Link>{" "} page, there's a "Load Example" button. You can click that and poke around to see how things work.
-
+          </Link>{" "}
+          page, there's a "Load Example" button. You can click that and poke
+          around to see how things work.
           <br />
           Once you're ready to start, go back to the{" "}
           <Link component={RouterLink} to="/dashboard">
@@ -75,7 +76,9 @@ export default function Landing() {
           <Link component={RouterLink} to="/weights">
             fine tune weights
           </Link>{" "}
-          page, and it will help you break it down. If you have the "Show explanations" box above checked, there will be explanations to guide you through the process the whole way.
+          page, and it will help you break it down. If you have the "Show
+          explanations" box above checked, there will be explanations to guide
+          you through the process the whole way.
         </Typography>
       ),
     },
@@ -169,7 +172,9 @@ export default function Landing() {
           page, you'll find a button that lets you download a .xlsx template
           that you can fill out yourself using your favorite spreadsheet
           program. Fill out either fully or partially, and then upload it using
-          the import button to continue from there to see the results.
+          the import button to continue from there to see the results. You can also
+          save the decision as a spreadsheet in your Google drive, so you can sync
+          it with your other devices, or share with others.
           <br />
           You can also download a current decision in the same spreadsheet
           format.
@@ -184,6 +189,11 @@ export default function Landing() {
           browser. There's no server, no analytics, and no tracking. I{" "}
           <i>can't</i> see your data. Your data is stored in the browser: if you
           delete a decision, it's gone forever unless you've downloaded it.
+          <br />
+          The exception to this is if you use Google Drive integration, in which
+          case your data is synced with your Google Drive account. The data is
+          only shared with Google in that case (do with that what you will), and
+          I still can't see it.
         </Typography>
       ),
     },
@@ -205,7 +215,6 @@ export default function Landing() {
       </Typography>
       <Typography
         variant="caption"
-
         sx={{ fontStyle: "italic", mb: 1, color: "text.secondary" }}>
         {/* A tool to help you decide what to do when it's complicated */}
         Helping you live a more examined life
