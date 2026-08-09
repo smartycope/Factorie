@@ -1,4 +1,4 @@
-import * as XLSX from "xlsx"
+import XLSX from "xlsx-js-style"
 import Decision from "../models/Decision"
 
 const factorPackModules = import.meta.glob("../factor-packs/*.json", {
@@ -140,9 +140,10 @@ function spreadsheetColor(color) {
 }
 
 function cellBackgroundColor(sheet, address) {
-  const fill = sheet[address]?.s?.fill
+  const style = sheet[address]?.s
+  const fill = style?.fill ?? style
   const rgb = fill?.fgColor?.rgb ?? fill?.bgColor?.rgb
-  return typeof rgb === "string" && /^[0-9a-f]{8}$/i.test(rgb) ?
+  return typeof rgb === "string" && /^(?:[0-9a-f]{6}|[0-9a-f]{8})$/i.test(rgb) ?
       `#${rgb.slice(-6)}`
     : null
 }
@@ -348,7 +349,7 @@ export function parseDecisionSpreadsheet(
 ) {
   let workbook
   try {
-    workbook = XLSX.read(arrayBuffer, { type: "array" })
+    workbook = XLSX.read(arrayBuffer, { type: "array", cellStyles: true })
   } catch (error) {
     spreadsheetError(`Could not read this .xlsx file: ${error.message}`)
   }

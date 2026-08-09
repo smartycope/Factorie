@@ -32,6 +32,7 @@ import { getSuggestedUnitMinMax, SUGGESTED_UNITS } from "../suggestedUnits"
 
 import texts from "../assets/texts.json"
 import Stack from "@mui/material/Stack"
+import ColorSelector from "../components/ColorSelector"
 
 // TODO: a place (on this page? New page?) that asks the user what the optimal value is for each factor that doesn't have one set yet
 
@@ -638,19 +639,27 @@ export default function Factors() {
             <Box sx={{ mb: 1 }}></Box>
 
             <Box sx={{ mt: 1 }}>
-              <HelpOverlay helpText={texts.factors.name}>
-                <TextField
-                  label="Factor"
-                  value={addName}
-                  onChange={(e) => setAddName(e.target.value)}
-                  onKeyDown={(e) => {
-                    if (e.key === "Enter") handleUpsert()
-                  }}
-                  fullWidth
-                  size="small"
-                  sx={{ mb: 1 }}
+              <Box sx={{ display: "flex", alignItems: "center", gap: 1, mb: 1 }}>
+                <Box sx={{ flex: 1, minWidth: 0 }}>
+                  <HelpOverlay helpText={texts.factors.name}>
+                    <TextField
+                      label="Factor"
+                      value={addName}
+                      onChange={(e) => setAddName(e.target.value)}
+                      onKeyDown={(e) => {
+                        if (e.key === "Enter") handleUpsert()
+                      }}
+                      fullWidth
+                      size="small"
+                    />
+                  </HelpOverlay>
+                </Box>
+                <ColorSelector
+                  value={addColor}
+                  onChange={setAddColor}
+                  label="factor color"
                 />
-              </HelpOverlay>
+              </Box>
 
               <Box
                 sx={{
@@ -806,24 +815,6 @@ export default function Factors() {
                   </Box>
                 </Box>
               </HelpOverlay>
-
-              <Box sx={{ display: "flex", alignItems: "center", gap: 1, mb: 1 }}>
-                <TextField
-                  label="Color"
-                  type="color"
-                  value={addColor ?? "#FFFFFF"}
-                  onChange={(event) => setAddColor(event.target.value)}
-                  size="small"
-                  slotProps={{ htmlInput: { "aria-label": "Factor color" } }}
-                  sx={{ width: 130 }}
-                />
-                <Button
-                  size="small"
-                  disabled={!addColor}
-                  onClick={() => setAddColor(null)}>
-                  Clear color
-                </Button>
-              </Box>
 
               {addError && (
                 <Typography color="error" sx={{ mt: 1 }}>

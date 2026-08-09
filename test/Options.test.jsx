@@ -85,3 +85,25 @@ test("Options hides and deletes options through their page controls", async () =
     ])
   })
 })
+
+test("Options assigns and clears a color from the row palette", async () => {
+  seedDecision()
+  const user = userEvent.setup()
+  renderOptions()
+
+  await user.click(screen.getByRole("button", { name: "Choose Alpha color" }))
+  await user.click(
+    screen.getByRole("button", { name: "Set Alpha color to #DDEEFF" }),
+  )
+
+  await waitFor(() =>
+    expect(savedDecision().options[0].color).toBe("#DDEEFF"),
+  )
+
+  await user.click(screen.getByRole("button", { name: "Choose Alpha color" }))
+  await user.click(screen.getByRole("button", { name: "Clear Alpha color" }))
+
+  await waitFor(() =>
+    expect(savedDecision().options[0].color).toBeUndefined(),
+  )
+})

@@ -19,6 +19,7 @@ import TextField from "@mui/material/TextField"
 import Tooltip from "@mui/material/Tooltip"
 import Typography from "@mui/material/Typography"
 import { useDecisions } from "../contexts/UseDecisions"
+import ColorSelector from "../components/ColorSelector"
 
 function OptionsEditor({
   decision,
@@ -198,7 +199,12 @@ function OptionsEditor({
                     outlineOffset: -2,
                   }}
                   secondaryAction={
-                    <Box sx={{ display: "flex", alignItems: "center" }}>
+                    <Box sx={{ display: "flex", alignItems: "center", gap: 0.5 }}>
+                      <ColorSelector
+                        value={option.color}
+                        onChange={(color) => setOptionColor(index, color)}
+                        label={`${option.name} color`}
+                      />
                       <Tooltip
                         title={`${option.hidden ? "Show" : "Hide"} ${option.name}`}>
                         <IconButton
@@ -274,26 +280,6 @@ function OptionsEditor({
         fullWidth
         sx={{ mt: 3 }}
       />
-      <Box sx={{ display: "flex", alignItems: "center", gap: 1, mt: 2 }}>
-        <TextField
-          label={selectedOption ? `Color for ${selectedOption.name}` : "Option color"}
-          type="color"
-          value={selectedOption?.color ?? "#FFFFFF"}
-          onChange={(event) =>
-            setOptionColor(selectedOptionIndex, event.target.value)
-          }
-          disabled={!selectedOption}
-          size="small"
-          slotProps={{ htmlInput: { "aria-label": "Option color" } }}
-          sx={{ width: 190 }}
-        />
-        <Button
-          size="small"
-          disabled={!selectedOption?.color}
-          onClick={() => setOptionColor(selectedOptionIndex, null)}>
-          Clear color
-        </Button>
-      </Box>
     </>
   )
 }
