@@ -1,6 +1,7 @@
 import Answer from "./Answer.js"
 import Factor from "./Factor.js"
 import Option from "./Option.js"
+import { percentile } from "../utils/misc"
 
 // TODO: remove the threshold member (it doesn't do anything anymore)
 
@@ -705,10 +706,4 @@ export default class Decision {
     }
     return { best, worst }
   }
-}
-
-function percentile(arr, p) {
-  const a = arr.slice().sort((x, y) => x - y)
-  const idx = Math.floor((p / 100) * a.length)
-  return a[Math.max(0, Math.min(a.length - 1, idx))]
 }

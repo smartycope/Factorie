@@ -1,7 +1,5 @@
-// Does NOT check for "" or 0
-function nully(value) {
-  return value === undefined || value === null || isNaN(value)
-}
+import {nully} from "../utils/misc"
+
 export default class Answer {
   constructor(min = null, max = min, tentative = false) {
     this._min = min
