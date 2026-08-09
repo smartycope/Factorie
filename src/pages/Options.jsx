@@ -1,7 +1,25 @@
 import { Fragment, useState, useRef } from "react"
+import {
+  closestCenter,
+  DndContext,
+  KeyboardSensor,
+  PointerSensor,
+  useSensor,
+  useSensors,
+} from "@dnd-kit/core"
+import {
+  arrayMove,
+  SortableContext,
+  sortableKeyboardCoordinates,
+  useSortable,
+  verticalListSortingStrategy,
+} from "@dnd-kit/sortable"
+import { CSS } from "@dnd-kit/utilities"
 import AddIcon from "@mui/icons-material/Add"
 import DeleteIcon from "@mui/icons-material/Delete"
 import DragIndicatorIcon from "@mui/icons-material/DragIndicator"
+import KeyboardArrowDownIcon from "@mui/icons-material/KeyboardArrowDown"
+import KeyboardArrowUpIcon from "@mui/icons-material/KeyboardArrowUp"
 import VisibilityIcon from "@mui/icons-material/Visibility"
 import VisibilityOffIcon from "@mui/icons-material/VisibilityOff"
 import Box from "@mui/material/Box"
@@ -12,7 +30,6 @@ import IconButton from "@mui/material/IconButton"
 import List from "@mui/material/List"
 import ListItem from "@mui/material/ListItem"
 import ListItemButton from "@mui/material/ListItemButton"
-import ListItemIcon from "@mui/material/ListItemIcon"
 import ListItemText from "@mui/material/ListItemText"
 import Paper from "@mui/material/Paper"
 import TextField from "@mui/material/TextField"
@@ -20,6 +37,120 @@ import Tooltip from "@mui/material/Tooltip"
 import Typography from "@mui/material/Typography"
 import { useDecisions } from "../contexts/UseDecisions"
 import ColorSelector from "../components/ColorSelector"
+
+function SortableOption({
+  option,
+  index,
+  optionCount,
+  selected,
+  onSelect,
+  onMove,
+  onDelete,
+  onColorChange,
+  onHiddenChange,
+}) {
+  const {
+    attributes,
+    listeners,
+    setActivatorNodeRef,
+    setNodeRef,
+    transform,
+    transition,
+    isDragging,
+  } = useSortable({ id: option.name })
+
+  return (
+    <ListItem
+      ref={setNodeRef}
+      disablePadding
+      style={{ transform: CSS.Transform.toString(transform), transition }}
+      sx={{ zIndex: isDragging ? 1 : "auto", opacity: isDragging ? 0.55 : 1 }}
+      secondaryAction={
+        <Box sx={{ display: "flex", alignItems: "center", gap: 0.25 }}>
+          <Tooltip title={`Move ${option.name} up`}>
+            <span>
+              <IconButton
+                size="small"
+                aria-label={`Move ${option.name} up`}
+                disabled={index === 0}
+                onClick={(event) => {
+                  event.stopPropagation()
+                  onMove(index, index - 1)
+                }}>
+                <KeyboardArrowUpIcon />
+              </IconButton>
+            </span>
+          </Tooltip>
+          <Tooltip title={`Move ${option.name} down`}>
+            <span>
+              <IconButton
+                size="small"
+                aria-label={`Move ${option.name} down`}
+                disabled={index === optionCount - 1}
+                onClick={(event) => {
+                  event.stopPropagation()
+                  onMove(index, index + 1)
+                }}>
+                <KeyboardArrowDownIcon />
+              </IconButton>
+            </span>
+          </Tooltip>
+          <ColorSelector
+            value={option.color}
+            onChange={onColorChange}
+            label={`${option.name} color`}
+          />
+          <Tooltip title={`${option.hidden ? "Show" : "Hide"} ${option.name}`}>
+            <IconButton
+              aria-label={`${option.hidden ? "Show" : "Hide"} ${option.name}`}
+              onClick={(event) => {
+                event.stopPropagation()
+                onHiddenChange(!option.hidden)
+              }}>
+              {option.hidden ? <VisibilityOffIcon /> : <VisibilityIcon />}
+            </IconButton>
+          </Tooltip>
+          <Tooltip title={`Delete ${option.name}`}>
+            <IconButton
+              edge="end"
+              aria-label={`Delete ${option.name}`}
+              onClick={(event) => onDelete(event, index)}>
+              <DeleteIcon />
+            </IconButton>
+          </Tooltip>
+        </Box>
+      }>
+      <IconButton
+        ref={setActivatorNodeRef}
+        {...attributes}
+        {...listeners}
+        size="small"
+        aria-label={`Drag to reorder ${option.name}`}
+        title={`Drag to reorder ${option.name}`}
+        sx={{
+          ml: 0.75,
+          cursor: isDragging ? "grabbing" : "grab",
+          touchAction: "none",
+        }}>
+        <DragIndicatorIcon color="action" />
+      </IconButton>
+      <ListItemButton
+        selected={selected}
+        onClick={onSelect}
+        sx={{
+          pr: 27,
+          pl: 1,
+          opacity: option.hidden ? 0.6 : 1,
+          backgroundColor: option.color ?? undefined,
+        }}>
+        <ListItemText
+          primary={option.name}
+          secondary={option.notes ? option.notes.slice(0, 80) : "No notes"}
+        />
+      </ListItemButton>
+    </ListItem>
+  )
+}
 
 function OptionsEditor({
   decision,
@@ -32,10 +163,12 @@ function OptionsEditor({
   setOptionColor,
 }) {
   const [selectedOptionIndex, setSelectedOptionIndex] = useState(null)
-  const [draggedOptionIndex, setDraggedOptionIndex] = useState(null)
-  const [dragOverOptionIndex, setDragOverOptionIndex] = useState(null)
   const [optionName, setOptionName] = useState("")
   const nameBox = useRef()
+  const sensors = useSensors(
+    useSensor(PointerSensor),
+    useSensor(KeyboardSensor, { coordinateGetter: sortableKeyboardCoordinates }),
+  )
   const selectedOption =
     selectedOptionIndex == null ? null : decision.options[selectedOptionIndex]
   const normalizedName = optionName.trim()
@@ -77,42 +210,34 @@ function OptionsEditor({
     }
   }
 
-  function handleDragStart(event, index) {
-    setDraggedOptionIndex(index)
-    event.dataTransfer.setData("text/plain", String(index))
-    event.dataTransfer.effectAllowed = "move"
-  }
-
-  function handleDrop(event, targetIndex) {
-    event.preventDefault()
-    const transferredValue = event.dataTransfer.getData("text/plain")
-    const transferredIndex = Number(transferredValue)
-    const sourceIndex =
-      transferredValue !== "" && Number.isInteger(transferredIndex) ?
-        transferredIndex
-      : draggedOptionIndex
-
-    setDraggedOptionIndex(null)
-    setDragOverOptionIndex(null)
+  function moveOption(sourceIndex, targetIndex) {
     if (
-      sourceIndex == null ||
       sourceIndex < 0 ||
+      targetIndex < 0 ||
       sourceIndex >= decision.options.length ||
+      targetIndex >= decision.options.length ||
       sourceIndex === targetIndex
-    )
-      return
+    ) return
 
-    const order = decision.options.map((_, index) => index)
-    const [movedOptionIndex] = order.splice(sourceIndex, 1)
-    order.splice(targetIndex, 0, movedOptionIndex)
+    const order = arrayMove(
+      decision.options.map((_, index) => index),
+      sourceIndex,
+      targetIndex,
+    )
     reorderOptions(order)
     if (selectedOptionIndex != null)
       setSelectedOptionIndex(order.indexOf(selectedOptionIndex))
   }
 
-  function handleDragEnd() {
-    setDraggedOptionIndex(null)
-    setDragOverOptionIndex(null)
+  function handleDragEnd({ active, over }) {
+    if (!over || active.id === over.id) return
+    const sourceIndex = decision.options.findIndex(
+      (option) => option.name === active.id,
+    )
+    const targetIndex = decision.options.findIndex(
+      (option) => option.name === over.id,
+    )
+    moveOption(sourceIndex, targetIndex)
   }
 
   return (
@@ -177,86 +302,35 @@ function OptionsEditor({
           <Typography color="text.secondary" sx={{ px: 2, py: 4 }}>
             No options yet. Enter a name above to add your first one.
           </Typography>
-        : <List disablePadding aria-label="Decision options">
-            {decision.options.map((option, index) => (
-              <Fragment key={`${option.name}-${index}`}>
-                {index > 0 && <Divider component="li" />}
-                <ListItem
-                  disablePadding
-                  onDragOver={(event) => {
-                    event.preventDefault()
-                    event.dataTransfer.dropEffect = "move"
-                    setDragOverOptionIndex(index)
-                  }}
-                  onDrop={(event) => handleDrop(event, index)}
-                  sx={{
-                    outline:
-                      dragOverOptionIndex === index &&
-                      draggedOptionIndex !== index ?
-                        "2px solid"
-                      : "2px solid transparent",
-                    // outlineColor: "primary.main",
-                    outlineOffset: -2,
-                  }}
-                  secondaryAction={
-                    <Box sx={{ display: "flex", alignItems: "center", gap: 0.5 }}>
-                      <ColorSelector
-                        value={option.color}
-                        onChange={(color) => setOptionColor(index, color)}
-                        label={`${option.name} color`}
-                      />
-                      <Tooltip
-                        title={`${option.hidden ? "Show" : "Hide"} ${option.name}`}>
-                        <IconButton
-                          aria-label={`${option.hidden ? "Show" : "Hide"} ${option.name}`}
-                          onClick={(event) => {
-                            event.stopPropagation()
-                            setOptionHidden(index, !option.hidden)
-                          }}>
-                          {option.hidden ?
-                            <VisibilityOffIcon />
-                          : <VisibilityIcon />}
-                        </IconButton>
-                      </Tooltip>
-                      <Tooltip title={`Delete ${option.name}`}>
-                        <IconButton
-                          edge="end"
-                          aria-label={`Delete ${option.name}`}
-                          onClick={(event) => deleteOption(event, index)}>
-                          <DeleteIcon />
-                        </IconButton>
-                      </Tooltip>
-                    </Box>
-                  }>
-                  <ListItemButton
-                    selected={selectedOptionIndex === index}
-                    onClick={() => selectOption(index)}
-                    sx={{
-                      pr: 12,
-                      opacity: option.hidden ? 0.6 : 1,
-                      backgroundColor: option.color ?? undefined,
-                    }}>
-                    <ListItemIcon
-                      draggable
-                      title={`Drag to reorder ${option.name}`}
-                      onDragStart={(event) => handleDragStart(event, index)}
-                      onDragEnd={handleDragEnd}
-                      sx={{ minWidth: 32, cursor: "grab" }}>
-                      <DragIndicatorIcon color="action" />
-                    </ListItemIcon>
-                    <ListItemText
-                      primary={option.name}
-                      secondary={
-                        option.notes ?
-                          option.notes.slice(0, 80)
-                        : "No notes"
+        : <DndContext
+            sensors={sensors}
+            collisionDetection={closestCenter}
+            onDragEnd={handleDragEnd}>
+            <SortableContext
+              items={decision.options.map((option) => option.name)}
+              strategy={verticalListSortingStrategy}>
+              <List disablePadding aria-label="Decision options">
+                {decision.options.map((option, index) => (
+                  <Fragment key={option.name}>
+                    {index > 0 && <Divider component="li" />}
+                    <SortableOption
+                      option={option}
+                      index={index}
+                      optionCount={decision.options.length}
+                      selected={selectedOptionIndex === index}
+                      onSelect={() => selectOption(index)}
+                      onMove={moveOption}
+                      onDelete={deleteOption}
+                      onColorChange={(color) => setOptionColor(index, color)}
+                      onHiddenChange={(hidden) =>
+                        setOptionHidden(index, hidden)
                       }
                     />
-                  </ListItemButton>
-                </ListItem>
-              </Fragment>
-            ))}
-          </List>
+                  </Fragment>
+                ))}
+              </List>
+            </SortableContext>
+          </DndContext>
         }
       </Paper>
 

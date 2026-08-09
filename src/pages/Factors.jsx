@@ -1,4 +1,20 @@
 import React, { useCallback, useEffect, useMemo, useState } from "react"
+import {
+  closestCenter,
+  DndContext,
+  KeyboardSensor,
+  PointerSensor,
+  useSensor,
+  useSensors,
+} from "@dnd-kit/core"
+import {
+  arrayMove,
+  SortableContext,
+  sortableKeyboardCoordinates,
+  useSortable,
+  verticalListSortingStrategy,
+} from "@dnd-kit/sortable"
+import { CSS } from "@dnd-kit/utilities"
 import Box from "@mui/material/Box"
 import Typography from "@mui/material/Typography"
 import TextField from "@mui/material/TextField"
@@ -15,15 +31,15 @@ import DialogContent from "@mui/material/DialogContent"
 import DialogTitle from "@mui/material/DialogTitle"
 import DeleteIcon from "@mui/icons-material/Delete"
 import DragIndicatorIcon from "@mui/icons-material/DragIndicator"
+import KeyboardArrowDownIcon from "@mui/icons-material/KeyboardArrowDown"
+import KeyboardArrowUpIcon from "@mui/icons-material/KeyboardArrowUp"
+import VerticalAlignBottomIcon from "@mui/icons-material/VerticalAlignBottom"
+import VerticalAlignTopIcon from "@mui/icons-material/VerticalAlignTop"
 import CloseIcon from "@mui/icons-material/Close"
 import InputAdornment from "@mui/material/InputAdornment"
 // Select/MenuItem not needed anymore
 import Paper from "@mui/material/Paper"
-import Table from "@mui/material/Table"
-import TableBody from "@mui/material/TableBody"
-import TableCell from "@mui/material/TableCell"
-import TableHead from "@mui/material/TableHead"
-import TableRow from "@mui/material/TableRow"
+import Tooltip from "@mui/material/Tooltip"
 import { DataGrid } from "@mui/x-data-grid"
 import { useDecisions } from "../contexts/UseDecisions"
 import HelpOverlay from "../components/HelpOverlay"
@@ -89,11 +105,6 @@ function isFactorRowUnfinished(row, decision) {
   )
 }
 
-function missingCellSx(value) {
-  return {
-    backgroundColor: value ? "" : "rgba(247, 82, 82, 0.41)",
-  }
-}
 function FactorNameText({ value }) {
   const isUnnamed = !value
   return (
@@ -109,6 +120,90 @@ function FactorNameText({ value }) {
       }}>
       {isUnnamed ? "unnamed" : value}
     </Typography>
+  )
+}
+
+function SortableFactor({ factorIndex, name, position, count, onMove }) {
+  const {
+    attributes,
+    listeners,
+    setActivatorNodeRef,
+    setNodeRef,
+    transform,
+    transition,
+    isDragging,
+  } = useSortable({ id: factorIndex })
+
+  const moveButton = (label, targetPosition, disabled, icon) => (
+    <Tooltip title={label}>
+      <span>
+        <IconButton
+          size="small"
+          aria-label={label}
+          disabled={disabled}
+          onClick={() => onMove(position, targetPosition)}>
+          {icon}
+        </IconButton>
+      </span>
+    </Tooltip>
+  )
+
+  return (
+    <Paper
+      ref={setNodeRef}
+      variant="outlined"
+      style={{ transform: CSS.Transform.toString(transform), transition }}
+      sx={{
+        display: "flex",
+        alignItems: "center",
+        gap: 1,
+        p: 1,
+        zIndex: isDragging ? 1 : "auto",
+        opacity: isDragging ? 0.55 : 1,
+      }}>
+      <IconButton
+        ref={setActivatorNodeRef}
+        {...attributes}
+        {...listeners}
+        size="small"
+        aria-label={`Drag to reorder ${name}`}
+        title={`Drag to reorder ${name}`}
+        sx={{
+          cursor: isDragging ? "grabbing" : "grab",
+          touchAction: "none",
+        }}>
+        <DragIndicatorIcon color="action" />
+      </IconButton>
+      <Box sx={{ flex: 1, minWidth: 0 }}>
+        <FactorNameText value={name} />
+      </Box>
+      <Box sx={{ display: "flex", alignItems: "center" }}>
+        {moveButton(
+          `Move ${name} to top`,
+          0,
+          position === 0,
+          <VerticalAlignTopIcon />,
+        )}
+        {moveButton(
+          `Move ${name} up`,
+          position - 1,
+          position === 0,
+          <KeyboardArrowUpIcon />,
+        )}
+        {moveButton(
+          `Move ${name} down`,
+          position + 1,
+          position === count - 1,
+          <KeyboardArrowDownIcon />,
+        )}
+        {moveButton(
+          `Move ${name} to bottom`,
+          count - 1,
+          position === count - 1,
+          <VerticalAlignBottomIcon />,
+        )}
+      </Box>
+    </Paper>
   )
 }
 
@@ -143,104 +238,6 @@ const factorsDataGridSx = (theme) => ({
     backgroundColor: theme.palette.action.hover,
   },
 })
-
-function FactorsTable({
-  decision,
-  editFactorIndex,
-  setEditFactorIndex,
-  handleRemove,
-  onDragStart,
-  onDragOver,
-  onDropRow,
-  showOnlyUnfinished,
-  factorSearch,
-}) {
-  const rows = factorRows(decision).filter(
-    (row) =>
-      factorMatchesSearch(row.name, factorSearch) &&
-      (!showOnlyUnfinished || isFactorRowUnfinished(row, decision)),
-  )
-
-  return (
-    <Paper sx={{ mt: 1 }}>
-      <Table size="small">
-        <TableHead>
-          <TableRow>
-            <TableCell
-              sx={{
-                position: "sticky",
-                left: 0,
-                zIndex: 2,
-                backgroundColor: "rgba(15, 23, 42, 0.1)",
-              }}>
-              Name
-            </TableCell>
-            <TableCell>Unit</TableCell>
-            <TableCell>Optimal</TableCell>
-            <TableCell>Weight</TableCell>
-            <TableCell>Min</TableCell>
-            <TableCell>Max</TableCell>
-            <TableCell>Delete</TableCell>
-          </TableRow>
-        </TableHead>
-        <TableBody>
-          {rows.map((row) => (
-            <TableRow
-              key={`${row.name}-${row.index}`}
-              draggable
-              hover
-              selected={editFactorIndex === row.index}
-              onClick={() => setEditFactorIndex(row.index)}
-              onDragStart={(e) => onDragStart(e, row.index)}
-              onDragOver={onDragOver}
-              onDrop={(e) => onDropRow(e, row.index)}
-              sx={{ cursor: "pointer" }}>
-              <TableCell
-                sx={{
-                  ...missingCellSx(row.name),
-                  position: "sticky",
-                  left: 0,
-                  zIndex: 1,
-                }}>
-                <FactorNameText value={row.name} />
-              </TableCell>
-              <TableCell sx={missingCellSx(row.unit)}>{row.unit}</TableCell>
-              <TableCell sx={missingCellSx(row.optimal !== null)}>
-                {row.optimal === -Infinity ?
-                  "min"
-                : row.optimal === Infinity ?
-                  "max"
-                : (row.optimal ?? "")}
-              </TableCell>
-              <TableCell>
-                {Number.isFinite(row.weight) ?
-                  (row.weight * 100).toFixed(0) + "%"
-                : ""}
-              </TableCell>
-              <TableCell>
-                {row.min == null ? "calculated" : String(row.min)}
-              </TableCell>
-              <TableCell>
-                {row.max == null ? "calculated" : String(row.max)}
-              </TableCell>
-              <TableCell>
-                <IconButton
-                  size="small"
-                  onClick={(e) => {
-                    e.stopPropagation()
-                    handleRemove(row.index)
-                  }}
-                  title="Delete">
-                  <DeleteIcon fontSize="small" />
-                </IconButton>
-              </TableCell>
-            </TableRow>
-          ))}
-        </TableBody>
-      </Table>
-    </Paper>
-  )
-}
 
 const FactorsDataGrid = React.memo(function FactorsDataGrid({
   decision,
@@ -422,7 +419,10 @@ export default function Factors() {
   const [unitMenuAnchorEl, setUnitMenuAnchorEl] = useState(null)
   const [reorderDialogOpen, setReorderDialogOpen] = useState(false)
   const [factorOrder, setFactorOrder] = useState([])
-  const [draggedFactorIndex, setDraggedFactorIndex] = useState(null)
+  const reorderSensors = useSensors(
+    useSensor(PointerSensor),
+    useSensor(KeyboardSensor, { coordinateGetter: sortableKeyboardCoordinates }),
+  )
   const unitMenuOpen = Boolean(unitMenuAnchorEl)
 
   const resetFormFields = useCallback(() => {
@@ -581,42 +581,27 @@ export default function Factors() {
 
   function openReorderDialog() {
     setFactorOrder(decision.factors.map((_, index) => index))
-    setDraggedFactorIndex(null)
     setReorderDialogOpen(true)
   }
 
   function closeReorderDialog() {
     setReorderDialogOpen(false)
-    setDraggedFactorIndex(null)
   }
 
-  function handleFactorDragStart(event, factorIndex) {
-    setDraggedFactorIndex(factorIndex)
-    event.dataTransfer.setData("text/plain", String(factorIndex))
-    event.dataTransfer.effectAllowed = "move"
+  function moveFactor(from, to) {
+    if (
+      from < 0 ||
+      to < 0 ||
+      from >= factorOrder.length ||
+      to >= factorOrder.length ||
+      from === to
+    ) return
+    setFactorOrder((currentOrder) => arrayMove(currentOrder, from, to))
   }
 
-  function handleFactorDrop(event, targetFactorIndex) {
-    event.preventDefault()
-    const transferredValue = event.dataTransfer.getData("text/plain")
-    const transferredIndex = Number(transferredValue)
-    const sourceFactorIndex =
-      transferredValue !== "" && Number.isInteger(transferredIndex) ?
-        transferredIndex
-      : draggedFactorIndex
-    if (sourceFactorIndex == null || sourceFactorIndex === targetFactorIndex)
-      return
-
-    setFactorOrder((currentOrder) => {
-      const from = currentOrder.indexOf(sourceFactorIndex)
-      const to = currentOrder.indexOf(targetFactorIndex)
-      if (from === -1 || to === -1) return currentOrder
-      const nextOrder = [...currentOrder]
-      const [movedFactor] = nextOrder.splice(from, 1)
-      nextOrder.splice(to, 0, movedFactor)
-      return nextOrder
-    })
-    setDraggedFactorIndex(null)
+  function handleFactorDragEnd({ active, over }) {
+    if (!over || active.id === over.id) return
+    moveFactor(factorOrder.indexOf(active.id), factorOrder.indexOf(over.id))
   }
 
   function applyFactorOrder() {
@@ -961,38 +946,31 @@ export default function Factors() {
           <DialogTitle>Reorder factors</DialogTitle>
           <DialogContent>
             <Typography color="text.secondary" sx={{ mb: 2 }}>
-              Drag factors into the order you want.
+              Drag factors into the order you want, or use the move buttons.
             </Typography>
-            <Stack spacing={1}>
-              {factorOrder.map((factorIndex) => (
-                <Paper
-                  key={factorIndex}
-                  draggable
-                  onDragStart={(event) =>
-                    handleFactorDragStart(event, factorIndex)
-                  }
-                  onDragOver={(event) => {
-                    event.preventDefault()
-                    event.dataTransfer.dropEffect = "move"
-                  }}
-                  onDrop={(event) => handleFactorDrop(event, factorIndex)}
-                  onDragEnd={() => setDraggedFactorIndex(null)}
-                  variant="outlined"
-                  sx={{
-                    display: "flex",
-                    alignItems: "center",
-                    gap: 1,
-                    p: 1.5,
-                    cursor: "grab",
-                    opacity: draggedFactorIndex === factorIndex ? 0.5 : 1,
-                  }}>
-                  <DragIndicatorIcon color="action" />
-                  <FactorNameText
-                    value={factorNameText(decision.factors[factorIndex]?.name)}
-                  />
-                </Paper>
-              ))}
-            </Stack>
+            <DndContext
+              sensors={reorderSensors}
+              collisionDetection={closestCenter}
+              onDragEnd={handleFactorDragEnd}>
+              <SortableContext
+                items={factorOrder}
+                strategy={verticalListSortingStrategy}>
+                <Stack spacing={1}>
+                  {factorOrder.map((factorIndex, position) => (
+                    <SortableFactor
+                      key={factorIndex}
+                      factorIndex={factorIndex}
+                      name={factorNameText(
+                        decision.factors[factorIndex]?.name,
+                      )}
+                      position={position}
+                      count={factorOrder.length}
+                      onMove={moveFactor}
+                    />
+                  ))}
+                </Stack>
+              </SortableContext>
+            </DndContext>
           </DialogContent>
           <DialogActions>
             <Button onClick={closeReorderDialog}>Cancel</Button>

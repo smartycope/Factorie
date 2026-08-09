@@ -107,3 +107,18 @@ test("Options assigns and clears a color from the row palette", async () => {
     expect(savedDecision().options[0].color).toBeUndefined(),
   )
 })
+
+test("Options moves an option with the row controls", async () => {
+  seedDecision()
+  const user = userEvent.setup()
+  renderOptions()
+
+  await user.click(screen.getByRole("button", { name: "Move Alpha down" }))
+
+  await waitFor(() =>
+    expect(savedDecision().options.map((option) => option.name)).toEqual([
+      "Bravo",
+      "Alpha",
+    ]),
+  )
+})
