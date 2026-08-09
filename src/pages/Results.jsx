@@ -1389,7 +1389,7 @@ export default function Results() {
         Not all answers are valid! Either you haven't answered some questions
         yet, or you have an answer that's out of range of the min/max of it's
         factor. Head over to the{" "}
-        <Link component={RouterLink} to="/quiz">
+        <Link component={RouterLink} to="/quiz?answer=invalid">
           Quiz
         </Link>{" "}
         page and fill in any red you see.

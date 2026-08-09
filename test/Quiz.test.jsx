@@ -1,13 +1,16 @@
 import { cleanup, render, screen, within } from "@testing-library/react"
 import userEvent from "@testing-library/user-event"
-import { afterEach, beforeEach, expect, test } from "vitest"
+import { afterEach, beforeEach, expect, test, vi } from "vitest"
 import { ThemeProvider, createTheme } from "@mui/material/styles"
-import { MemoryRouter } from "react-router-dom"
+import { MemoryRouter, Route, Routes } from "react-router-dom"
 
 import { DecisionsProvider } from "../src/contexts/DecisionsContext.jsx"
 import Answer from "../src/models/Answer.js"
 import Decision from "../src/models/Decision.js"
 import Quiz from "../src/pages/Quiz.jsx"
+import Results from "../src/pages/Results.jsx"
+
+vi.mock("react-plotly.js", () => ({ default: () => null }))
 
 const STORAGE_KEY = "factorie.decisions"
 
@@ -34,9 +37,10 @@ function quizFilterDecision() {
   return decision
 }
 
-function renderQuiz() {
+function renderQuiz(initialEntries = ["/quiz"]) {
   return render(
     <MemoryRouter
+      initialEntries={initialEntries}
       future={{ v7_startTransition: true, v7_relativeSplatPath: true }}>
       <ThemeProvider theme={createTheme()}>
         <DecisionsProvider>
@@ -86,4 +90,51 @@ test("Quiz answer filters combine unanswered, tentative, range, and invalid stat
   table = screen.getByRole("table", { hidden: true })
   expect(within(table).getByText("Unanswered factor")).toBeTruthy()
   expect(within(table).queryByText("Invalid factor")).toBeNull()
+})
+
+test("Quiz loads all persisted filters from query parameters", () => {
+  renderQuiz([
+    "/quiz?option=Choice&answer=invalid&factor=Invalid%20factor",
+  ])
+
+  expect(screen.getByRole("combobox", { name: "Focus option" }).textContent).toBe(
+    "Choice",
+  )
+  expect(screen.getByRole("textbox", { name: "Search by factor" }).value).toBe(
+    "Invalid factor",
+  )
+  expect(screen.getByRole("button", { name: /Answer filters/ }).textContent).toContain(
+    "(1)",
+  )
+  const table = screen.getByRole("table", { hidden: true })
+  expect(within(table).getByText("Invalid factor")).toBeTruthy()
+  expect(within(table).queryByText("Range factor")).toBeNull()
+})
+
+test("Results links invalid answers to an invalid-only Quiz view", async () => {
+  const user = userEvent.setup()
+  render(
+    <MemoryRouter
+      initialEntries={["/results"]}
+      future={{ v7_startTransition: true, v7_relativeSplatPath: true }}>
+      <ThemeProvider theme={createTheme()}>
+        <DecisionsProvider>
+          <Routes>
+            <Route path="results" element={<Results />} />
+            <Route path="quiz" element={<Quiz />} />
+          </Routes>
+        </DecisionsProvider>
+      </ThemeProvider>
+    </MemoryRouter>,
+  )
+
+  await user.click(screen.getByRole("link", { name: "Quiz" }))
+
+  expect(screen.getByRole("button", { name: /Answer filters/ }).textContent).toContain(
+    "(1)",
+  )
+  const table = screen.getByRole("table", { hidden: true })
+  expect(within(table).getByText("Invalid factor")).toBeTruthy()
+  expect(within(table).queryByText("Unanswered factor")).toBeNull()
+  expect(within(table).queryByText("Range factor")).toBeNull()
 })

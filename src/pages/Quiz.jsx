@@ -28,7 +28,7 @@ import CloseIcon from "@mui/icons-material/Close"
 import FilterListIcon from "@mui/icons-material/FilterList"
 import { TextField } from "@mui/material"
 import Answer from "../models/Answer"
-import { Link } from "react-router-dom"
+import { Link, useSearchParams } from "react-router-dom"
 
 const TRANSPOSED = true
 const ALL_OPTIONS = ""
@@ -38,11 +38,9 @@ const ANSWER_FILTERS = [
   { value: "range", label: "Range" },
   { value: "invalid", label: "Invalid" },
 ]
-const persistedQuizFilters = {
-  focusedOption: ALL_OPTIONS,
-  answerFilters: [],
-  factorSearch: "",
-}
+const ANSWER_FILTER_VALUES = new Set(
+  ANSWER_FILTERS.map(({ value }) => value),
+)
 
 // TODO: negative values don't work well with this right now
 // function cloneDecision(decision) {
@@ -440,20 +438,20 @@ function TransposedAnswersTable({
 
 export default function Quiz() {
   const { decision, modifyCurrentDecision: updateDecision } = useDecisions()
+  const [searchParams, setSearchParams] = useSearchParams()
 
   // UI state (unconditional hooks)
   const [precise, setPrecise] = useState(false)
   const [unsure, setUnsure] = useState(null)
-  const [focusedOption, setFocusedOption] = useState(
-    persistedQuizFilters.focusedOption,
-  )
-  const [answerFilters, setAnswerFilters] = useState(
-    persistedQuizFilters.answerFilters,
-  )
+  const focusedOption = searchParams.get("option") ?? ALL_OPTIONS
+  const answerFilters = searchParams
+    .getAll("answer")
+    .filter(
+      (filter, index, filters) =>
+        ANSWER_FILTER_VALUES.has(filter) && filters.indexOf(filter) === index,
+    )
   const [answerFilterAnchorEl, setAnswerFilterAnchorEl] = useState(null)
-  const [factorSearch, setFactorSearch] = useState(
-    persistedQuizFilters.factorSearch,
-  )
+  const factorSearch = searchParams.get("factor") ?? ""
   const [selectedCell, setSelectedCell] = useState([0, 0])
   const [history, setHistory] = useState([])
   // The value of the response given by the user
@@ -804,8 +802,11 @@ export default function Quiz() {
   }
 
   function changeAnswerFilters(nextAnswerFilters) {
-    setAnswerFilters(nextAnswerFilters)
-    persistedQuizFilters.answerFilters = nextAnswerFilters
+    const nextSearchParams = new URLSearchParams(searchParams)
+    nextSearchParams.delete("answer")
+    for (const filter of nextAnswerFilters)
+      nextSearchParams.append("answer", filter)
+    setSearchParams(nextSearchParams, { replace: true })
     changeFilters(nextAnswerFilters, factorSearch, activeFocusedOption, true)
   }
 
@@ -823,8 +824,10 @@ export default function Quiz() {
   }
 
   function changeFactorSearch(nextFactorSearch, dontFocus = false) {
-    setFactorSearch(nextFactorSearch)
-    persistedQuizFilters.factorSearch = nextFactorSearch
+    const nextSearchParams = new URLSearchParams(searchParams)
+    if (nextFactorSearch) nextSearchParams.set("factor", nextFactorSearch)
+    else nextSearchParams.delete("factor")
+    setSearchParams(nextSearchParams, { replace: true })
     changeFilters(
       answerFilters,
       nextFactorSearch,
@@ -835,8 +838,10 @@ export default function Quiz() {
 
   function handleFocusedOptionChange(event) {
     const nextFocusedOption = event.target.value
-    setFocusedOption(nextFocusedOption)
-    persistedQuizFilters.focusedOption = nextFocusedOption
+    const nextSearchParams = new URLSearchParams(searchParams)
+    if (nextFocusedOption) nextSearchParams.set("option", nextFocusedOption)
+    else nextSearchParams.delete("option")
+    setSearchParams(nextSearchParams, { replace: true })
     setHistory([])
     changeFilters(answerFilters, factorSearch, nextFocusedOption)
   }
