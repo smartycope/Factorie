@@ -50,15 +50,17 @@ function copyAnswer(answer) {
 }
 
 function numberOrNull(value) {
-  const normalized = String(value).replaceAll(",", "").replaceAll("$", "").trim()
+  const normalized = String(value)
+    .replaceAll(",", "")
+    .replaceAll("$", "")
+    .trim()
   if (normalized === "") return null
   const parsed = Number(normalized)
   return Number.isFinite(parsed) ? parsed : null
 }
 
 function updateAnswerMin(answer, min) {
-  if (min === null)
-    return answer.copy({ min: null, max: null })
+  if (min === null) return answer.copy({ min: null, max: null })
   return answer.copy({
     min,
     max: Number.isFinite(answer.max) ? answer.max : min,
@@ -66,8 +68,7 @@ function updateAnswerMin(answer, min) {
 }
 
 function updateAnswerMax(answer, max) {
-  if (max === null)
-    return answer.copy({ min: null, max: null })
+  if (max === null) return answer.copy({ min: null, max: null })
   return answer.copy({
     min: Number.isFinite(answer.min) ? answer.min : max,
     max,
@@ -160,9 +161,7 @@ function factorIndexesForMode(
     .filter(
       (index) =>
         (!query ||
-          String(decision.factors[index].name)
-            .toLowerCase()
-            .includes(query)) &&
+          String(decision.factors[index].name).toLowerCase().includes(query)) &&
         (!onlyShowUnanswered ||
           (focusedOptionIndex === -1 ?
             factorHasProblem(decision, index)
@@ -198,10 +197,7 @@ function AnswersTable({
     )
   const selectedPageKey = `${selectedOptionPosition}-${rowsPerPage}`
   const previousSelectedPageKey = useRef(null)
-  const maxPage = Math.max(
-    0,
-    Math.ceil(optionIndexes.length / rowsPerPage) - 1,
-  )
+  const maxPage = Math.max(0, Math.ceil(optionIndexes.length / rowsPerPage) - 1)
   const safePage = Math.min(page, maxPage)
   const start = safePage * rowsPerPage
   const visibleOptionIndexes = optionIndexes.slice(start, start + rowsPerPage)
@@ -224,7 +220,10 @@ function AnswersTable({
               {visibleFactorIndexes.map((factorIndex) => (
                 <TableCell
                   key={factorIndex}
-                  sx={{ backgroundColor: decision.factors[factorIndex].color ?? undefined }}>
+                  sx={{
+                    backgroundColor:
+                      decision.factors[factorIndex].color ?? undefined,
+                  }}>
                   {decision.factors[factorIndex].name}
                 </TableCell>
               ))}
@@ -235,7 +234,10 @@ function AnswersTable({
               const opt = decision.options[r].name
               return (
                 <TableRow key={r}>
-                  <TableCell sx={{ backgroundColor: decision.options[r].color ?? undefined }}>
+                  <TableCell
+                    sx={{
+                      backgroundColor: decision.options[r].color ?? undefined,
+                    }}>
                     {opt}
                   </TableCell>
                   {visibleFactorIndexes.map((c) => {
@@ -305,13 +307,13 @@ function TransposedAnswersTable({
     setPage(selectedPage)
   }, [selectedFactorPosition, selectedPage, selectedPageKey])
 
-//   Why did I want this??
-//   useEffect(() => {
-//     activeCellRef.current?.scrollIntoView({
-//       block: "nearest",
-//       inline: "nearest",
-//     })
-//   }, [optionIdx, factorIdx, safePage, optionIndexes, factorIndexes])
+  //   Why did I want this??
+  //   useEffect(() => {
+  //     activeCellRef.current?.scrollIntoView({
+  //       block: "nearest",
+  //       inline: "nearest",
+  //     })
+  //   }, [optionIdx, factorIdx, safePage, optionIndexes, factorIndexes])
 
   return (
     <>
@@ -348,7 +350,8 @@ function TransposedAnswersTable({
                         position: "sticky",
                         left: 0,
                         zIndex: 2,
-                        backgroundColor: decision.factors[c].color ?? "background.paper",
+                        backgroundColor:
+                          decision.factors[c].color ?? "background.paper",
                       }}>
                       {decision.factors[c].name}
                     </TableCell>
@@ -395,7 +398,7 @@ function TransposedAnswersTable({
 }
 
 export default function Quiz() {
-  const { decision, modifyCurrentDecision:updateDecision } = useDecisions()
+  const { decision, modifyCurrentDecision: updateDecision } = useDecisions()
 
   // UI state (unconditional hooks)
   const [precise, setPrecise] = useState(false)
@@ -465,7 +468,8 @@ export default function Quiz() {
   const valueLabel = unit || "Value"
   const minLabel = unit ? `Min: ${unit}` : "Min"
   const maxLabel = unit ? `Max: ${unit}` : "Max"
-  const discreteAnswerOptions = factorDefinition?.isDiscrete() ?
+  const discreteAnswerOptions =
+    factorDefinition?.isDiscrete() ?
       factorDefinition.discreteValues().map(({ number, name }) => ({
         label: name,
         value: number,
@@ -493,7 +497,12 @@ export default function Quiz() {
     setResp(answer)
   }
 
-  function changeCell(newCell, sourceDecision = decision, remember = true, dontFocus = false) {
+  function changeCell(
+    newCell,
+    sourceDecision = decision,
+    remember = true,
+    dontFocus = false,
+  ) {
     if (!dontFocus) {
       focusValueInput()
     }
@@ -507,10 +516,7 @@ export default function Quiz() {
       newFactorIdx >= sourceDecision.factors.length
     )
       return
-    if (
-      remember &&
-      (newOptionIdx !== optionIdx || newFactorIdx !== factorIdx)
-    )
+    if (remember && (newOptionIdx !== optionIdx || newFactorIdx !== factorIdx))
       setHistory((previous) => [...previous, [optionIdx, factorIdx]])
     const newValue = copyAnswer(
       sourceDecision?.getAnswer(newOptionIdx, newFactorIdx),
@@ -588,7 +594,6 @@ export default function Quiz() {
     ]
   }
 
-
   function handleDeleteAll() {
     if (confirm("Are you sure you want to delete all answers?")) {
       const updatedDecision = updateDecision((d) => d.clearAllAnswers())
@@ -621,19 +626,13 @@ export default function Quiz() {
   }
 
   function handleDiscreteAnswer(answerValue) {
-    handleSubmit(
-      value.copy({ min: answerValue, max: answerValue }),
-    )
+    handleSubmit(value.copy({ min: answerValue, max: answerValue }))
   }
 
   function handleSkip() {
     const [ignoredFactors, ignoredOptions] = ignoredIndexes()
     changeCell(
-      getNextUnanswered(
-        [optionIdx, factorIdx],
-        ignoredFactors,
-        ignoredOptions,
-      ),
+      getNextUnanswered([optionIdx, factorIdx], ignoredFactors, ignoredOptions),
     )
   }
 
@@ -660,12 +659,7 @@ export default function Quiz() {
 
   useEffect(() => {
     function handleKeyDown(event) {
-      if (
-        event.key !== "Enter" ||
-        event.repeat ||
-        event.isComposing
-      )
-        return
+      if (event.key !== "Enter" || event.repeat || event.isComposing) return
       event.preventDefault()
       submitOnEnter()
     }
@@ -708,9 +702,7 @@ export default function Quiz() {
     const isChecked = event.target.checked
     setUnsure(isChecked)
     if (isChecked && !value.isRanged() && hasSliderScale)
-      setAnswerResponse(
-        value.copy({ min: scale[0], max: scale[1] }),
-      )
+      setAnswerResponse(value.copy({ min: scale[0], max: scale[1] }))
   }
 
   function handleTentativeChange(event) {
@@ -722,7 +714,7 @@ export default function Quiz() {
     nextOnlyShowUnanswered,
     nextFactorSearch,
     nextFocusedOption = activeFocusedOption,
-    dontFocus = false
+    dontFocus = false,
   ) {
     const nextOptionIndexes = optionIndexesForMode(
       decision,
@@ -764,7 +756,12 @@ export default function Quiz() {
   function changeFactorSearch(nextFactorSearch, dontFocus = false) {
     setFactorSearch(nextFactorSearch)
     persistedQuizFilters.factorSearch = nextFactorSearch
-    changeFilters(onlyShowUnanswered, nextFactorSearch, activeFocusedOption, dontFocus)
+    changeFilters(
+      onlyShowUnanswered,
+      nextFactorSearch,
+      activeFocusedOption,
+      dontFocus,
+    )
   }
 
   function handleFocusedOptionChange(event) {
@@ -776,9 +773,7 @@ export default function Quiz() {
   }
 
   const isRespInValid =
-    hasVisibleQuizCells ?
-      Boolean(value.isInvalid(true))
-    : false
+    hasVisibleQuizCells ? Boolean(value.isInvalid(true)) : false
 
   const unfinishedFactors =
     decision?.factors
@@ -888,17 +883,35 @@ export default function Quiz() {
         <Card sx={{ mb: 2 }}>
           <CardContent>
             {factor ?
-              <Box sx={{ display: "flex", gap: 1, flexWrap: "wrap", mb: 1 }}>
+              <Box
+                sx={{
+                  display: "flex",
+                  justifyContent: "center",
+                  flexWrap: "wrap",
+                  mb: 1,
+                  width: "100%",
+                  alignItems: "center",
+                }}>
                 <Typography
                   variant="h6"
                   component="span"
-                  sx={{ backgroundColor: factorDefinition?.color ?? undefined, px: 0.5 }}>
+                  sx={{
+                    backgroundColor: factorDefinition?.color ?? undefined,
+                    px: 0.5,
+                    borderRadius: 1,
+                  }}>
                   {factor}
                 </Typography>
+                :
                 <Typography
                   variant="h6"
                   component="span"
-                  sx={{ backgroundColor: optionDefinition?.color ?? undefined, px: 0.5 }}>
+                  sx={{
+                    ml: 1,
+                    backgroundColor: optionDefinition?.color ?? undefined,
+                    px: 0.5,
+                    borderRadius: 1,
+                  }}>
                   {option}
                 </Typography>
               </Box>
@@ -906,10 +919,7 @@ export default function Quiz() {
 
             <FormControlLabel
               control={
-                <Checkbox
-                  checked={isUnsure}
-                  onChange={handleUnsureChange}
-                />
+                <Checkbox checked={isUnsure} onChange={handleUnsureChange} />
               }
               label="I'm not sure"
             />
@@ -940,9 +950,7 @@ export default function Quiz() {
                       max={scale[1]}
                       step={step}
                       onChange={(e, v) =>
-                        setAnswerResponse(
-                          value.copy({ min: v, max: v }),
-                        )
+                        setAnswerResponse(value.copy({ min: v, max: v }))
                       }
                       marks={sliderMarks}
                     />
@@ -955,9 +963,7 @@ export default function Quiz() {
                     onChange={(e) => {
                       setValueInputText(e.target.value)
                       const nextValue = numberOrNull(e.target.value)
-                      setResp(
-                        value.copy({ min: nextValue, max: nextValue }),
-                      )
+                      setResp(value.copy({ min: nextValue, max: nextValue }))
                     }}
                     key={`t-${optionIdx}-${factorIdx}`}
                     value={valueInputText ?? value.min ?? ""}
@@ -984,9 +990,7 @@ export default function Quiz() {
                       max={scale[1]}
                       step={step}
                       onChange={(e, v) =>
-                        setAnswerResponse(
-                          value.copy({ min: v[0], max: v[1] }),
-                        )
+                        setAnswerResponse(value.copy({ min: v[0], max: v[1] }))
                       }
                       marks={rangedSliderMarks}
                     />
@@ -1064,7 +1068,9 @@ export default function Quiz() {
           </CardContent>
         </Card>
       : <Paper sx={{ p: 2, mb: 2 }}>
-          <Typography>No options or factors match the current filters.</Typography>
+          <Typography>
+            No options or factors match the current filters.
+          </Typography>
         </Paper>
       }
 
@@ -1075,9 +1081,7 @@ export default function Quiz() {
           alignItems: "center",
           mb: 1,
         }}>
-        <Typography variant="h6">
-          Answers
-        </Typography>
+        <Typography variant="h6">Answers</Typography>
         <TextField
           label="Search by factor"
           size="small"
