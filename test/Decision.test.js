@@ -629,6 +629,25 @@ test("calculation and factor-pack flows continue to use factor values", () => {
   assert.deepEqual(decision.answers, [[], []])
 })
 
+test("calculations return factor entropy and weighted usefulness", () => {
+  const decision = createCompleteDecision()
+  const answers = decision.answerValues(Answer.rangeModes.MEDIAN)
+  const calculation = decision._calculate(answers)
+
+  expect(calculation.entropy[0]).toBeCloseTo(0.15)
+  expect(calculation.entropy[1]).toBeCloseTo(0.25)
+  expect(calculation.usefulness[0]).toBeCloseTo(0.15)
+  expect(calculation.usefulness[1]).toBeCloseTo(0.125)
+
+  const all = decision.calculateAll({
+    rangeMode: Answer.rangeModes.MEDIAN,
+  })
+  expect(all.mean.entropy).toEqual(calculation.entropy)
+  expect(all.mean.usefulness).toEqual(calculation.usefulness)
+  expect(all.std.entropy).toEqual([0, 0])
+  expect(all.std.usefulness).toEqual([0, 0])
+})
+
 test("bestWorst supports extremes and threshold explanations", () => {
   const decision = new Decision("Explanations")
   for (const name of ["A", "B", "C"])

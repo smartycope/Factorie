@@ -232,14 +232,6 @@ function linspace(start, stop, n) {
   return Array.from({ length: n }, (_, i) => start + step * i)
 }
 
-function stdDev(arr) {
-  if (!arr.length) return 0
-  const mean = arr.reduce((s, v) => s + v, 0) / arr.length
-  const variance =
-    arr.reduce((s, v) => s + Math.pow(v - mean, 2), 0) / arr.length
-  return Math.sqrt(variance)
-}
-
 function interpolateColor(c1, c2, t) {
   const toRgba = (color) => {
     if (color.startsWith("rgb")) {
@@ -388,7 +380,7 @@ function GoodnessPlot({ decision, goodness, goodnessConf }) {
 }
 
 // "Usefulness of each factor"
-function EntropyPlot({ decision, factorNames, normalizedAnswers, weights }) {
+function EntropyPlot({ decision, factorNames, entropy, usefulness, weights }) {
   const theme = useTheme()
   const [topCount, setTopCount] = useState(10)
   const visibleCount =
@@ -398,17 +390,16 @@ function EntropyPlot({ decision, factorNames, normalizedAnswers, weights }) {
         factorNames.length,
         Math.max(1, Math.floor(Number(topCount) || 1)),
       )
-  // TODO: move calculating entropies into the decision
   const plot = useMemo(() => {
     const rows = factorNames
       .map((factor, factorIndex) => ({
         factor,
-        entropy:
-          stdDev(normalizedAnswers.map((row) => row[factorIndex])) * weights[factorIndex],
+        entropy: entropy[factorIndex],
+        usefulness: usefulness[factorIndex],
         weight: weights[factorIndex],
         color: decision?.factors[factorIndex]?.color,
       }))
-      .sort((a, b) => b.entropy - a.entropy)
+      .sort((a, b) => b.usefulness - a.usefulness)
       .slice(0, visibleCount)
 
     return {
@@ -441,7 +432,7 @@ function EntropyPlot({ decision, factorNames, normalizedAnswers, weights }) {
         margin: { t: 60, b: 100, l: 50, r: 20 },
       },
     }
-  }, [decision, factorNames, normalizedAnswers, weights, theme, visibleCount])
+  }, [decision, entropy, factorNames, usefulness, weights, theme, visibleCount])
 
   return (
     <HelpOverlay helpText={texts.results.entropy}>
@@ -495,14 +486,13 @@ function HeatmapPlot({
   const plot = useMemo(() => {
     const colorscale = ["#9B1127", "rgba(255, 255, 191, 0)", "#195695"]
     const nRows = normalizedAnswers.length
-    // TODO: move calculating entropies into the decision
+    const usefulness = calc.mean.usefulness ?? []
     const factorIndexes = factorNames
       .map((_, factorIndex) => ({
         factorIndex,
-        entropy:
-          stdDev(normalizedAnswers.map((row) => row[factorIndex])) * weights[factorIndex],
+        usefulness: usefulness[factorIndex] ?? 0,
       }))
-      .sort((a, b) => b.entropy - a.entropy)
+      .sort((a, b) => b.usefulness - a.usefulness)
       .slice(0, visibleCount)
       .map(({ factorIndex }) => factorIndex)
     const visibleFactorNames = factorIndexes.map(
@@ -1330,7 +1320,8 @@ export default function Results() {
         <EntropyPlot
           decision={calculationDecision}
           factorNames={factorNames}
-          normalizedAnswers={normalizedAnswers}
+          entropy={calc.mean.entropy}
+          usefulness={calc.mean.usefulness}
           weights={weights}
         />
 

@@ -533,6 +533,15 @@ export default class Decision {
         (v, j) => (v - minsA[j]) / (maxsA[j] - minsA[j] + Number.EPSILON),
       ),
     )
+    const entropy = Array.from({ length: numFactors }, (_, factorIndex) =>
+      elementwiseStd(
+        normalizedAnswers.map((row) => row[factorIndex]),
+      ) ?? 0,
+    )
+    const usefulness = entropy.map(
+      (factorEntropy, factorIndex) =>
+        factorEntropy * weights[factorIndex],
+    )
 
     const deltaVectorsNormalized = normalizedAnswers.map((row) =>
       row.map((v, j) => v - tiledOptimal[0][j]),
@@ -572,6 +581,8 @@ export default class Decision {
 
     return {
       normalized_answers: normalizedAnswers,
+      entropy,
+      usefulness,
       delta_vectors_normalized: deltaVectorsNormalized,
       weighted_delta_vectors_normalized: weightedDeltaVectorsNormalized,
       weighted_delta_magnitudes: weightedDeltaMagnitudes,
