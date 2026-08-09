@@ -1,10 +1,17 @@
-import assert from "node:assert/strict"
-import test from "node:test"
+import { expect, test } from "vitest"
 
 import Answer from "../src/models/Answer.js"
 import Decision from "../src/models/Decision.js"
 import Factor from "../src/models/Factor.js"
 import Option from "../src/models/Option.js"
+
+const assert = {
+  ok: (actual) => expect(actual).toBeTruthy(),
+  equal: (actual, expected) => expect(actual).toBe(expected),
+  deepEqual: (actual, expected) => expect(actual).toEqual(expected),
+  notEqual: (actual, expected) => expect(actual).not.toBe(expected),
+  throws: (callback, expected) => expect(callback).toThrow(expected),
+}
 
 function createCompleteDecision() {
   const decision = new Decision("Dinner")
