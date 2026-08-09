@@ -42,11 +42,11 @@ function cloneDecision(decision) {
 }
 
 function formatAnswer(cell) {
-  return Answer.parse(cell)?.toString() ?? ""
+  return cell?.toString() ?? ""
 }
 
 function copyAnswer(answer) {
-  return new Answer(answer?.min, answer?.max, answer?.tentative)
+  return answer?.copy() ?? new Answer()
 }
 
 function numberOrNull(value) {
@@ -58,22 +58,20 @@ function numberOrNull(value) {
 
 function updateAnswerMin(answer, min) {
   if (min === null)
-    return new Answer(null, null, answer.tentative)
-  return new Answer(
+    return answer.copy({ min: null, max: null })
+  return answer.copy({
     min,
-    Number.isFinite(answer.max) ? answer.max : min,
-    answer.tentative,
-  )
+    max: Number.isFinite(answer.max) ? answer.max : min,
+  })
 }
 
 function updateAnswerMax(answer, max) {
   if (max === null)
-    return new Answer(null, null, answer.tentative)
-  return new Answer(
-    Number.isFinite(answer.min) ? answer.min : max,
+    return answer.copy({ min: null, max: null })
+  return answer.copy({
+    min: Number.isFinite(answer.min) ? answer.min : max,
     max,
-    answer.tentative,
-  )
+  })
 }
 
 function DiscreteAnswerButtons({ options, value, onAnswer }) {
@@ -108,12 +106,11 @@ function DiscreteAnswerButtons({ options, value, onAnswer }) {
 }
 
 function answerHasProblem(decision, optionIndex, factorIndex) {
-  const answer = Answer.parse(decision.answers[optionIndex]?.[factorIndex])
-  const factor = decision.factors[factorIndex].name
+  const answer = decision.answers[optionIndex]?.[factorIndex]
   return (
     !answer?.isAnswered() ||
-    answer.isTentative(decision, factor) ||
-    Boolean(answer.isInvalid(decision, factor, true))
+    answer.isTentative() ||
+    Boolean(answer.isInvalid(true))
   )
 }
 
@@ -242,7 +239,7 @@ function AnswersTable({
                     const text = formatAnswer(cell)
                     const isActive = r === optionIdx && c === factorIdx
                     const hasProblem = answerHasProblem(decision, r, c)
-                    const tentative = Answer.parse(cell)?.isTentative(decision, factorIdx)
+                    const tentative = cell?.isTentative()
                     return (
                       <TableCell
                         key={c}
@@ -348,7 +345,6 @@ function TransposedAnswersTable({
                     </TableCell>
                     {optionIndexes.map((r) => {
                       const cell = decision.answers[r]?.[c]
-                      const parsedAnswer = Answer.parse(cell)
                       const text = formatAnswer(cell)
                       const isActive = r === optionIdx && c === factorIdx
                       const hasProblem = answerHasProblem(decision, r, c)
@@ -360,7 +356,7 @@ function TransposedAnswersTable({
                           sx={answerCellSx(
                             isActive,
                             hasProblem,
-                            parsedAnswer?.isTentative(decision, c),
+                            cell?.isTentative(),
                           )}>
                           {text}
                         </TableCell>
@@ -615,7 +611,7 @@ export default function Quiz() {
 
   function handleDiscreteAnswer(answerValue) {
     handleSubmit(
-      new Answer(answerValue, answerValue, value.tentative),
+      value.copy({ min: answerValue, max: answerValue }),
     )
   }
 
@@ -638,7 +634,11 @@ export default function Quiz() {
 
   function handleClearAnswer() {
     const updatedDecision = updateDecision((d) => {
-      d.setAnswer(option, factor, new Answer())
+      d.setAnswer(
+        option,
+        factor,
+        value.copy({ min: null, max: null, tentative: false }),
+      )
     })
     changeCell([optionIdx, factorIdx], updatedDecision, false)
   }
@@ -698,12 +698,12 @@ export default function Quiz() {
     setUnsure(isChecked)
     if (isChecked && !value.isRanged() && hasSliderScale)
       setAnswerResponse(
-        new Answer(scale[0], scale[1], value.tentative),
+        value.copy({ min: scale[0], max: scale[1] }),
       )
   }
 
   function handleTentativeChange(event) {
-    setResp(new Answer(value.min, value.max, event.target.checked))
+    setResp(value.copy({ tentative: event.target.checked }))
     focusValueInput()
   }
 
@@ -766,7 +766,7 @@ export default function Quiz() {
 
   const isRespInValid =
     hasVisibleQuizCells ?
-      Boolean(value.isInvalid(decision, factor, true))
+      Boolean(value.isInvalid(true))
     : false
 
   const unfinishedFactors =
@@ -917,7 +917,7 @@ export default function Quiz() {
                       step={step}
                       onChange={(e, v) =>
                         setAnswerResponse(
-                          new Answer(v, v, value.tentative),
+                          value.copy({ min: v, max: v }),
                         )
                       }
                       marks={sliderMarks}
@@ -932,11 +932,7 @@ export default function Quiz() {
                       setValueInputText(e.target.value)
                       const nextValue = numberOrNull(e.target.value)
                       setResp(
-                        new Answer(
-                          nextValue,
-                          nextValue,
-                          value.tentative,
-                        ),
+                        value.copy({ min: nextValue, max: nextValue }),
                       )
                     }}
                     key={`t-${optionIdx}-${factorIdx}`}
@@ -965,7 +961,7 @@ export default function Quiz() {
                       step={step}
                       onChange={(e, v) =>
                         setAnswerResponse(
-                          new Answer(v[0], v[1], value.tentative),
+                          value.copy({ min: v[0], max: v[1] }),
                         )
                       }
                       marks={rangedSliderMarks}

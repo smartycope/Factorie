@@ -20,7 +20,15 @@ function deserializeValue(value, discreteValues) {
 }
 
 export default class Answer {
-  constructor(min = null, max = min, tentative = false) {
+  constructor(
+    min = null,
+    max = min,
+    tentative = false,
+    factor = null,
+    option = null,
+  ) {
+    this.factor = factor
+    this.option = option
     this._min = min
     this._max = max
     this.tentative = Boolean(tentative)
@@ -49,17 +57,15 @@ export default class Answer {
     return this._max
   }
 
-  isTentative(decision, factor) {
-    const factorIdx = decision._parseFactorParam(factor)
-
-    const {min: factorMin, max: factorMax} = decision.factors[factorIdx]
+  isTentative() {
+    const {min: factorMin, max: factorMax} = this.factor
     // It's tentative if the user has marked it as such, or if it has the maximum range possible (maximum uncertainty)
     return this.isAnswered() && (this.tentative || ((factorMin != null && this.min == factorMin) && (factorMax != null && this.max == factorMax)))
   }
 
   // Returns an object, not a string
-  serialize(factor) {
-    const discreteValues = discreteValuesFor(factor)
+  serialize() {
+    const discreteValues = discreteValuesFor(this.factor)
     const min = serializeValue(this.min, discreteValues)
     const max = serializeValue(this.max, discreteValues)
     return this.tentative ?
@@ -67,7 +73,7 @@ export default class Answer {
       : [min, max]
   }
 
-  static deserialize(data, factor) {
+  static deserialize(data, factor, option) {
     const serialized = typeof data === "string" ? JSON.parse(data) : data
     if (!Array.isArray(serialized))
       throw new TypeError("Serialized answer must be an array")
@@ -77,7 +83,19 @@ export default class Answer {
       deserializeValue(serialized[0], discreteValues),
       deserializeValue(serialized[1], discreteValues),
       serialized[2],
+      factor,
+      option,
     )
+  }
+
+  copy({
+    min = this.min,
+    max = this.max,
+    tentative = this.tentative,
+    factor = this.factor,
+    option = this.option,
+  } = {}) {
+    return new Answer(min, max, tentative, factor, option)
   }
 
   clear() {
@@ -86,13 +104,22 @@ export default class Answer {
     this.tentative = false
   }
 
-  // Retruns null if it can't parse it (but "" -> empty answer)
-  static parse(answer) {
-    if (Array.isArray(answer)) return new Answer(...answer)
-    if (answer instanceof Answer) return answer
-    if (typeof answer === "number") return new Answer(answer, answer)
+  // Returns null if it can't parse it (but "" -> empty answer)
+  static parse(answer, factor = null, option = null) {
+    if (Array.isArray(answer))
+      return new Answer(answer[0], answer[1], answer[2], factor, option)
+    if (answer instanceof Answer) {
+      if (factor === null && option === null) return answer
+      return answer.copy({
+        factor: factor ?? answer.factor,
+        option: option ?? answer.option,
+      })
+    }
+    if (typeof answer === "number")
+      return new Answer(answer, answer, false, factor, option)
     if (typeof answer === "string") {
-      if (answer.trim() === "") return new Answer()
+      if (answer.trim() === "")
+        return new Answer(null, null, false, factor, option)
 
       const m = answer.match(
         // LLM translated version
@@ -114,6 +141,8 @@ export default class Answer {
           parseFloat(m[1]),
           m[3] ? parseFloat(m[3]) : parseFloat(m[1]),
           Boolean(m.groups?.tentative),
+          factor,
+          option,
         )
       else return null
     }
@@ -136,14 +165,12 @@ export default class Answer {
     return Number.isFinite(this.min)
   }
 
-  // Is the answer invalid for this option and factor
-  isInvalid(decision, factor, allow_null=false) {
+  // Is the answer invalid for its factor
+  isInvalid(allow_null=false) {
     if (!allow_null && !this.isAnswered()) return null
 
-    const factorIdx = decision._parseFactorParam(factor)
-
-    const factorMin = decision.factors[factorIdx].min
-    const factorMax = decision.factors[factorIdx].max
+    const factorMin = this.factor.min
+    const factorMax = this.factor.max
 
     if (this.min > this.max) return `Answer min is greater than max: ${this}`
     if (

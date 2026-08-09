@@ -80,15 +80,30 @@ test("Answer serialization uses discrete labels and accepts legacy numbers", () 
   const factor = new Factor({
     unit: "0: Small, 1: Medium, 2: Large",
   })
-  const answer = new Answer(0, 2, true)
+  const option = new Option({ name: "Choice" })
+  const answer = new Answer(0, 2, true, factor, option)
 
-  assert.deepEqual(answer.serialize(factor), ["Small", "Large", true])
+  assert.equal(answer.factor, factor)
+  assert.equal(answer.option, option)
+  assert.equal(answer.isTentative(), true)
+  assert.deepEqual(answer.serialize(), ["Small", "Large", true])
+  const copied = answer.copy({ min: 1, max: 1, tentative: false })
+  assert.equal(copied.factor, factor)
+  assert.equal(copied.option, option)
+  assert.deepEqual(copied.serialize(), ["Medium", "Medium"])
+  const deserialized = Answer.deserialize(
+    '["Small", "Large", true]',
+    factor,
+    option,
+  )
   assert.deepEqual(
-    Answer.deserialize('["Small", "Large", true]', factor).serialize(factor),
+    deserialized.serialize(),
     ["Small", "Large", true],
   )
+  assert.equal(deserialized.factor, factor)
+  assert.equal(deserialized.option, option)
 
-  const legacyAnswer = Answer.deserialize([0, 2], factor)
+  const legacyAnswer = Answer.deserialize([0, 2], factor, option)
   assert.equal(legacyAnswer.min, 0)
   assert.equal(legacyAnswer.max, 2)
 })
@@ -99,11 +114,40 @@ test("Decision owns Factor and Answer instances", () => {
   assert.ok(decision.factors.every((factor) => factor instanceof Factor))
   assert.ok(decision.options.every((option) => option instanceof Option))
   assert.ok(
-    decision.answers.every((row) =>
-      row.every((answer) => answer instanceof Answer),
+    decision.answers.every((row, optionIndex) =>
+      row.every(
+        (answer, factorIndex) =>
+          answer instanceof Answer &&
+          answer.factor === decision.factors[factorIndex] &&
+          answer.option === decision.options[optionIndex],
+      ),
     ),
   )
   assert.equal(decision.isInvalid(), null)
+})
+
+test("new and submitted answers reference their owning factor and option", () => {
+  const decision = new Decision("Ownership")
+  decision.addOption("First")
+  decision.addFactor({
+    name: "Score",
+    optimal: 10,
+    weight: 1,
+    min: 0,
+    max: 10,
+  })
+
+  const emptyAnswer = decision.getAnswer("First", "Score")
+  assert.equal(emptyAnswer.factor, decision.factors[0])
+  assert.equal(emptyAnswer.option, decision.options[0])
+
+  const submitted = new Answer(7)
+  decision.setAnswer("First", "Score", submitted)
+  const stored = decision.getAnswer("First", "Score")
+  assert.notEqual(stored, submitted)
+  assert.equal(stored.min, 7)
+  assert.equal(stored.factor, decision.factors[0])
+  assert.equal(stored.option, decision.options[0])
 })
 
 test("factor edits and removal keep the answer matrix aligned", () => {
@@ -139,6 +183,8 @@ test("factor reordering keeps answer columns aligned", () => {
     decision.answers.map((row) => row.map((answer) => answer.min)),
     [[8, 10], [4, 7]],
   )
+  assert.equal(decision.answers[0][0].factor, decision.factors[0])
+  assert.equal(decision.answers[0][1].factor, decision.factors[1])
 })
 
 test("option reordering keeps answer rows and notes aligned", () => {
@@ -163,6 +209,8 @@ test("option reordering keeps answer rows and notes aligned", () => {
     decision.options.map((option) => option.notes),
     ["Soup note", "Taco note"],
   )
+  assert.equal(decision.answers[0][0].option, decision.options[0])
+  assert.equal(decision.answers[1][0].option, decision.options[1])
   assert.throws(
     () => decision.reorderOptions([0, 0]),
     /Option order must contain every option index exactly once/,
@@ -193,6 +241,10 @@ test("Decision serialization uses Factor and Option objects and copy is independ
   assert.ok(copy.factors[0] instanceof Factor)
   assert.ok(copy.options[0] instanceof Option)
   assert.ok(copy.answers[0][0] instanceof Answer)
+  assert.equal(copy.answers[0][0].factor, copy.factors[0])
+  assert.equal(copy.answers[0][0].option, copy.options[0])
+  assert.notEqual(copy.answers[0][0].factor, decision.factors[0])
+  assert.notEqual(copy.answers[0][0].option, decision.options[0])
   copy.editFactor(0, { name: "Flavor" })
   copy.setAnswer(0, 0, 5)
   copy.setOptionNote("Tacos", "Different note")
@@ -389,15 +441,15 @@ test("uncertain copies fill only unanswered cells and identify needed ranges", (
 
   const simulated = decision.uncertainCopy({ Cost: [0, 100] })
   assert.deepEqual(
-    simulated.getAnswer("Unknown", "Quality").serialize(simulated.factors[0]),
+    simulated.getAnswer("Unknown", "Quality").serialize(),
     [0, 10],
   )
   assert.deepEqual(
-    simulated.getAnswer("Unknown", "Cost").serialize(simulated.factors[1]),
+    simulated.getAnswer("Unknown", "Cost").serialize(),
     [0, 100],
   )
   assert.deepEqual(
-    simulated.getAnswer("Known", "Cost").serialize(simulated.factors[1]),
+    simulated.getAnswer("Known", "Cost").serialize(),
     [25, 25],
   )
   assert.equal(decision.getAnswer("Unknown", "Quality").isAnswered(), false)
@@ -477,6 +529,8 @@ test("legacy object-of-arrays decisions migrate to Factor objects", () => {
     ],
   )
   assert.equal(decision.getAnswer("Tacos", "Cost").toString(), "7 - 8")
+  assert.equal(decision.getAnswer("Tacos", "Cost").factor, decision.factors[1])
+  assert.equal(decision.getAnswer("Tacos", "Cost").option, decision.options[0])
   assert.deepEqual([...decision.factorPacks], ["Choosing Dinner"])
   assert.ok(decision.options.every((option) => option instanceof Option))
   assert.ok(Array.isArray(JSON.parse(decision.serialize()).factors))

@@ -71,20 +71,16 @@ export default class Decision {
       .map((option, index) => (option.hidden ? null : index))
       .filter((index) => index !== null)
     if (visibleOptionIndexes.length === 0) return "No visible options"
-    // const invalidAnswers = this.factors.filter((row) =>
-    // row.some((ans) => ans.isInvalid(this, )),
-    // )
     let invalidAnswers = []
     for (let i = 0; i < this.factors.length; i++) {
       for (const j of visibleOptionIndexes) {
         const ans = this.answers[j][i]
-        if (ans.isInvalid(this, i))
-          invalidAnswers.push({ answer: ans, factor: this.factors[i] })
+        if (ans.isInvalid()) invalidAnswers.push(ans)
       }
     }
     if (invalidAnswers.length)
       return `Not all answers are valid:
-        ${invalidAnswers.map(({ answer, factor }) => answer.serialize(factor).join(", ")).join("\n")}`
+        ${invalidAnswers.map((answer) => answer.serialize().join(", ")).join("\n")}`
 
     if (
       !allowUnanswered &&
@@ -125,9 +121,12 @@ export default class Decision {
     // hopefully removing this doesn't mess things up...
     // if (this.factors.some(({ name }) => name === factor.name))
     //   throw new Error(`Factor ${factor.name} already exists`);
-    this.factors.push(Factor.deserialize(factor))
+    const newFactor = Factor.deserialize(factor)
+    this.factors.push(newFactor)
     for (let i = 0; i < this.answers.length; i++) {
-      this.answers[i].push(new Answer())
+      this.answers[i].push(
+        new Answer(null, null, false, newFactor, this.options[i]),
+      )
     }
   }
 
@@ -162,7 +161,7 @@ export default class Decision {
     let idx
     try {
       idx = this._parseFactorParam(factor)
-    } catch (e) {
+    } catch {
       // If it's not a valid factor, good, we don't need to do anything
       return
     }
@@ -189,9 +188,11 @@ export default class Decision {
   }
 
   addOption(option) {
-    this.options.push(Option.deserialize(option))
-    const row = []
-    for (let i = 0; i < this.factors.length; i++) row.push(new Answer())
+    const newOption = Option.deserialize(option)
+    this.options.push(newOption)
+    const row = this.factors.map(
+      (factor) => new Answer(null, null, false, factor, newOption),
+    )
     this.answers.push(row)
   }
 
@@ -236,16 +237,20 @@ export default class Decision {
 
   // Throws an error if it fails
   setAnswer(option, factor, answer) {
-    answer = Answer.parse(answer)
+    const optionIdx = this._parseOptionParam(option)
+    const factorIdx = this._parseFactorParam(factor)
+    answer = Answer.parse(
+      answer,
+      this.factors[factorIdx],
+      this.options[optionIdx],
+    )
     if (answer === null) throw new Error(`Unable to parse answer`)
     // If they didn't answer it, that's fine
     if (answer.isAnswered()) {
-      const err = answer.isInvalid(this, factor, true)
+      const err = answer.isInvalid(true)
       if (err) throw new Error(err)
     }
-    this.answers[this._parseOptionParam(option)][
-      this._parseFactorParam(factor)
-    ] = answer
+    this.answers[optionIdx][factorIdx] = answer
   }
 
   // Throws an error if it fails
@@ -279,7 +284,7 @@ export default class Decision {
       factors: this.factors.map((factor) => factor.serialize()),
       options: this.options.map((option) => option.serialize()),
       answers: this.answers.map((row) =>
-        row.map((ans, factorIndex) => ans.serialize(this.factors[factorIndex])),
+        row.map((answer) => answer.serialize()),
       ),
       threshold: this.threshold,
       factorPacks: Array.from(this.factorPacks),
@@ -316,9 +321,13 @@ export default class Decision {
         parsed.notes = legacyOptionNotes[parsed.name]
       return parsed
     })
-    d.answers = obj.answers.map((row) =>
+    d.answers = obj.answers.map((row, optionIndex) =>
       row.map((answer, factorIndex) =>
-        Answer.deserialize(answer, d.factors[factorIndex]),
+        Answer.deserialize(
+          answer,
+          d.factors[factorIndex],
+          d.options[optionIndex],
+        ),
       ),
     )
     d.threshold = obj.threshold
