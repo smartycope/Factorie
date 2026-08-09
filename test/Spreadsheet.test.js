@@ -38,3 +38,30 @@ test("factor and option colors round-trip as spreadsheet cell fills", () => {
     '<pane xSplit="1" ySplit="5" topLeftCell="B6" activePane="bottomRight" state="frozen"/>',
   )
 })
+
+test("spreadsheet import accepts case-insensitive discrete answer labels", () => {
+  const decision = new Decision("Discrete labels")
+  decision.addFactor({
+    name: "Size",
+    unit: "0: Small, 1: Medium, 2: Large",
+    optimal: 2,
+    weight: 1,
+    min: 0,
+    max: 2,
+  })
+  decision.addOption("Choice")
+  decision.setAnswer("Choice", "Size", 1)
+
+  const workbook = XLSX.read(createDecisionSpreadsheet(decision), {
+    type: "array",
+  })
+  workbook.Sheets.Decision.B6 = { t: "s", v: "mEdIuM" }
+  const imported = parseDecisionSpreadsheet(
+    XLSX.write(workbook, { type: "array", bookType: "xlsx" }),
+  )
+
+  expect(imported.getAnswer("Choice", "Size").serialize()).toEqual([
+    "Medium",
+    "Medium",
+  ])
+})

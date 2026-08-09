@@ -128,6 +128,21 @@ export default class Answer {
       if (answer.trim() === "")
         return new Answer(null, null, false, factor, option)
 
+      const discreteValue = factor
+        ?.discreteValues()
+        .find(
+          ({ name }) =>
+            name.toLowerCase() === answer.trim().toLowerCase(),
+        )
+      if (discreteValue)
+        return new Answer(
+          discreteValue.number,
+          discreteValue.number,
+          false,
+          factor,
+          option,
+        )
+
       const m = answer.match(
         // LLM translated version
         // /(([+-])?\d+(?:\.\d+)?)(?:\s?-\s?(([+-])?\d+(?:\.\d+)?))?/,
