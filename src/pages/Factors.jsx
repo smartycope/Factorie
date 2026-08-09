@@ -78,12 +78,16 @@ function factorMatchesSearch(name, searchQuery = "") {
 function factorRows(decision) {
   return decision.factors.map((factor, i) => {
     const factorName = factorNameText(factor.name)
+    const discreteOptimalLabel = factor
+      .discreteValues?.()
+      .find(({ number }) => number === factor.optimal)?.name
     return {
       id: i,
       index: i,
       name: factorName,
       unit: factor.unit ?? "",
       optimal: factor.optimal,
+      discreteOptimalLabel,
       weight: factor.weight,
       min: factor.min,
       max: factor.max,
@@ -319,7 +323,7 @@ const FactorsDataGrid = React.memo(function FactorsDataGrid({
         renderCell: (params) =>
           params.value === -Infinity ? "min"
           : params.value === Infinity ? "max"
-          : (params.value ?? ""),
+          : (params.row.discreteOptimalLabel ?? params.value ?? ""),
       },
       {
         field: "weight",
@@ -377,7 +381,7 @@ const FactorsDataGrid = React.memo(function FactorsDataGrid({
             rows
               .filter((row) => row.color)
               .map((row) => [
-                `& .MuiDataGrid-row.factor-color-${row.index} .MuiDataGrid-cell`,
+                `& .MuiDataGrid-row.factor-color-${row.index} .MuiDataGrid-cell[data-field="name"]`,
                 { backgroundColor: row.color },
               ]),
           ),
