@@ -43,6 +43,7 @@ export default function Dashboard() {
   const decFileInputRef = React.useRef(null);
   const spreadsheetFileInputRef = React.useRef(null);
   const [isImportDialogOpen, setImportDialogOpen] = React.useState(false);
+  const [spreadsheetFeedback, setSpreadsheetFeedback] = React.useState(null)
 
   function addExamples() {
     const ex1 = JSON.parse(
@@ -145,7 +146,10 @@ export default function Dashboard() {
         { onWarning: (warning) => warnings.push(warning) },
       )
       if (warnings.length)
-        alert(`Spreadsheet imported with warnings:\n\n${warnings.join("\n\n")}`)
+        setSpreadsheetFeedback({
+          title: "Spreadsheet imported with warnings",
+          message: warnings.join("\n\n"),
+        })
       const existingIndex = decisions.findIndex(
         (decision) => decision.name.toLowerCase() === importedDecision.name.toLowerCase(),
       )
@@ -173,7 +177,10 @@ export default function Dashboard() {
       })
     } catch (error) {
       console.error("Spreadsheet import failed", error)
-      alert(`Unable to import spreadsheet:\n${error.message}`)
+      setSpreadsheetFeedback({
+        title: "Unable to import spreadsheet",
+        message: error.message,
+      })
     } finally {
       e.target.value = null
     }
@@ -331,6 +338,23 @@ export default function Dashboard() {
           <Button onClick={() => chooseImport("dec")}>Decision file (.dec)</Button>
           <Button variant="contained" onClick={() => chooseImport("xlsx")}>
             Spreadsheet (.xlsx)
+          </Button>
+        </DialogActions>
+      </Dialog>
+      <Dialog
+        open={spreadsheetFeedback !== null}
+        onClose={() => setSpreadsheetFeedback(null)}>
+        <DialogTitle>{spreadsheetFeedback?.title}</DialogTitle>
+        <DialogContent>
+          <DialogContentText sx={{ whiteSpace: "pre-wrap" }}>
+            {spreadsheetFeedback?.message}
+          </DialogContentText>
+        </DialogContent>
+        <DialogActions>
+          <Button
+            variant="contained"
+            onClick={() => setSpreadsheetFeedback(null)}>
+            Close
           </Button>
         </DialogActions>
       </Dialog>

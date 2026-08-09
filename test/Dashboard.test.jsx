@@ -1,4 +1,4 @@
-import { cleanup, render, screen, waitFor } from "@testing-library/react"
+import { cleanup, fireEvent, render, screen, waitFor } from "@testing-library/react"
 import userEvent from "@testing-library/user-event"
 import { afterEach, beforeEach, expect, test, vi } from "vitest"
 import { ThemeProvider, createTheme } from "@mui/material/styles"
@@ -88,4 +88,22 @@ test("Dashboard changes the active decision when a decision row is selected", as
   await waitFor(() =>
     expect(screen.getByText(/Currently Deciding:/).textContent).toContain("Movie"),
   )
+})
+
+test("Dashboard shows spreadsheet import errors in a dialog", async () => {
+  const alert = vi.fn()
+  vi.stubGlobal("alert", alert)
+  vi.spyOn(console, "error").mockImplementation(() => {})
+  const { container } = renderDashboard()
+  const spreadsheetInput = container.querySelector('input[accept^=".xlsx"]')
+  const file = {
+    arrayBuffer: vi.fn().mockResolvedValue(new ArrayBuffer(0)),
+  }
+
+  fireEvent.change(spreadsheetInput, { target: { files: [file] } })
+
+  expect(
+    await screen.findByRole("dialog", { name: "Unable to import spreadsheet" }),
+  ).toBeTruthy()
+  expect(alert).not.toHaveBeenCalled()
 })

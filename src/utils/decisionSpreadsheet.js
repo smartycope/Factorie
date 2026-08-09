@@ -356,6 +356,7 @@ function parseOptionNotes(sheet, decision, onWarning) {
 
 function parseAnswers(sheet, decision, factorNames, optionNames) {
   optionNames.forEach((optionName) => decision.addOption(optionName))
+  const errors = []
 
   factorNames.forEach((factorName, factorIndex) => {
     optionNames.forEach((optionName, optionIndex) => {
@@ -364,12 +365,18 @@ function parseAnswers(sheet, decision, factorNames, optionNames) {
       try {
         decision.setAnswer(optionIndex, factorIndex, value == null ? "" : value)
       } catch (error) {
-        spreadsheetError(
-          `Could not parse answer at ${address} for "${optionName}" / "${factorName}": ${error.message}.`,
+        errors.push(
+          `${address} for "${optionName}" / "${factorName}": ${error.message}.`,
         )
       }
     })
   })
+
+  if (errors.length)
+    spreadsheetError(
+      "Could not parse answers:\n" +
+        errors.map((error) => `- ${error}`).join("\n"),
+    )
 }
 
 export function parseDecisionSpreadsheet(

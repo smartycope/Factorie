@@ -79,3 +79,33 @@ test.each([
 
   expect(imported.getAnswer("Choice", "Size").serialize()).toEqual(expected)
 })
+
+test("spreadsheet import reports every invalid answer cell together", () => {
+  const decision = new Decision("Invalid answers")
+  decision.addFactor({
+    name: "Score",
+    optimal: 10,
+    weight: 1,
+    min: 0,
+    max: 10,
+  })
+  decision.addOption("Too high")
+  decision.addOption("Not a number")
+  decision.setAnswer("Too high", "Score", 5)
+  decision.setAnswer("Not a number", "Score", 5)
+
+  const workbook = XLSX.read(createDecisionSpreadsheet(decision), {
+    type: "array",
+  })
+  workbook.Sheets.Decision.B6 = { t: "n", v: 20 }
+  workbook.Sheets.Decision.C6 = { t: "s", v: "invalid" }
+  const data = XLSX.write(workbook, { type: "array", bookType: "xlsx" })
+
+  expect(() => parseDecisionSpreadsheet(data)).toThrowError(
+    expect.objectContaining({
+      message: expect.stringMatching(
+        /Could not parse answers:[\s\S]*B6 for "Too high" \/ "Score"[\s\S]*C6 for "Not a number" \/ "Score"/,
+      ),
+    }),
+  )
+})
