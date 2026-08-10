@@ -13,7 +13,7 @@ import Checkbox from "@mui/material/Checkbox"
 import FormControlLabel from "@mui/material/FormControlLabel"
 import Collapse from "@mui/material/Collapse"
 import ExpandMoreIcon from "@mui/icons-material/ExpandMore"
-import { darken, emphasize, useTheme } from "@mui/material/styles"
+import { useTheme } from "@mui/material/styles"
 import Plot from "react-plotly.js"
 import * as PCAImport from "pca-js"
 import texts from "../assets/texts.json"
@@ -268,9 +268,43 @@ function sampleColorscale(colors, t) {
   return interpolateColor(colors[i], colors[i + 1], local)
 }
 
+function saturateColor(color, amount = 0.6) {
+  const hex = color.replace("#", "")
+  const normalizedHex =
+    hex.length === 3 ?
+      hex
+        .split("")
+        .map((digit) => digit + digit)
+        .join("")
+    : hex
+  if (!/^[\da-f]{6}$/i.test(normalizedHex)) return color
+
+  const rgb = [0, 2, 4].map(
+    (offset) => parseInt(normalizedHex.slice(offset, offset + 2), 16) / 255,
+  )
+  const max = Math.max(...rgb)
+  const min = Math.min(...rgb)
+  const lightness = (max + min) / 2
+  const delta = max - min
+  if (delta === 0) return color
+
+  const saturation = delta / (1 - Math.abs(2 * lightness - 1))
+  let hue
+  if (max === rgb[0]) hue = ((rgb[1] - rgb[2]) / delta) % 6
+  else if (max === rgb[1]) hue = (rgb[2] - rgb[0]) / delta + 2
+  else hue = (rgb[0] - rgb[1]) / delta + 4
+  hue = Math.round(hue * 60)
+  if (hue < 0) hue += 360
+
+  const increasedSaturation = saturation + (1 - saturation) * amount
+  return `hsl(${hue} ${Math.round(increasedSaturation * 100)}% ${Math.round(
+    lightness * 100,
+  )}%)`
+}
+
 function coloredPlotLabel(label, color) {
   if (!color) return label
-  return `<span style="color:${darken(color, 0.2)}">${label}</span>`
+  return `<span style="color:${saturateColor(color)}">${label}</span>`
 }
 
 function radarColorForLabel(label) {
@@ -355,6 +389,9 @@ function GoodnessPlot({ decision, goodness, goodnessConf }) {
           marker: {
             color: rows.map((r) => r.color ?? theme.palette.primary.main),
           },
+          customdata: rows.map((r) => [r.option, r.conf]),
+          hovertemplate:
+            "%{customdata[0]}<br>Goodness: %{y:.0%}<br>Uncertainty: ±%{customdata[1]:.0%}<extra></extra>",
         },
       ],
       layout: {
@@ -421,6 +458,13 @@ function EntropyPlot({ decision, factorNames, entropy, usefulness, weights }) {
               width: 2,
             },
           },
+          customdata: rows.map((row) => [
+            row.factor,
+            row.usefulness,
+            row.weight,
+          ]),
+          hovertemplate:
+            "%{customdata[0]}<br>Difference: %{y:.2f}<br>Usefulness: %{customdata[1]:.2f}<br>Weight: %{customdata[2]:.0%}<extra></extra>",
         },
       ],
       layout: {
@@ -516,6 +560,7 @@ function HeatmapPlot({
     const textY = []
     const textLabels = []
     const textColors = []
+    const hoverData = []
     const maxs = decision.maxs()
     for (let i = 0; i < nRows; i++) {
       for (let factorPosition = 0; factorPosition < nCols; factorPosition++) {
@@ -546,6 +591,14 @@ function HeatmapPlot({
           )})`,
         )
         textColors.push(weight > 0.3 ? "black" : theme.palette.text.primary)
+        hoverData.push([
+          decision.options[i].name,
+          factorNames[factorIndex],
+          value,
+          answer,
+          maxVal,
+          weight,
+        ])
       }
     }
     console.log(textLabels)
@@ -562,8 +615,9 @@ function HeatmapPlot({
           // text: showText ? textLabels : undefined,
           text: textLabels,
           textfont: { color: showText ? textColors : "#00000000", size: 12 },
-          // Apparently this a bool, not an array
-          hoverinfo: true,
+          customdata: hoverData,
+          hovertemplate:
+            "%{customdata[0]}<br>%{customdata[1]}: %{customdata[2]:.0%}<br>Answer: %{customdata[3]:.1f} / %{customdata[4]:.1f}<br>Weight: %{customdata[5]:.0%}<extra></extra>",
           showlegend: false,
         },
       ],
@@ -659,6 +713,7 @@ function HeatmapPlot({
   )
 }
 
+// "Deciding factors for {option}" plot
 function FactorContributionPlot({ decision, best, contributions }) {
   const theme = useTheme()
   const optionNames = decision.options.map((option) => option.name)
@@ -797,7 +852,7 @@ function SingleLinePlot({ results }) {
         text: `${r.option} (${r.percentage.toFixed(1)}%)`,
         showarrow: false,
         font: {
-          color: r.color ? darken(r.color, 0.2) : theme.palette.text.primary,
+          color: r.color ? saturateColor(r.color) : theme.palette.text.primary,
           size: 15,
         },
         xanchor: "left",
@@ -835,7 +890,7 @@ function SingleLinePlot({ results }) {
             color: t,
             colorscale: "Reds",
           },
-          hovertemplate: null,
+          hoverinfo: "skip",
         },
         {
           type: "scatter",
@@ -851,7 +906,7 @@ function SingleLinePlot({ results }) {
             cmax: 100,
             showscale: false,
           },
-          hovertemplate: "%{text}<br>Badness: %{x:.1f}%",
+          hovertemplate: "%{text}<br>Badness: %{x:.1f}%<extra></extra>",
         },
       ],
       layout: {
@@ -916,6 +971,8 @@ function PcaPlot({
           y: ys,
           text: labels,
           textposition: "top center",
+          hovertemplate:
+            "%{text}<br>Component 1: %{x:.2f}<br>Component 2: %{y:.2f}<extra></extra>",
         },
       ],
       layout: {
@@ -992,6 +1049,7 @@ function RadarPlot({
     const sortedDimLabels = sortedIndices.map((i) =>
       coloredPlotLabel(factorNames[i], factorColors[i]),
     )
+    const sortedFactorNames = sortedIndices.map((i) => factorNames[i])
     const sortedData = data.map((row) => sortedIndices.map((i) => row[i]))
     const traces = []
     for (let i = 0; i < sortedData.length; i++) {
@@ -1007,6 +1065,11 @@ function RadarPlot({
         fillcolor: color.fill,
         line: { color: color.line },
         name: coloredPlotLabel(label, optionColors[i]),
+        customdata: [...sortedFactorNames, sortedFactorNames[0]].map(
+          (factor) => [label, factor],
+        ),
+        hovertemplate:
+          "%{customdata[0]}<br>%{customdata[1]}: %{r:.0%}<extra></extra>",
       })
     }
     return {
