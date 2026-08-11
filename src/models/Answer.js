@@ -26,6 +26,7 @@ export default class Answer {
     MONTE_CARLO: "monteCarlo",
     BEST: "best",
     WORST: "worst",
+    AVERAGE: "average",
     HIGH: "high",
     LOW: "low",
     MEDIAN: "median",
@@ -227,14 +228,22 @@ export default class Answer {
     return Math.min(Math.max(this.factor.optimal, this.min), this.max)
   }
 
-  worst(allowUnanswered = false) {
-    if (!this.isAnswered()) return allowUnanswered ? this.factor.optimal : null
+  worst() {
+    if (!this.isAnswered()) return null
     if (!this.isRanged()) return this.min
 
     const minDistance = Math.abs(this.min - this.factor.optimal)
     const maxDistance = Math.abs(this.max - this.factor.optimal)
 
     return minDistance >= maxDistance ? this.min : this.max
+  }
+
+  mean() {
+    if (!this.isAnswered()) return null
+    if (!this.isRanged()) return this.min
+    const rtn = (this.best() + this.worst()) / 2
+    if (rtn < this.min || rtn > this.max) throw new Error("Mean out of range")
+    return rtn
   }
 
   // Resolve this answer's range to one value for a results calculation.
@@ -248,6 +257,8 @@ export default class Answer {
         return this.best()
       case Answer.rangeModes.WORST:
         return this.worst()
+      case Answer.rangeModes.AVERAGE:
+        return this.mean()
       case Answer.rangeModes.LOW:
         return this.valueAt(0)
       case Answer.rangeModes.HIGH:

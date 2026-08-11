@@ -50,6 +50,11 @@ const RANGE_MODE_OPTIONS = [
     description: "Use the value in each range farthest from that factor's optimal.",
   },
   {
+    value: Answer.rangeModes.AVERAGE,
+    label: "Average",
+    description: "Use the mean of the best and worst values in each range.",
+  },
+  {
     value: Answer.rangeModes.HIGH,
     label: "High",
     description: "Use the highest value from every range.",
@@ -70,14 +75,14 @@ function rangeModeOption(mode) {
   return RANGE_MODE_OPTIONS.find((option) => option.value === mode)
 }
 
-function joinAnd(items, { oxford = false, ampersand = false } = {}) {
-  const andToken = ampersand ? " & " : " and "
-  if (!items || items.length === 0) return ""
-  if (items.length === 1) return items[0]
-  if (items.length === 2) return items.join(andToken)
-  const sep = oxford ? `,${andToken}` : andToken
-  return `${items.slice(0, -1).join(", ")}${sep}${items[items.length - 1]}`
-}
+// function joinAnd(items, { oxford = false, ampersand = false } = {}) {
+    // const andToken = ampersand ? " & " : " and "
+    // if (!items || items.length === 0) return ""
+    // if (items.length === 1) return items[0]
+    // if (items.length === 2) return items.join(andToken)
+    // const sep = oxford ? `,${andToken}` : andToken
+    // return `${items.slice(0, -1).join(", ")}${sep}${items[items.length - 1]}`
+// }
 
 function rangeInputValue(factor, ranges, endpoint) {
   const range = ranges[factor.name]

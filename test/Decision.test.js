@@ -798,6 +798,7 @@ test("Answer resolves ranges using each range calculation mode", () => {
   expect(answer.rangeRadius()).toBe(3)
   expect(answer.valueForRange(Answer.rangeModes.BEST)).toBe(6)
   expect(answer.valueForRange(Answer.rangeModes.WORST)).toBe(2)
+  expect(answer.valueForRange(Answer.rangeModes.AVERAGE)).toBe(4)
   expect(answer.valueForRange(Answer.rangeModes.LOW)).toBe(2)
   expect(answer.valueForRange(Answer.rangeModes.HIGH)).toBe(8)
   expect(answer.valueForRange(Answer.rangeModes.MEDIAN)).toBe(5)
@@ -856,6 +857,7 @@ test("Decision calculates deterministic range modes", () => {
   const expectations = [
     [Answer.rangeModes.BEST, 0.8, "Ranged"],
     [Answer.rangeModes.WORST, 0.2, "Exact"],
+    [Answer.rangeModes.AVERAGE, 0.5, "Ranged"],
     [Answer.rangeModes.LOW, 0.2, "Exact"],
     [Answer.rangeModes.HIGH, 0.8, "Ranged"],
     [Answer.rangeModes.MEDIAN, 0.5, "Ranged"],
