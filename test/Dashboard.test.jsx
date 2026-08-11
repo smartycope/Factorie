@@ -69,7 +69,8 @@ test("Dashboard creates a decision from the New Decision interaction", async () 
   await user.click(screen.getByRole("button", { name: "New Decision" }))
 
   await waitFor(() => {
-    expect(screen.getAllByText("Weekend plans")).toHaveLength(2)
+    expect(screen.getByText("Weekend plans")).toBeTruthy()
+    expect(screen.getByRole("textbox").value).toBe("Weekend plans")
     expect(savedDecisions()).toHaveLength(1)
   })
   expect(savedDecisions()[0]).toMatchObject({
@@ -89,8 +90,24 @@ test("Dashboard changes the active decision when a decision row is selected", as
   await user.click(screen.getByRole("button", { name: /Movie/ }))
 
   await waitFor(() =>
-    expect(screen.getByText(/Currently Deciding:/).textContent).toContain("Movie"),
+    expect(screen.getByRole("textbox").value).toBe("Movie"),
   )
+})
+
+test("Dashboard renames the active decision from the deciding field", async () => {
+  seedDecisions([decisionWithOneOption("Dinner")])
+  const user = userEvent.setup()
+  renderDashboard()
+
+  const nameField = screen.getByRole("textbox")
+  await user.clear(nameField)
+  await user.type(nameField, "Restaurant")
+  await user.tab()
+
+  await waitFor(() => {
+    expect(savedDecisions()[0].name).toBe("Restaurant")
+    expect(screen.getByRole("button", { name: /Restaurant/ })).toBeTruthy()
+  })
 })
 
 test("Dashboard shows spreadsheet import errors in a dialog", async () => {

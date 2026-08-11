@@ -4,7 +4,9 @@ import { useDecisions } from "../contexts/UseDecisions";
 import { useNavigate } from "react-router-dom";
 import Box from "@mui/material/Box";
 import Typography from "@mui/material/Typography";
+import TextField from "@mui/material/TextField";
 import Button from "@mui/material/Button";
+import Stack from "@mui/material/Stack";
 import List from "@mui/material/List";
 import ListItem from "@mui/material/ListItem";
 import ListItemButton from "@mui/material/ListItemButton";
@@ -48,6 +50,7 @@ export default function Dashboard() {
     selectedIndex,
     createDecision,
     removeDecision,
+    renameDecision,
   } = useDecisions();
   const { toast } = useToast();
   const navigate = useNavigate();
@@ -383,9 +386,29 @@ export default function Dashboard() {
           />
         </Box>
       </Box>
-      {(decisions.length || null) && <Typography variant="subtitle1">
-        Currently Deciding: <i>{decisions[selectedIndex]?.name}</i>
-      </Typography>}
+      {(decisions.length || null) && (
+        <>
+          <Stack direction="row">
+            <Typography variant="h4" sx={{ mr: 2 }}>Deciding: </Typography>
+            <TextField
+              key={selectedIndex}
+              defaultValue={decisions[selectedIndex]?.name || ""}
+              size="large"
+              sx={{ flex: 1 }}
+              variant="standard"
+              onBlur={(e) => renameDecision(e.target.value)}
+              onKeyDown={(e) => {
+                if (e.key === "Enter") e.target.blur()
+                if (e.key === "Escape") {
+                  e.target.value = decisions[selectedIndex].name
+                  e.target.blur()
+                }
+              }}
+            />
+          </Stack>
+          <br />
+        </>
+      )}
 
       {decisions.length === 0 ? (
         <Typography>No decisions yet — create one to get started.</Typography>

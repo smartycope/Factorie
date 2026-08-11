@@ -1129,9 +1129,11 @@ export default function Quiz() {
             </Box>
 
             <Box sx={{ mt: 2 }}>
-              <Button onClick={handleClearAnswer} sx={{ mr: 1 }}>
-                Clear Answer
-              </Button>
+              {currentAnswer.isAnswered() && (
+                <Button onClick={handleClearAnswer} sx={{ mr: 1 }}>
+                  Clear Answer
+                </Button>
+              )}
               <Button
                 onClick={handleBack}
                 disabled={!history.length}
