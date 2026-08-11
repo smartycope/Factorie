@@ -588,6 +588,12 @@ export default class Decision {
       },
     )
 
+    // The original way of calculating it. This may not be accurate to the comment above, however.
+    // It may be what I actually want though. Honestly not sure.
+    // const perOptionContributions = normalizedAnswers.map((row, i) =>
+    //   row.map((v, j) => v * tiledWeights[i][j]),
+    // )
+
     // objective_contributions = perOptionContributions / weightedDeltaMagnitudes[:, None]
     // A percentage of how much each factor contributed to the distance from the optimal, divided by each option's distance
     // I'm not sure how useful this is: probably just use per_option_contributions or weighted_delta_vectors instead
