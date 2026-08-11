@@ -789,12 +789,15 @@ test("Decision parses answer input, rejects invalid ranges, and supports indexes
   expect(decision.getAnswer("Option", "Score").serialize()).toEqual([3, 7, true])
 })
 
-test("Answer resolves ranges as low, high, median, or a Monte Carlo sample", () => {
+test("Answer resolves ranges using each range calculation mode", () => {
   const answer = new Answer(2, 8)
+  answer.factor = { optimal: 6 }
 
   expect(answer.valueAt(0.25)).toBe(3.5)
   expect(answer.midpoint()).toBe(5)
   expect(answer.rangeRadius()).toBe(3)
+  expect(answer.valueForRange(Answer.rangeModes.BEST)).toBe(6)
+  expect(answer.valueForRange(Answer.rangeModes.WORST)).toBe(2)
   expect(answer.valueForRange(Answer.rangeModes.LOW)).toBe(2)
   expect(answer.valueForRange(Answer.rangeModes.HIGH)).toBe(8)
   expect(answer.valueForRange(Answer.rangeModes.MEDIAN)).toBe(5)
@@ -836,7 +839,7 @@ test("Decision answer helpers interpolate ranges and clear every answer", () => 
   expect(decision.maxAnswers()).toEqual([[null], [null]])
 })
 
-test("Decision calculates deterministic low, high, and median range modes", () => {
+test("Decision calculates deterministic range modes", () => {
   const decision = new Decision("Range modes")
   decision.addFactor({
     name: "Score",
@@ -851,6 +854,8 @@ test("Decision calculates deterministic low, high, and median range modes", () =
   decision.setAnswer("Exact", "Score", 5)
 
   const expectations = [
+    [Answer.rangeModes.BEST, 0.8, "Ranged"],
+    [Answer.rangeModes.WORST, 0.2, "Exact"],
     [Answer.rangeModes.LOW, 0.2, "Exact"],
     [Answer.rangeModes.HIGH, 0.8, "Ranged"],
     [Answer.rangeModes.MEDIAN, 0.5, "Ranged"],

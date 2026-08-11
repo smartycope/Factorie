@@ -40,6 +40,16 @@ const RANGE_MODE_OPTIONS = [
     description: `Average ${Decision.numSamples} random samples from each range.`,
   },
   {
+    value: Answer.rangeModes.BEST,
+    label: "Best",
+    description: "Use the value in each range closest to that factor's optimal.",
+  },
+  {
+    value: Answer.rangeModes.WORST,
+    label: "Worst",
+    description: "Use the value in each range farthest from that factor's optimal.",
+  },
+  {
     value: Answer.rangeModes.HIGH,
     label: "High",
     description: "Use the highest value from every range.",
@@ -376,8 +386,8 @@ function GoodnessPlot({ decision, goodness, goodnessConf }) {
       ([min, max], row) => {
         const uncertainty = Number.isFinite(row.conf) ? Math.abs(row.conf) : 0
         return [
-          Math.min(min, row.value - uncertainty),
-          Math.max(max, row.value + uncertainty),
+          Math.max(Math.min(min, row.value - uncertainty) - 0.01, 0),
+          Math.min(Math.max(max, row.value + uncertainty) + 0.01, 1),
         ]
       },
       [0.5, 0.5],
@@ -478,7 +488,7 @@ function EntropyPlot({ decision, factorNames, entropy, usefulness, weights }) {
             row.weight,
           ]),
           hovertemplate:
-            "%{customdata[0]}<br>Difference: %{y:.2f}<br>Usefulness: %{customdata[1]:.2f}<br>Weight: %{customdata[2]:.0%}<extra></extra>",
+            "%{customdata[0]}<br>Std. Dev: %{y:.2f}<br>Weight: %{customdata[2]:.0%}<br>Usefulness: %{customdata[1]:.2f}<extra></extra>",
         },
       ],
       layout: {
@@ -631,7 +641,7 @@ function HeatmapPlot({
           textfont: { color: showText ? textColors : "#00000000", size: 12 },
           customdata: hoverData,
           hovertemplate:
-            "%{customdata[0]}<br>%{customdata[1]}: %{customdata[2]:.0%}<br>Answer: %{customdata[3]:.1f} / %{customdata[4]:.1f}<br>Weight: %{customdata[5]:.0%}<extra></extra>",
+            "%{customdata[0]}<br>%{customdata[1]}: %{customdata[2]:.0%} good<br>Answer: %{customdata[3]:.1f} / %{customdata[4]:.0f}<br>Weight: %{customdata[5]:.0%}<extra></extra>",
           showlegend: false,
         },
       ],
@@ -753,7 +763,7 @@ function FactorContributionPlot({ decision, best, contributions }) {
   const rows = decision.factors
     .map((factor, factorIndex) => ({
       factor: factor.name,
-      contribution: contributions[selectedOptionIndex]?.[factorIndex] ?? 0,
+      contribution: -contributions[selectedOptionIndex][factorIndex],
     }))
     .sort((a, b) => b.contribution - a.contribution)
   const halfCount = visibleCount / 2

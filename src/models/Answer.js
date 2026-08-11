@@ -1,4 +1,4 @@
-import {nully} from "../utils/misc.js"
+import { nully } from "../utils/misc.js"
 
 function discreteValuesFor(factor) {
   if (!factor || typeof factor.discreteValues !== "function")
@@ -7,13 +7,15 @@ function discreteValuesFor(factor) {
 }
 
 function serializeValue(value, discreteValues) {
-  return discreteValues.find(({number}) => number === value)?.name ?? value
+  return discreteValues.find(({ number }) => number === value)?.name ?? value
 }
 
 function deserializeValue(value, discreteValues) {
   if (typeof value !== "string") return value
 
-  const discreteValue = discreteValues.find(({name}) => name.toLowerCase() === value.toLowerCase())
+  const discreteValue = discreteValues.find(
+    ({ name }) => name.toLowerCase() === value.toLowerCase(),
+  )
   if (!discreteValue)
     throw new Error(`Unknown discrete answer label: "${value}"`)
   return discreteValue.number
@@ -22,6 +24,8 @@ function deserializeValue(value, discreteValues) {
 export default class Answer {
   static rangeModes = Object.freeze({
     MONTE_CARLO: "monteCarlo",
+    BEST: "best",
+    WORST: "worst",
     HIGH: "high",
     LOW: "low",
     MEDIAN: "median",
@@ -65,9 +69,16 @@ export default class Answer {
   }
 
   isTentative() {
-    const {min: factorMin, max: factorMax} = this.factor
+    const { min: factorMin, max: factorMax } = this.factor
     // It's tentative if the user has marked it as such, or if it has the maximum range possible (maximum uncertainty)
-    return this.isAnswered() && (this.tentative || ((factorMin != null && this.min == factorMin) && (factorMax != null && this.max == factorMax)))
+    return (
+      this.isAnswered() &&
+      (this.tentative ||
+        (factorMin != null &&
+          this.min == factorMin &&
+          factorMax != null &&
+          this.max == factorMax))
+    )
   }
 
   // Returns an object, not a string
@@ -75,9 +86,7 @@ export default class Answer {
     const discreteValues = discreteValuesFor(this.factor)
     const min = serializeValue(this.min, discreteValues)
     const max = serializeValue(this.max, discreteValues)
-    return this.tentative ?
-        [min, max, true]
-      : [min, max]
+    return this.tentative ? [min, max, true] : [min, max]
   }
 
   static deserialize(data, factor, option) {
@@ -153,13 +162,7 @@ export default class Answer {
             .toLowerCase()
             .replace(/\s*-\s*/g, "-")
           if (range === normalizedDiscreteAnswer)
-            return new Answer(
-              min.number,
-              max.number,
-              tentative,
-              factor,
-              option,
-            )
+            return new Answer(min.number, max.number, tentative, factor, option)
         }
       }
 
@@ -176,7 +179,7 @@ export default class Answer {
         // EZRegex Version with tentative
         // num = group(either(full_float, signed))
         // pattern = lineStart + ow + num + optional(ow + '-' + ow + num) + ow + optional(group('?', name="tentative"))+lineEnd
-        /^\s*((?:(?:(?:-|\+))?(?:\d*\.\d+|\d+\.\d*)(?:e(?:-|\+)\d+)?|(?:(?:-|\+))?\d+(?:e(?:-|\+)\d+)?))(?:\s*-\s*((?:(?:(?:-|\+))?(?:\d*\.\d+|\d+\.\d*)(?:e(?:-|\+)\d+)?|(?:(?:-|\+))?\d+(?:e(?:-|\+)\d+)?)))?\s*(?:(?<tentative>\?))?$/m
+        /^\s*((?:(?:(?:-|\+))?(?:\d*\.\d+|\d+\.\d*)(?:e(?:-|\+)\d+)?|(?:(?:-|\+))?\d+(?:e(?:-|\+)\d+)?))(?:\s*-\s*((?:(?:(?:-|\+))?(?:\d*\.\d+|\d+\.\d*)(?:e(?:-|\+)\d+)?|(?:(?:-|\+))?\d+(?:e(?:-|\+)\d+)?)))?\s*(?:(?<tentative>\?))?$/m,
       )
       if (m)
         return new Answer(
@@ -193,7 +196,8 @@ export default class Answer {
 
   toString() {
     if (!this.isAnswered()) return ""
-    if (this.isRanged()) return `${this.min} - ${this.max}` + (this.tentative ? "?" : "")
+    if (this.isRanged())
+      return `${this.min} - ${this.max}` + (this.tentative ? "?" : "")
     return `${this.min}` + (this.tentative ? "?" : "")
   }
 
@@ -216,6 +220,23 @@ export default class Answer {
     return (this.max - this.min) / 2
   }
 
+  best(allowUnanswered = false) {
+    if (!this.isAnswered()) return allowUnanswered ? this.factor.optimal : null
+    if (!this.isRanged()) return this.min
+
+    return Math.min(Math.max(this.factor.optimal, this.min), this.max)
+  }
+
+  worst(allowUnanswered = false) {
+    if (!this.isAnswered()) return allowUnanswered ? this.factor.optimal : null
+    if (!this.isRanged()) return this.min
+
+    const minDistance = Math.abs(this.min - this.factor.optimal)
+    const maxDistance = Math.abs(this.max - this.factor.optimal)
+
+    return minDistance >= maxDistance ? this.min : this.max
+  }
+
   // Resolve this answer's range to one value for a results calculation.
   // Monte Carlo intentionally preserves the existing normal distribution,
   // centered on the range midpoint with half the range as its deviation.
@@ -223,6 +244,10 @@ export default class Answer {
     if (!this.isAnswered()) return null
 
     switch (mode) {
+      case Answer.rangeModes.BEST:
+        return this.best()
+      case Answer.rangeModes.WORST:
+        return this.worst()
       case Answer.rangeModes.LOW:
         return this.valueAt(0)
       case Answer.rangeModes.HIGH:
@@ -243,13 +268,13 @@ export default class Answer {
     }
   }
 
-  // TODO: is this still accurate, with the new non-finite min/max system?
+  // TODO: is this still accurate, with the new non-finite min/max system? -- add tests for this
   isAnswered() {
     return Number.isFinite(this.min)
   }
 
   // Is the answer invalid for its factor
-  isInvalid(allow_null=false) {
+  isInvalid(allow_null = false) {
     if (!allow_null && !this.isAnswered()) return null
 
     const factorMin = this.factor.min
