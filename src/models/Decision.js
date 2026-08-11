@@ -4,8 +4,6 @@ import Option from "./Option.js"
 import { normalizeColor } from "./color.js"
 import { percentile } from "../utils/misc.js"
 
-// TODO: remove the threshold member (it doesn't do anything anymore)
-
 // Recursively average equally shaped scalars, vectors, or matrices. This lets
 // calculateAll() aggregate every numeric result returned by _calculate().
 function elementwiseMean(values) {
@@ -749,6 +747,7 @@ export default class Decision {
       per_option_contributions: perOptionContributions,
       objective_contributions: objectiveContributions,
       mean_factor_relevances: meanFactorRelevances,
+      worst_possible_deltas: worstPossibleDeltas,
       badness: normalizedWeightedDists,
       goodness: invertedNormalized,
     }

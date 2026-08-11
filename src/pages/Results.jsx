@@ -632,7 +632,7 @@ function HeatmapPlot({
         ])
       }
     }
-    console.log(textLabels)
+
     return {
       data: [
         {
@@ -770,7 +770,7 @@ function FactorContributionPlot({ decision, best, contributions }) {
   const rows = decision.factors
     .map((factor, factorIndex) => ({
       factor: factor.name,
-      contribution: -contributions[selectedOptionIndex][factorIndex],
+      contribution: contributions[selectedOptionIndex][factorIndex],
     }))
     .sort((a, b) => b.contribution - a.contribution)
   const halfCount = visibleCount / 2
@@ -1188,7 +1188,7 @@ function Summary({ results, best, worst }) {
       </Stack>
     )
   }
-  console.log(results)
+
   return (
     <Box>
       <Box sx={{ mt: 1, whiteSpace: "pre-line" }}>
@@ -1311,7 +1311,7 @@ export default function Results() {
   const calc = useMemo(() => {
     if (!calculationDecision || calculationDecision.isInvalid()) return null
     return calculationDecision.calculateAll({
-      method: "threshold",
+      method: "extremes",
       rangeMode: activeRangeMode,
       run: simulationRun,
     })
@@ -1330,6 +1330,7 @@ export default function Results() {
     results,
     optimalNormalized,
     worstPossibleOptionNormalized,
+    objectiveContributions,
     normalizedAnswers,
     goodness,
     goodnessConf,
@@ -1571,7 +1572,7 @@ export default function Results() {
           key={`${calculationDecision.name}:${best?.is}:${calculationDecision.options.map((option) => option.name).join("|")}`}
           decision={calculationDecision}
           best={best}
-          contributions={calc.mean.per_option_contributions}
+          contributions={objectiveContributions}
         />
 
         <SingleLinePlot results={results} />
