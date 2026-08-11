@@ -754,76 +754,88 @@ function FactorContributionPlot({ decision, best, contributions }) {
   )
   const [selectedOptionIndex, setSelectedOptionIndex] =
     useState(bestOptionIndex)
-  const maximumEvenCount = Math.max(
-    2,
-    decision.factors.length - (decision.factors.length % 2),
+  const maximumFactorCount = decision.factors.length
+  const [factorCount, setFactorCount] = useState(
+    Math.min(10, maximumFactorCount),
   )
-  const [factorCount, setFactorCount] = useState(Math.min(10, maximumEvenCount))
 
   const selectedOption = optionNames[selectedOptionIndex] ?? optionNames[0]
   const visibleCount = Math.min(
-    maximumEvenCount,
-    factorCount === "" ? maximumEvenCount : (
-      Math.max(2, Math.floor(Number(factorCount) / 2) * 2 || 2)
-    ),
+    maximumFactorCount,
+    factorCount === "" ? maximumFactorCount :
+      Math.max(1, Math.floor(Number(factorCount) || 1)),
   )
   const rows = decision.factors
     .map((factor, factorIndex) => ({
       factor: factor.name,
-      contribution: contributions[selectedOptionIndex][factorIndex],
+      contribution: contributions[selectedOptionIndex]?.[factorIndex] ?? 0,
+      color: factor.color,
+      weight: factor.weight,
     }))
     .sort((a, b) => b.contribution - a.contribution)
-  const halfCount = visibleCount / 2
-  const visibleRows =
-    visibleCount >= rows.length ?
-      rows
-    : [...rows.slice(0, halfCount), ...rows.slice(-halfCount)]
-  const maximumMagnitude = Math.max(
-    ...visibleRows.map(({ contribution }) => Math.abs(contribution)),
-    0.01,
-  )
+  const visibleRows = rows.slice(0, visibleCount)
   const factorLabelAnnotations = visibleRows.map(
-    ({ factor, contribution }) => ({
+    ({ factor, color }) => ({
       x: factor,
-      y: contribution,
+      y: 0,
       text: factor,
       showarrow: false,
-      yanchor: contribution >= 0 ? "bottom" : "top",
-      yshift: contribution >= 0 ? 6 : -6,
-      font: { color: theme.palette.text.primary },
+      yanchor: "top",
+      yshift: -6,
+      font: {
+        color: color ? saturateColor(color) : theme.palette.text.primary,
+      },
     }),
   )
   const plot = {
     data: [
       {
         type: "bar",
+        name: "Bad",
         x: visibleRows.map(({ factor }) => factor),
         y: visibleRows.map(({ contribution }) => contribution),
+        width: visibleRows.map(({ weight }) => weight),
         customdata: visibleRows.map(({ factor }) => factor),
-        hovertemplate: "%{customdata}: %{y:.0%}<extra></extra>",
+        hovertemplate: "%{customdata}: %{y:.0%} bad<extra></extra>",
         marker: {
-          color: visibleRows.map(({ contribution }) =>
-            contribution >= 0 ?
-              theme.palette.success.main
-            : theme.palette.error.main,
-          ),
+          color: theme.palette.error.main,
+          line: {
+            color: theme.palette.background.paper,
+            width: 2,
+          },
+        },
+      },
+      {
+        type: "bar",
+        name: "Good",
+        x: visibleRows.map(({ factor }) => factor),
+        y: visibleRows.map(({ contribution }) => 1 - contribution),
+        width: visibleRows.map(({ weight }) => weight),
+        customdata: visibleRows.map(({ factor }) => factor),
+        hovertemplate: "%{customdata}: %{y:.0%} good<extra></extra>",
+        marker: {
+          color: theme.palette.success.main,
+          line: {
+            color: theme.palette.background.paper,
+            width: 2,
+          },
         },
       },
     ],
     layout: {
+      barmode: "stack",
       title: {
-        text: `The Deciding Factors for ${selectedOption}`,
+        text: `Deciding Factors for ${selectedOption}`,
       },
       xaxis: { showticklabels: false },
       yaxis: {
-        range: [-maximumMagnitude * 1.25, maximumMagnitude * 1.25],
+        range: [0, 1.08],
         tickformat: ".0%",
-        zeroline: true,
-        zerolinecolor: theme.palette.text.primary,
-        zerolinewidth: 1,
+        title: { text: "Objective contribution" },
+        rangemode: "nonnegative",
       },
       annotations: factorLabelAnnotations,
-      margin: { t: 60, b: 40, l: 60, r: 20 },
+      margin: { t: 60, b: 60, l: 60, r: 20 },
     },
   }
 
@@ -853,7 +865,7 @@ function FactorContributionPlot({ decision, best, contributions }) {
             value={factorCount}
             onChange={(event) => setFactorCount(event.target.value)}
             slotProps={{
-              htmlInput: { min: 2, max: maximumEvenCount, step: 2 },
+              htmlInput: { min: 1, max: maximumFactorCount, step: 1 },
             }}
             sx={{ width: 130 }}
           />
@@ -1345,6 +1357,7 @@ export default function Results() {
         results: [],
         optimalNormalized: [],
         worstPossibleOptionNormalized: [],
+        objectiveContributions: [],
         normalizedAnswers: [],
         goodness: [],
         goodnessConf: [],
@@ -1371,6 +1384,7 @@ export default function Results() {
       results: resultsRows,
       optimalNormalized: optimal,
       worstPossibleOptionNormalized: worstOpt,
+      objectiveContributions: calc.mean.objective_contributions || [],
       normalizedAnswers: calc.mean.normalized_answers || [],
       goodness: calc.mean.goodness || [],
       goodnessConf: calc.std.goodness || [],
