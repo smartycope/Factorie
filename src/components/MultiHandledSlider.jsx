@@ -54,36 +54,29 @@ export default function MultiHandledSlider({
 
   const onDrag = (e) => {
     if (e.cancelable) e.preventDefault()
+    const draggedLabel = draggingLabel.current
+    if (draggedLabel == null) return
     const rect = sliderRef.current.getBoundingClientRect()
     const clientX = e.touches ? e.touches[0].clientX : e.clientX
     let newPos = clamp((clientX - rect.left) / rect.width, 0, 1)
     if (step && step > 0) newPos = Math.round(newPos / step, digits) * step
 
+    if (overlap === "block") {
+      newPos = clamp(
+        newPos,
+        blockingBounds.current.min,
+        blockingBounds.current.max,
+      )
+    }
+
+    if (overlap === "push")
+      throw new Error("Overlap 'push' is not implemented yet")
+
+    const nextPosition = clamp(newPos, 0, 1)
     onChange((prev) => {
+      if (!Object.prototype.hasOwnProperty.call(prev, draggedLabel)) return prev
       const newHandles = { ...prev }
-
-      if (overlap === "block") {
-        newPos = clamp(
-          newPos,
-          blockingBounds.current.min,
-          blockingBounds.current.max,
-        )
-      }
-
-      if (overlap === "push") {
-        throw new Error("Overlap 'push' is not implemented yet")
-        //   if (currentHandle > 0)
-        //     newHandles[currentHandle - 1] = Math.min(
-        //       newHandles[currentHandle - 1],
-        //       newHandles[currentHandle],
-        //     );
-        //   if (currentHandle < newHandles.length - 1)
-        //     newHandles[currentHandle + 1] = Math.max(
-        //       newHandles[currentHandle + 1],
-        //       newHandles[currentHandle],
-        //     );
-      }
-      newHandles[draggingLabel.current] = clamp(newPos, 0, 1)
+      newHandles[draggedLabel] = nextPosition
 
       return newHandles
     })

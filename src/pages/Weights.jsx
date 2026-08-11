@@ -83,6 +83,14 @@ const WEIGHT_ARRANGEMENTS = [
   },
 ]
 
+function handlesForDecision(decision, handles = {}) {
+  if (!decision) return {}
+  return decision.factors.reduce((validHandles, factor) => {
+    validHandles[factor.name] = handles[factor.name] ?? factor.weight ?? 0
+    return validHandles
+  }, {})
+}
+
 function* mergeSortCoroutine(arr) {
   if (arr.length <= 1) return arr
 
@@ -269,6 +277,17 @@ export default function Weights() {
     }
   }, [decision, selectedIndex])
 
+  const factorHandles = handlesForDecision(decision, handles)
+
+  function updateFactorHandles(update) {
+    setHandles((previous) => {
+      const validPrevious = handlesForDecision(decision, previous)
+      const next =
+        typeof update === "function" ? update(validPrevious) : update
+      return handlesForDecision(decision, next)
+    })
+  }
+
   function startSort() {
     setQuizFinished(false)
     setSortStarted(true)
@@ -302,7 +321,11 @@ export default function Weights() {
     if (!sortedResult || sortedResult.length === 0) return
     const orderedLabels = decision.factors.map((factor) => factor.name)
     setHandles(
-      reorderWeightsForSortedResult(handles, sortedResult, orderedLabels),
+      reorderWeightsForSortedResult(
+        factorHandles,
+        sortedResult,
+        orderedLabels,
+      ),
     )
   }
 
@@ -317,7 +340,7 @@ export default function Weights() {
   }
 
   function arrangeWeights(getWeights) {
-    const orderedLabels = Object.entries(handles)
+    const orderedLabels = Object.entries(factorHandles)
       .sort(([, a], [, b]) => a - b)
       .map(([label]) => label)
     const count = orderedLabels.length
@@ -338,18 +361,20 @@ export default function Weights() {
     const copy = [...decisions]
     const d = Decision.deserialize(JSON.parse(decision.serialize()))
     d.factors.forEach((factor) => {
-      factor.weight = handles[factor.name]
+      factor.weight = factorHandles[factor.name]
     })
     copy[selectedIndex] = d
     setDecisions(copy)
   }
 
-  const labels = Object.keys(handles)
-  const positions = labels.map((label) => handles[label] ?? 0)
+  const labels = Object.keys(factorHandles)
+  const positions = labels.map((label) => factorHandles[label])
 
-  let unsaved
-  if (decision != null)
-    unsaved = positions.some((p, i) => p !== decision.factors[i].weight)
+  const unsaved =
+    decision != null &&
+    decision.factors.some(
+      (factor) => factorHandles[factor.name] !== factor.weight,
+    )
 
   // Plotly visuals
   // sort bars by value (ascending)
@@ -539,12 +564,12 @@ export default function Weights() {
             </Menu>
           </Box>
           <MultiHandledSlider
-            handles={handles}
+            handles={factorHandles}
             overlap={allowReordering ? "free" : "block"}
             gradient={["#0024630f", "#002463"]}
             step={precise ? 0 : 0.01}
             digits={precise ? -1 : 2}
-            onChange={setHandles}
+            onChange={updateFactorHandles}
           />
           <Box sx={{ mt: 2 }}>
             <Box sx={{ display: "flex", alignItems: "center", gap: 2 }}>
