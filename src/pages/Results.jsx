@@ -774,19 +774,6 @@ function FactorContributionPlot({ decision, best, contributions }) {
     }))
     .sort((a, b) => b.contribution - a.contribution)
   const visibleRows = rows.slice(0, visibleCount)
-  const factorLabelAnnotations = visibleRows.map(
-    ({ factor, color }) => ({
-      x: factor,
-      y: 0,
-      text: factor,
-      showarrow: false,
-      yanchor: "top",
-      yshift: -6,
-      font: {
-        color: color ? saturateColor(color) : theme.palette.text.primary,
-      },
-    }),
-  )
   const plot = {
     data: [
       {
@@ -827,14 +814,21 @@ function FactorContributionPlot({ decision, best, contributions }) {
       title: {
         text: `Deciding Factors for ${selectedOption}`,
       },
-      xaxis: { showticklabels: false },
+      xaxis: {
+        tickmode: "array",
+        tickvals: visibleRows.map(({ factor }) => factor),
+        ticktext: visibleRows.map(({ factor, color }) =>
+          coloredPlotLabel(factor, color),
+        ),
+        tickangle: "auto",
+        automargin: true,
+      },
       yaxis: {
         range: [0, 1.08],
         tickformat: ".0%",
         title: { text: "Objective contribution" },
         rangemode: "nonnegative",
       },
-      annotations: factorLabelAnnotations,
       margin: { t: 60, b: 60, l: 60, r: 20 },
     },
   }
