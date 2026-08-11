@@ -594,8 +594,10 @@ function HeatmapPlot({
     for (let i = 0; i < nRows; i++) {
       for (let factorPosition = 0; factorPosition < nCols; factorPosition++) {
         const factorIndex = factorIndexes[factorPosition]
-        const value =
-          1 - Math.abs(calc.mean.delta_vectors_normalized[i][factorIndex])
+        const factorBadness =
+          calc.mean.factor_badness?.[i]?.[factorIndex] ??
+          Math.abs(calc.mean.delta_vectors_normalized[i][factorIndex])
+        const value = 1 - factorBadness
         const weight = weights[factorIndex]
         const color = sampleColorscale(colorscale, value)
         const halfW = (1 * weight) / 2

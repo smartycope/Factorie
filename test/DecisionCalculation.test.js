@@ -206,6 +206,7 @@ describe("Decision._calculate", () => {
       for (const matrix of [
         calculation.normalized_answers,
         calculation.delta_vectors_normalized,
+        calculation.factor_badness,
         calculation.weighted_delta_vectors_normalized,
         calculation.per_option_contributions,
         calculation.objective_contributions,
@@ -257,6 +258,138 @@ describe("Decision._calculate", () => {
     decision._calculate(answers)
 
     expect(answers).toEqual(originalAnswers)
+  })
+
+  test("normalization remains exact for very small non-zero ranges", () => {
+    const decision = new Decision("Tiny scale")
+    decision.addFactor({
+      name: "Tiny",
+      optimal: 1e-20,
+      weight: 1,
+      min: 0,
+      max: 1e-20,
+    })
+    decision.addOption("Best")
+    decision.addOption("Worst")
+    decision.setAnswer("Best", "Tiny", 1e-20)
+    decision.setAnswer("Worst", "Tiny", 0)
+
+    const calculation = calculateRangeMode(
+      decision,
+      Answer.rangeModes.MEDIAN,
+    )
+
+    expect(decision.optimalNormalized()).toEqual([1])
+    expect(calculation.normalized_answers).toEqual([[1], [0]])
+    expect(calculation.goodness).toEqual([1, 0])
+  })
+
+  test("constant factors do not enlarge the worst-possible distance", () => {
+    const decision = new Decision("Constant factor")
+    decision.addFactor({
+      name: "Constant",
+      optimal: 5,
+      weight: 1,
+      min: null,
+      max: null,
+    })
+    decision.addFactor({
+      name: "Variable",
+      optimal: 1,
+      weight: 0.5,
+      min: 0,
+      max: 1,
+    })
+    decision.addOption("Option")
+    decision.setAnswer("Option", "Constant", 5)
+    decision.setAnswer("Option", "Variable", 0)
+
+    expect(decision.worstPossibleDeltasNormalized()).toEqual([0, 1])
+    expect(decision.worstPossibleDistance()).toBeCloseTo(0.5)
+    expect(
+      calculateRangeMode(decision, Answer.rangeModes.MEDIAN).goodness[0],
+    ).toBeCloseTo(0)
+  })
+
+  test("objective contributions are additive shares of squared distance", () => {
+    const decision = new Decision("Contributions")
+    decision.addFactor({
+      name: "X",
+      optimal: 1,
+      weight: 0.6,
+      min: 0,
+      max: 1,
+    })
+    decision.addFactor({
+      name: "Y",
+      optimal: 0,
+      weight: 0.8,
+      min: 0,
+      max: 1,
+    })
+    decision.addOption("Mixed")
+    decision.setAnswer("Mixed", "X", 0.5)
+    decision.setAnswer("Mixed", "Y", 0.5)
+
+    const calculation = calculateRangeMode(
+      decision,
+      Answer.rangeModes.MEDIAN,
+    )
+
+    expect(calculation.per_option_contributions[0]).toEqual([-0.6, 0.8])
+    expect(calculation.objective_contributions[0][0]).toBeCloseTo(0.36)
+    expect(calculation.objective_contributions[0][1]).toBeCloseTo(0.64)
+    expect(
+      calculation.objective_contributions[0].reduce((a, b) => a + b),
+    ).toBeCloseTo(1)
+    expect(calculation.mean_factor_relevances).toEqual(
+      calculation.objective_contributions[0],
+    )
+  })
+
+  test("Monte Carlo explanations do not cancel deviations across an interior optimum", () => {
+    const decision = new Decision("Uncertain explanation")
+    decision.addFactor({
+      name: "Uncertain",
+      optimal: 0.5,
+      weight: 1,
+      min: 0,
+      max: 1,
+    })
+    decision.addFactor({
+      name: "Known shortfall",
+      optimal: 1,
+      weight: 1,
+      min: 0,
+      max: 1,
+    })
+    decision.addOption("Only option")
+    decision.setAnswer("Only option", "Uncertain", [0, 1])
+    decision.setAnswer("Only option", "Known shortfall", 0.8)
+
+    const randomValues = [0, 1]
+    const calculation = decision.calculateAll({
+      rangeMode: Answer.rangeModes.MONTE_CARLO,
+      numSamples: 2,
+      random: () => randomValues.shift(),
+    })
+
+    expect(calculation.mean.delta_vectors_normalized[0][0]).toBe(0)
+    expect(calculation.mean.factor_badness[0][0]).toBe(1)
+    expect(calculation.best.despite).toEqual(["Uncertain"])
+    expect(randomValues).toEqual([])
+  })
+
+  test("Monte Carlo rejects a non-positive or fractional sample count", () => {
+    const decision = createMaximallyUncertainExampleDecision()
+
+    for (const numSamples of [0, -1, 1.5])
+      expect(() =>
+        decision.calculateAll({
+          rangeMode: Answer.rangeModes.MONTE_CARLO,
+          numSamples,
+        }),
+      ).toThrow("Monte Carlo numSamples must be a positive integer")
   })
 })
 

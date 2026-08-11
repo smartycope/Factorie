@@ -509,18 +509,25 @@ export default class Decision {
   optimalNormalized() {
     const mins = this.mins()
     const maxs = this.maxs()
-    return this.optimals().map(
-      (optimal, i) =>
-        (optimal - mins[i]) / (maxs[i] - mins[i] + Number.EPSILON),
+    return this.optimals().map((optimal, i) => {
+      const range = maxs[i] - mins[i]
+      return range === 0 ? 0 : (optimal - mins[i]) / range
+    })
+  }
+
+  worstPossibleDeltasNormalized() {
+    const mins = this.mins()
+    const maxs = this.maxs()
+    return this.optimalNormalized().map((optimal, index) =>
+      maxs[index] === mins[index] ?
+        0
+      : Math.max(Math.abs(optimal), Math.abs(1 - optimal)),
     )
   }
 
   worstPossibleDistance() {
-    const optNorm = this.optimalNormalized()
-    const worst = optNorm.map((v) => (Math.round(v) === 0 ? 1 : 0))
-    const weightedWorstDelta = worst.map(
-      (value, index) =>
-        (value - optNorm[index]) * this.factors[index].weight,
+    const weightedWorstDelta = this.worstPossibleDeltasNormalized().map(
+      (delta, index) => delta * this.factors[index].weight,
     )
     return vectorMagnitude(weightedWorstDelta)
   }
@@ -543,11 +550,13 @@ export default class Decision {
     const minsA = this.mins()
     const maxsA = this.maxs()
 
-    // The answers normalized to the range [0, 1]
+    // Normalize every factor to [0, 1] so unlike units are comparable. A
+    // zero-width practical range is constant and therefore contributes 0.
     const normalizedAnswers = answers.map((row) =>
-      row.map(
-        (v, j) => (v - minsA[j]) / (maxsA[j] - minsA[j] + Number.EPSILON),
-      ),
+      row.map((value, factorIndex) => {
+        const range = maxsA[factorIndex] - minsA[factorIndex]
+        return range === 0 ? 0 : (value - minsA[factorIndex]) / range
+      }),
     )
     const entropy = Array.from({ length: numFactors }, (_, factorIndex) =>
       elementwiseStd(
@@ -562,6 +571,17 @@ export default class Decision {
     // The distance between each option and the optimal
     const deltaVectorsNormalized = normalizedAnswers.map((row) =>
       row.map((v, j) => v - tiledOptimal[0][j]),
+    )
+
+    // Express each factor's distance from its optimum relative to the farthest
+    // feasible value on that factor. Unlike a signed delta, this can be safely
+    // averaged across Monte Carlo samples without opposite sides cancelling.
+    const worstPossibleDeltas = this.worstPossibleDeltasNormalized()
+    const factorBadness = deltaVectorsNormalized.map((row) =>
+      row.map((value, factorIndex) => {
+        const worstDelta = worstPossibleDeltas[factorIndex]
+        return worstDelta === 0 ? 0 : Math.abs(value) / worstDelta
+      }),
     )
     // The weighted delta vector between each option and the optimal
     const weightedDeltaVectorsNormalized = deltaVectorsNormalized.map(
@@ -579,11 +599,8 @@ export default class Decision {
     )
     const invertedNormalized = normalizedWeightedDists.map((v) => 1 - v)
 
-    // per option contributions = normalizedAnswers * tiledWeights
-    // A percentage of how much each factor contributed to the total distance between the optimal and each option
-    // This is really num_options seperate vectors, but they're together for convenience
-    // The sign indicates whether it was towrds or away from the optimal. Take the absolute value for the plain contribution
-    // per_option_contributions = weighted_delta_vectors_normalized / weighted_delta_magnitudes[:, None]
+    // The direction of each option's weighted delta vector. These components
+    // describe direction, not additive percentages, so they need not sum to 1.
     const perOptionContributions = weightedDeltaVectorsNormalized.map(
       (row, optionIndex) => {
         const magnitude = weightedDeltaMagnitudes[optionIndex] || 1
@@ -591,27 +608,24 @@ export default class Decision {
       },
     )
 
-    // The original way of calculating it. This may not be accurate to the comment above, however.
-    // It may be what I actually want though. Honestly not sure.
-    // const perOptionContributions = normalizedAnswers.map((row, i) =>
-    //   row.map((v, j) => v * tiledWeights[i][j]),
-    // )
-
-    // objective_contributions = perOptionContributions / weightedDeltaMagnitudes[:, None]
-    // A percentage of how much each factor contributed to the distance from the optimal, divided by each option's distance
-    // I'm not sure how useful this is: probably just use per_option_contributions or weighted_delta_vectors instead
-    const objectiveContributions = perOptionContributions.map((row, i) => {
-      const denom = weightedDeltaMagnitudes[i] || 1
-      return row.map((x) => x / denom)
+    // Euclidean distance is a square root of a sum of squares. Squared weighted
+    // deltas divided by squared distance are therefore the exact non-negative
+    // shares of that squared distance, and add to 1 for every non-optimal option.
+    const objectiveContributions = weightedDeltaVectorsNormalized.map((row) => {
+      const magnitudeSquared = row.reduce(
+        (sum, value) => sum + value * value,
+        0,
+      )
+      if (magnitudeSquared === 0) return row.map(() => 0)
+      return row.map((value) => (value * value) / magnitudeSquared)
     })
 
-    // The average percentage of how much each factor deviates from the optimal
-    // I'm about 85% sure this is correct
+    // The average share of squared option distance attributable to each factor.
     const meanFactorRelevances = (() => {
       const sums = Array(numFactors).fill(0)
       for (let i = 0; i < numOptions; i++)
         for (let j = 0; j < numFactors; j++)
-          sums[j] += perOptionContributions[i][j]
+          sums[j] += objectiveContributions[i][j]
       return sums.map((s) => s / numOptions)
     })()
 
@@ -620,6 +634,7 @@ export default class Decision {
       entropy,
       usefulness,
       delta_vectors_normalized: deltaVectorsNormalized,
+      factor_badness: factorBadness,
       weighted_delta_vectors_normalized: weightedDeltaVectorsNormalized,
       weighted_delta_magnitudes: weightedDeltaMagnitudes,
       per_option_contributions: perOptionContributions,
@@ -639,7 +654,7 @@ export default class Decision {
         if (visibleCopy.options[index].hidden) visibleCopy.removeOption(index)
       return visibleCopy.calculateAll(options)
     }
-    const numSamples = options.numSamples || Decision.numSamples
+    const numSamples = options.numSamples ?? Decision.numSamples
     const method = options.method || "extremes"
     const minThresh = options.minThresh
     const maxThresh = options.maxThresh
@@ -650,6 +665,8 @@ export default class Decision {
 
     const sampleCount =
       rangeMode === Answer.rangeModes.MONTE_CARLO ? numSamples : 1
+    if (!Number.isInteger(sampleCount) || sampleCount < 1)
+      throw new Error("Monte Carlo numSamples must be a positive integer")
     const calculations = Array.from({ length: sampleCount }, () =>
       this._calculate(this.answerValues(rangeMode, random)),
     )
@@ -684,13 +701,17 @@ export default class Decision {
       if (weighted[i] > weighted[worstIdx]) worstIdx = i
     }
     const options = this.getVisibleOptions().map((option) => option.name)
-    // The abs is because 0 is the best, and if it's non-zero in either direction, + or -, it's still
-    // further away from the optimal.
-    const contrib = calc.delta_vectors_normalized.map((row) =>
-      row.map((v) => Math.abs(v)),
-    )
-    if (min_thresh == null) min_thresh = percentile(contrib.flat(), 20)
-    if (max_thresh == null) max_thresh = percentile(contrib.flat(), 80)
+    // Prefer per-sample factor badness aggregated by calculateAll(). Falling
+    // back keeps bestWorst compatible with callers that provide older results.
+    const worstPossibleDeltas = this.worstPossibleDeltasNormalized()
+    const contrib =
+      calc.factor_badness ??
+      calc.delta_vectors_normalized.map((row) =>
+        row.map((value, factorIndex) => {
+          const worstDelta = worstPossibleDeltas[factorIndex]
+          return worstDelta === 0 ? 0 : Math.abs(value) / worstDelta
+        }),
+      )
     // These need to be seperate, so that the weights actually apply to each
     // (.9 * 0 is still 0)
     const tiledWeights = Array.from({ length: options.length }, () =>
@@ -702,6 +723,14 @@ export default class Decision {
     const goodnessVectors = contrib.map((row, i) =>
       row.map((v, j) => (1 - v) * tiledWeights[i][j]),
     )
+    // min_thresh is retained for compatibility with the prototype API. The
+    // current threshold mode selects unusually strong good/bad explanations.
+    void min_thresh
+    if (max_thresh == null)
+      max_thresh = percentile(
+        [...badnessVectors.flat(), ...goodnessVectors.flat()],
+        80,
+      )
     const argmax = (arr) => arr.reduce((m, v, i) => (v > arr[m] ? i : m), 0)
     const best_because = [this.factors[argmax(goodnessVectors[bestIdx])].name]
     const best_despite = [this.factors[argmax(badnessVectors[bestIdx])].name]

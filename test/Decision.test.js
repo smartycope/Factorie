@@ -803,13 +803,20 @@ test("Answer resolves ranges using each range calculation mode", () => {
   expect(answer.valueForRange(Answer.rangeModes.HIGH)).toBe(8)
   expect(answer.valueForRange(Answer.rangeModes.MEDIAN)).toBe(5)
 
-  const randomValues = [Math.exp(-0.5), 1]
   expect(
-    answer.valueForRange(
-      Answer.rangeModes.MONTE_CARLO,
-      () => randomValues.shift(),
-    ),
-  ).toBeCloseTo(8)
+    answer.valueForRange(Answer.rangeModes.MONTE_CARLO, () => 0.75),
+  ).toBeCloseTo(6.5)
+  expect(
+    answer.valueForRange(Answer.rangeModes.MONTE_CARLO, () => 0),
+  ).toBe(2)
+  expect(
+    answer.valueForRange(Answer.rangeModes.MONTE_CARLO, () => 1),
+  ).toBe(8)
+
+  answer.factor = { optimal: -Infinity }
+  expect(answer.valueForRange(Answer.rangeModes.BEST)).toBe(2)
+  expect(answer.valueForRange(Answer.rangeModes.WORST)).toBe(8)
+  expect(answer.valueForRange(Answer.rangeModes.AVERAGE)).toBe(5)
   expect(() => answer.valueForRange("unknown")).toThrow(
     "Invalid range mode: unknown",
   )
@@ -887,7 +894,7 @@ test("Decision averages Monte Carlo range samples", () => {
   decision.addOption("Ranged")
   decision.setAnswer("Ranged", "Score", [2, 8])
 
-  const randomValues = [Math.exp(-0.5), 0.5, Math.exp(-0.5), 1]
+  const randomValues = [0, 1]
   const calculation = decision.calculateAll({
     rangeMode: Answer.rangeModes.MONTE_CARLO,
     numSamples: 2,

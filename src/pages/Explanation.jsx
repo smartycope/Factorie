@@ -174,6 +174,17 @@ export default function Explanation() {
         This makes sense: if you care less about money, you're more likely to
         pick the meal that tastes better. <br />
         <br />
+        Behind the scenes, each factor is first converted to a scale from 0 to
+        1 using its minimum and maximum. That keeps units like dollars, minutes,
+        and 0–10 ratings comparable. The algorithm then scales each normalized
+        axis by its weight and uses ordinary straight-line distance. Multiplying
+        every weight by the same amount does not change the ranking; only their
+        proportions matter. If a minimum or maximum is calculated from the
+        answers instead of set explicitly, that axis is relative to the current
+        options. Adding a new extreme option can then rescale that factor, so
+        explicit realistic bounds give the most stable comparisons.
+        <br />
+        <br />
         That's all there is to it! Of course, this is a very simple example. In
         real life, you likely have more factors, especially in big decisions.
         For example, you might care about the healthiness of the meal, or the

@@ -232,6 +232,9 @@ export default class Answer {
     if (!this.isAnswered()) return null
     if (!this.isRanged()) return this.min
 
+    if (this.factor.optimal === -Infinity) return this.max
+    if (this.factor.optimal === Infinity) return this.min
+
     const minDistance = Math.abs(this.min - this.factor.optimal)
     const maxDistance = Math.abs(this.max - this.factor.optimal)
 
@@ -247,8 +250,8 @@ export default class Answer {
   }
 
   // Resolve this answer's range to one value for a results calculation.
-  // Monte Carlo intentionally preserves the existing normal distribution,
-  // centered on the range midpoint with half the range as its deviation.
+  // A range only states its bounds, not a more specific probability model, so
+  // Monte Carlo treats every value inside it as equally likely.
   valueForRange(mode = Answer.rangeModes.MEDIAN, random = Math.random) {
     if (!this.isAnswered()) return null
 
@@ -265,15 +268,8 @@ export default class Answer {
         return this.valueAt(1)
       case Answer.rangeModes.MEDIAN:
         return this.midpoint()
-      case Answer.rangeModes.MONTE_CARLO: {
-        let u = 0
-        let v = 0
-        while (u === 0) u = random()
-        while (v === 0) v = random()
-        const standardNormal =
-          Math.sqrt(-2 * Math.log(u)) * Math.cos(2 * Math.PI * v)
-        return this.midpoint() + standardNormal * this.rangeRadius()
-      }
+      case Answer.rangeModes.MONTE_CARLO:
+        return this.isRanged() ? this.valueAt(random()) : this.min
       default:
         throw new Error(`Invalid range mode: ${mode}`)
     }
