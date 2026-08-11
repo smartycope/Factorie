@@ -9,6 +9,8 @@ import graph5 from "../assets/graph5.png"
 import graph6 from "../assets/graph6.png"
 import graph7 from "../assets/graph7.png"
 import graph8 from "../assets/graph8.png"
+import "katex/dist/katex.min.css"
+import Latex from "react-latex-next"
 
 const sections = [
   { id: "how-it-works", label: "How it works" },
@@ -17,7 +19,23 @@ const sections = [
     label: "Interpreting a single option",
   },
   { id: "good-practices", label: "Best Practices" },
+  { id: "the-math", label: "The Math" },
 ]
+
+const formulaSx = {
+  maxWidth: 760,
+  mx: "auto",
+  my: 2,
+  px: 2,
+  py: 1.5,
+  overflowX: "auto",
+  borderRadius: 1,
+  bgcolor: "action.hover",
+  fontFamily: "monospace",
+  fontSize: "1rem",
+  textAlign: "center",
+  whiteSpace: "nowrap",
+}
 
 function scrollToSection(id, behavior = "smooth") {
   const section = document.getElementById(id)
@@ -174,8 +192,8 @@ export default function Explanation() {
         This makes sense: if you care less about money, you're more likely to
         pick the meal that tastes better. <br />
         <br />
-        Behind the scenes, each factor is first converted to a scale from 0 to
-        1 using its minimum and maximum. That keeps units like dollars, minutes,
+        Behind the scenes, each factor is first converted to a scale from 0 to 1
+        using its minimum and maximum. That keeps units like dollars, minutes,
         and 0–10 ratings comparable. The algorithm then scales each normalized
         axis by its weight and uses ordinary straight-line distance. Multiplying
         every weight by the same amount does not change the ranking; only their
@@ -324,6 +342,136 @@ export default function Explanation() {
           as well.
         </li>
       </Box>
+      <br />
+      <hr />
+      <br />
+      <Typography variant="h5" gutterBottom id="the-math">
+        The Math
+      </Typography>
+      <Typography paragraph>
+        The graphs above show the basic idea geometrically. This section writes
+        out the same process more precisely. The subscripts identify which
+        option and factor a value belongs to: <strong>i</strong> means an
+        option, and <strong>j</strong> means a factor.
+      </Typography>
+
+      <Typography variant="h6" gutterBottom>
+        1. Normalize every factor
+      </Typography>
+      <Typography paragraph>
+        Dollars, minutes, and 0–10 ratings cannot be compared directly. Each
+        answer is first converted to a position on a common scale from 0 to 1:
+      </Typography>
+      <Latex>{`\\[
+        x_{ij}=\\frac{a_{ij}-\\min_j}{\\max_j-\\min_j}
+        \\]`}</Latex>
+      <Box component="ul" sx={{ maxWidth: 760, mx: "auto", textAlign: "left" }}>
+        <li>
+          <strong>aᵢⱼ</strong> is option i's original answer for factor j.
+        </li>
+        <li>
+          <strong>minⱼ</strong> and <strong>maxⱼ</strong> are factor j's
+          effective bounds.
+        </li>
+        <li>
+          <strong>xᵢⱼ</strong> is the resulting normalized answer. Zero is the
+          lower bound and one is the upper bound.
+        </li>
+      </Box>
+      <Typography paragraph>
+        The factor's optimal value is normalized in exactly the same way and is
+        called <strong>oⱼ</strong>. A constant factor whose minimum and maximum
+        are equal cannot distinguish between options, so it contributes no
+        distance (but that's a bit of a silly case, that factor might as well
+        not exist).
+      </Typography>
+
+      <Typography variant="h6" gutterBottom>
+        2. Measure weighted distance from the optimum
+      </Typography>
+      <Typography paragraph>
+        For each factor, the algorithm subtracts the normalized optimum from the
+        normalized answer, then scales that difference by the factor's weight.
+        It combines those weighted differences using ordinary Euclidean
+        distance:
+      </Typography>
+      <Latex>{`\\[d_i=\\sqrt{\\sum_{j=1}^{n}\\left[w_j(x_{ij}-o_j)\\right]^2}\\]`}</Latex>
+      <Box component="ul" sx={{ maxWidth: 760, mx: "auto", textAlign: "left" }}>
+        <li>
+          <strong>wⱼ</strong> is the weight assigned to factor j.
+        </li>
+        <li>
+          <strong>xᵢⱼ − oⱼ</strong> is option i's normalized deviation from the
+          desired value on factor j.
+        </li>
+        <li>
+          <strong>Σⱼ</strong> means to add the squared weighted deviations for
+          every factor.
+        </li>
+        <li>
+          <strong>dᵢ</strong> is option i's total weighted distance from the
+          optimal point. A smaller distance is better.
+        </li>
+      </Box>
+      <Typography paragraph>
+        This is the mathematical version of squishing each axis by its weight.
+        Multiplying every weight by the same amount scales all raw distances
+        equally, so only the proportions between weights affect the final
+        ranking.
+      </Typography>
+
+      <Typography variant="h6" gutterBottom>
+        3. Find the worst possible distance
+      </Typography>
+      <Typography paragraph>
+        To turn distance into an understandable 0–100% score, the algorithm
+        finds the farthest feasible endpoint from the optimum on each normalized
+        factor:
+      </Typography>
+      <Latex>{`\\[m_j=\\max(|o_j|,|1-o_j|)\\]`}</Latex>
+      <Typography paragraph>
+        Here, <strong>mⱼ</strong> is factor j's greatest possible normalized
+        deviation. Combining those worst deviations with the same weights gives
+        the farthest possible overall distance:
+      </Typography>
+      <Latex>{`\\[D_{\\max}=\\sqrt{\\sum_{j=1}^{n}(w_jm_j)^2}\\]`}</Latex>
+      <Typography paragraph>
+        <strong>Dₘₐₓ</strong> is the distance from the optimal point to the
+        farthest feasible corner of the multidimensional space.
+      </Typography>
+
+      <Typography variant="h6" gutterBottom>
+        4. Convert distance into goodness
+      </Typography>
+      <Typography paragraph>
+        Finally, each option's distance is compared with that worst possible
+        distance:
+      </Typography>
+      <Latex>{`\\[
+        \\text{badness}_i=\\frac{d_i}{D_{\\max}},
+        \\qquad
+        \\text{goodness}_i=1-\\text{badness}_i
+        \\]`}</Latex>
+      <Typography paragraph>
+        An option at the optimal point has 0% badness and 100% goodness. An
+        option at the farthest feasible point has 100% badness and 0% goodness.
+        Best and worst are simply the options with the smallest and largest
+        weighted distances, respectively. Likewise, the point exactly in between
+        the best and worst, the "average" option, has 50% badness and 50%
+        goodness.
+      </Typography>
+
+      <Typography variant="h6" gutterBottom>
+        Uncertain answers
+      </Typography>
+      <Typography paragraph>
+        When an answer is a range, deterministic modes can use its best, worst,
+        high, low, average, or middle value. Monte Carlo mode instead draws
+        values uniformly from inside every range, performs the complete
+        calculation repeatedly, and reports the mean and standard deviation of
+        the results. Its ranking therefore reflects average distance from the
+        optimum across those simulated possibilities.
+      </Typography>
     </Box>
   )
 }

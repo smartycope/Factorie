@@ -26,6 +26,7 @@
     "plotly.js-dist-min": "^2.24.1",
     "react": "^19.2.0",
     "react-dom": "^19.2.0",
+    "react-latex-next": "^3.0.0",
     "react-plotly.js": "^2.5.1",
     "react-router-dom": "^6.14.1",
     "xlsx-js-style": "^1.2.0"
