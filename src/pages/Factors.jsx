@@ -429,6 +429,32 @@ export default function Factors() {
     useSensor(KeyboardSensor, { coordinateGetter: sortableKeyboardCoordinates }),
   )
   const unitMenuOpen = Boolean(unitMenuAnchorEl)
+  const weightComparisons = useMemo(() => {
+    const otherFactors =
+      decision?.factors
+        .map((factor, index) => ({
+          index,
+          name: factorNameText(factor.name),
+          weight: factor.weight,
+        }))
+        .filter(
+          (factor) =>
+            factor.index !== editFactorIndex &&
+            factor.name &&
+            Number.isFinite(factor.weight),
+        ) ?? []
+
+    return {
+      below: otherFactors
+        .filter((factor) => factor.weight < addWeight)
+        .sort((a, b) => a.weight - b.weight)
+        .at(-1)?.name,
+      above: otherFactors
+        .filter((factor) => factor.weight > addWeight)
+        .sort((a, b) => a.weight - b.weight)
+        .at(0)?.name,
+    }
+  }, [addWeight, decision, editFactorIndex])
 
   const resetFormFields = useCallback(() => {
     setAddName(DEFAULTS.name)
@@ -745,6 +771,23 @@ export default function Factors() {
                     value={Math.round(addWeight * 100)}
                     onChange={(e, v) => setAddWeight(v / 100)}
                     valueLabelDisplay="auto"
+                    valueLabelFormat={(value) => (
+                      <Box
+                        sx={{
+                          display: "flex",
+                          alignItems: "center",
+                          gap: 1,
+                          whiteSpace: "nowrap",
+                        }}>
+                        {weightComparisons.below && (
+                          <span>{weightComparisons.below}</span>
+                        )}
+                        <span>⇐ {value}% ⇒</span>
+                        {weightComparisons.above && (
+                          <span>{weightComparisons.above}</span>
+                        )}
+                      </Box>
+                    )}
                     min={0}
                     max={100}
                   />

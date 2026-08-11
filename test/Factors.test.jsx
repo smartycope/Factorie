@@ -89,6 +89,36 @@ test("editing an existing factor color saves immediately without applying other 
   expect(nameInput.value).toBe("Draft Alpha")
 })
 
+test("weight tooltip shows the adjacent lower and higher weighted factors", async () => {
+  const decision = new Decision("Dinner")
+  decision.addFactor({ name: "Lowest", weight: 0.1 })
+  decision.addFactor({ name: "Alpha", weight: 0.2 })
+  decision.addFactor({ name: "Bravo", weight: 0.5 })
+  decision.addFactor({ name: "Charlie", weight: 0.8 })
+  decision.addFactor({ name: "Highest", weight: 0.9 })
+  localStorage.setItem(
+    STORAGE_KEY,
+    JSON.stringify([JSON.parse(decision.serialize())]),
+  )
+  const user = userEvent.setup()
+  render(
+    <ThemeProvider theme={createTheme()}>
+      <DecisionsProvider>
+        <Factors />
+      </DecisionsProvider>
+    </ThemeProvider>,
+  )
+
+  await user.click(screen.getByRole("row", { name: /Bravo/ }))
+
+  const weightSlider = screen.getByRole("slider")
+  expect(weightSlider.value).toBe("50")
+  expect(weightSlider.parentElement.textContent).toContain("Alpha50%Charlie")
+  expect(weightSlider.parentElement.textContent).not.toContain("Lowest")
+  expect(weightSlider.parentElement.textContent).not.toContain("Highest")
+  expect(weightSlider.parentElement.textContent).not.toContain("Bravo")
+})
+
 test("factor scale inputs and calculated bounds clear each other", async () => {
   seedDecision()
   const user = userEvent.setup()
