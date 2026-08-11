@@ -10,6 +10,7 @@ import Menu from "@mui/material/Menu"
 import MenuItem from "@mui/material/MenuItem"
 import MultiHandledSlider from "../components/MultiHandledSlider"
 import { Checkbox, FormControlLabel, TextField } from "@mui/material"
+import { reorderWeightsForSortedResult } from "../utils/weights.js"
 
 // TODO: add a "back" button to change your previous answer in the quiz without resetting everything (difficult, possibly impossible)
 // TODO: let factors that were answered as "about the same" have the same weight and be grouped together in the sorting
@@ -299,22 +300,9 @@ export default function Weights() {
   function applySortedWeightsToPositions(sortedResult) {
     setQuizFinished(true)
     if (!sortedResult || sortedResult.length === 0) return
-    const n = sortedResult.length
-
-    const newWeightsSeq = easespace(0, 1, n)
     const orderedLabels = decision.factors.map((factor) => factor.name)
-    const orderedWeights = Array(orderedLabels.length).fill(0)
-    for (let i = 0; i < sortedResult.length; i++) {
-      const label = sortedResult[i]
-      const value = newWeightsSeq[i]
-      const idx = orderedLabels.indexOf(label)
-      if (idx !== -1) orderedWeights[idx] = value
-    }
     setHandles(
-      orderedLabels.reduce((acc, label, i) => {
-        acc[label] = orderedWeights[i] ?? 0
-        return acc
-      }, {}),
+      reorderWeightsForSortedResult(handles, sortedResult, orderedLabels),
     )
   }
 
