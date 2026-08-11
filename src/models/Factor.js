@@ -86,9 +86,13 @@ export default class Factor {
 
   discreteValues() {
     if (typeof this.unit !== "string") return []
-    return [...this.unit.matchAll(discreteRegex)].map(({ groups }) => ({
+    const rtn = [...this.unit.matchAll(discreteRegex)].map(({ groups }) => ({
       number: parseFloat(groups.number),
       name: groups.name.trim(),
     }))
+    // Check for duplicate numbers
+    if (new Set(rtn.map(({ number }) => number)).length !== rtn.length)
+      throw new Error("Discrete units must have unique numbers")
+    return rtn
   }
 }
