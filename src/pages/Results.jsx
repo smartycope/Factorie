@@ -13,7 +13,7 @@ import Checkbox from "@mui/material/Checkbox"
 import FormControlLabel from "@mui/material/FormControlLabel"
 import Collapse from "@mui/material/Collapse"
 import ExpandMoreIcon from "@mui/icons-material/ExpandMore"
-import { useTheme } from "@mui/material/styles"
+import { useTheme, darken } from "@mui/material/styles"
 import Plot from "react-plotly.js"
 import * as PCAImport from "pca-js"
 import texts from "../assets/texts.json"
@@ -319,7 +319,7 @@ function saturateColor(color, amount = 0.6) {
 
 function coloredPlotLabel(label, color) {
   if (!color) return label
-  return `<span style="color:${saturateColor(color)}">${label}</span>`
+  return `<span style="color:${saturateColor(darken(color, .15), .9)}">${label}</span>`
 }
 
 function radarColorForLabel(label) {
