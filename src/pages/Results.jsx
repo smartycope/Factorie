@@ -42,12 +42,14 @@ const RANGE_MODE_OPTIONS = [
   {
     value: Answer.rangeModes.BEST,
     label: "Best",
-    description: "Use the value in each range closest to that factor's optimal.",
+    description:
+      "Use the value in each range closest to that factor's optimal.",
   },
   {
     value: Answer.rangeModes.WORST,
     label: "Worst",
-    description: "Use the value in each range farthest from that factor's optimal.",
+    description:
+      "Use the value in each range farthest from that factor's optimal.",
   },
   {
     value: Answer.rangeModes.AVERAGE,
@@ -76,12 +78,12 @@ function rangeModeOption(mode) {
 }
 
 // function joinAnd(items, { oxford = false, ampersand = false } = {}) {
-    // const andToken = ampersand ? " & " : " and "
-    // if (!items || items.length === 0) return ""
-    // if (items.length === 1) return items[0]
-    // if (items.length === 2) return items.join(andToken)
-    // const sep = oxford ? `,${andToken}` : andToken
-    // return `${items.slice(0, -1).join(", ")}${sep}${items[items.length - 1]}`
+// const andToken = ampersand ? " & " : " and "
+// if (!items || items.length === 0) return ""
+// if (items.length === 1) return items[0]
+// if (items.length === 2) return items.join(andToken)
+// const sep = oxford ? `,${andToken}` : andToken
+// return `${items.slice(0, -1).join(", ")}${sep}${items[items.length - 1]}`
 // }
 
 function rangeInputValue(factor, ranges, endpoint) {
@@ -118,7 +120,7 @@ function SimulationControls({
 }) {
   const [expanded, setExpanded] = useState(true)
   const selectedMode = rangeModeOption(rangeMode)
-  const activeMode = rangeModeOption(activeRangeMode)
+  // const activeMode = rangeModeOption(activeRangeMode)
 
   return (
     <Paper variant="outlined" sx={{ p: 2, mt: 2 }}>
@@ -138,20 +140,20 @@ function SimulationControls({
         How to deal with uncertainty {/* ({activeMode.label}) */}
       </Button>
       <Collapse in={expanded}>
-      {requiresUnansweredRanges && (
-        <>
-          <FormControlLabel
-            control={
+        {requiresUnansweredRanges && (
+          <>
+            <FormControlLabel
+              control={
                 <Checkbox
-                checked={enabled}
-                onChange={(event) => onEnabledChange(event.target.checked)}
+                  checked={enabled}
+                  onChange={(event) => onEnabledChange(event.target.checked)}
                 />
-            }
-            label="Fill unanswered entries from their full possible ranges"
-          />
+              }
+              label="Fill unanswered entries from their full possible ranges"
+            />
             <br />
-        </>
-      )}
+          </>
+        )}
         <TextField
           select
           fullWidth
@@ -229,7 +231,6 @@ function SimulationControls({
               disabled={!canRun}
               onClick={() => {
                 onRun()
-                setExpanded(false)
               }}
               sx={{ alignSelf: "flex-start" }}>
               {rangeMode === Answer.rangeModes.MONTE_CARLO ?
@@ -319,7 +320,7 @@ function saturateColor(color, amount = 0.6) {
 
 function coloredPlotLabel(label, color) {
   if (!color) return label
-  return `<span style="color:${saturateColor(darken(color, .15), .9)}">${label}</span>`
+  return `<span style="color:${saturateColor(darken(color, 0.15), 0.9)}">${label}</span>`
 }
 
 function radarColorForLabel(label) {
@@ -398,7 +399,8 @@ function GoodnessPlot({ decision, goodness, goodnessConf }) {
       [0.5, 0.5],
     )
     const valueRange =
-      rangeMin === rangeMax ? [rangeMin - 0.01, rangeMax + 0.01]
+      rangeMin === rangeMax ?
+        [rangeMin - 0.01, rangeMax + 0.01]
       : [rangeMin, rangeMax]
     return {
       data: [
@@ -762,8 +764,9 @@ function FactorContributionPlot({ decision, best, contributions }) {
   const selectedOption = optionNames[selectedOptionIndex] ?? optionNames[0]
   const visibleCount = Math.min(
     maximumFactorCount,
-    factorCount === "" ? maximumFactorCount :
-      Math.max(1, Math.floor(Number(factorCount) || 1)),
+    factorCount === "" ? maximumFactorCount : (
+      Math.max(1, Math.floor(Number(factorCount) || 1))
+    ),
   )
   const rows = decision.factors
     .map((factor, factorIndex) => ({
