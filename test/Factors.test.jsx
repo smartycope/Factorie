@@ -89,6 +89,66 @@ test("editing an existing factor color saves immediately without applying other 
   expect(nameInput.value).toBe("Draft Alpha")
 })
 
+test("clearing existing answers follows scale edits until manually overridden", async () => {
+  seedDecision()
+  const user = userEvent.setup()
+  render(
+    <ThemeProvider theme={createTheme()}>
+      <DecisionsProvider>
+        <Factors />
+      </DecisionsProvider>
+    </ThemeProvider>,
+  )
+
+  await user.click(screen.getByRole("row", { name: /Alpha/ }))
+  const clearAnswers = screen.getByRole("checkbox", {
+    name: "Clear existing answers",
+  })
+  const unitInput = screen.getByRole("textbox", { name: "Unit" })
+  const minInput = screen.getByRole("spinbutton", { name: "Min" })
+  const maxInput = screen.getByRole("spinbutton", { name: "Max" })
+
+  expect(clearAnswers.checked).toBe(false)
+
+  await user.type(unitInput, "points")
+  expect(clearAnswers.checked).toBe(true)
+  await user.clear(unitInput)
+  expect(clearAnswers.checked).toBe(false)
+
+  await user.clear(minInput)
+  await user.type(minInput, "1")
+  expect(clearAnswers.checked).toBe(true)
+  await user.clear(minInput)
+  await user.type(minInput, "0")
+  expect(clearAnswers.checked).toBe(false)
+
+  await user.clear(maxInput)
+  await user.type(maxInput, "11")
+  expect(clearAnswers.checked).toBe(true)
+  await user.click(clearAnswers)
+  expect(clearAnswers.checked).toBe(false)
+
+  await user.clear(unitInput)
+  await user.type(unitInput, "stars")
+  expect(clearAnswers.checked).toBe(false)
+
+  await user.click(screen.getByRole("button", { name: "Modify" }))
+  await waitFor(() => expect(savedDecision().factors[0].unit).toBe("stars"))
+  expect(savedDecision().answers[0][0]).toEqual([7, 7])
+
+  await user.click(screen.getByRole("row", { name: /Alpha/ }))
+  const nextMinInput = screen.getByRole("spinbutton", { name: "Min" })
+  await user.clear(nextMinInput)
+  await user.type(nextMinInput, "2")
+  expect(
+    screen.getByRole("checkbox", { name: "Clear existing answers" }).checked,
+  ).toBe(true)
+  await user.click(screen.getByRole("button", { name: "Modify" }))
+  await waitFor(() =>
+    expect(savedDecision().answers[0][0]).toEqual([null, null]),
+  )
+})
+
 test("weight tooltip shows the adjacent lower and higher weighted factors", async () => {
   const decision = new Decision("Dinner")
   decision.addFactor({ name: "Lowest", weight: 0.1 })
@@ -113,7 +173,9 @@ test("weight tooltip shows the adjacent lower and higher weighted factors", asyn
 
   const weightSlider = screen.getByRole("slider")
   expect(weightSlider.value).toBe("50")
-  expect(weightSlider.parentElement.textContent).toContain("Alpha50%Charlie")
+  expect(weightSlider.parentElement.textContent).toContain(
+    "Alpha⇐ 50% ⇒Charlie",
+  )
   expect(weightSlider.parentElement.textContent).not.toContain("Lowest")
   expect(weightSlider.parentElement.textContent).not.toContain("Highest")
   expect(weightSlider.parentElement.textContent).not.toContain("Bravo")

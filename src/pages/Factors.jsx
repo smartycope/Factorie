@@ -416,7 +416,8 @@ export default function Factors() {
 
   // Edit state tracks which factor (by index) is being modified. We reuse the add form fields while editing.
   const [editFactorIndex, setEditFactorIndex] = useState(null)
-  const [clearExistingAnswers, setClearExistingAnswers] = useState(true)
+  const [clearExistingAnswersOverride, setClearExistingAnswersOverride] =
+    useState(null)
   const [markExistingAnswersTentative, setMarkExistingAnswersTentative] =
     useState(false)
   const [showOnlyUnfinished, setShowOnlyUnfinished] = useState(false)
@@ -455,6 +456,19 @@ export default function Factors() {
         .at(0)?.name,
     }
   }, [addWeight, decision, editFactorIndex])
+  const editedFactor = decision?.factors[editFactorIndex] ?? null
+  const editedMin =
+    addMinUnbounded || !Number.isFinite(Number(addMin)) ? null : Number(addMin)
+  const editedMax =
+    addMaxUnbounded || !Number.isFinite(Number(addMax)) ? null : Number(addMax)
+  const factorScaleChanged = Boolean(
+    editedFactor &&
+      (addUnit !== (editedFactor.unit ?? "") ||
+        editedMin !== editedFactor.min ||
+        editedMax !== editedFactor.max),
+  )
+  const clearExistingAnswers =
+    clearExistingAnswersOverride ?? factorScaleChanged
 
   const resetFormFields = useCallback(() => {
     setAddName(DEFAULTS.name)
@@ -466,7 +480,7 @@ export default function Factors() {
     setAddMin(DEFAULTS.min)
     setAddMax(DEFAULTS.max)
     setAddColor(DEFAULTS.color)
-    setClearExistingAnswers(true)
+    setClearExistingAnswersOverride(null)
     setMarkExistingAnswersTentative(false)
   }, [])
 
@@ -496,7 +510,7 @@ export default function Factors() {
     setAddMin(factor.min ?? DEFAULTS.min)
     setAddMax(factor.max ?? DEFAULTS.max)
     setAddColor(factor.color ?? DEFAULTS.color)
-    setClearExistingAnswers(true)
+    setClearExistingAnswersOverride(null)
     setMarkExistingAnswersTentative(false)
   }
 
@@ -564,7 +578,7 @@ export default function Factors() {
         addMaxUnbounded || !Number.isFinite(Number(addMax)) ?
           null
         : Number(addMax),
-      unit: addUnit || undefined,
+      unit: editFactorIndex != null ? addUnit : addUnit || undefined,
       color: addColor,
     }
 
@@ -866,7 +880,7 @@ export default function Factors() {
                       <Checkbox
                         checked={clearExistingAnswers}
                         onChange={(event) => {
-                          setClearExistingAnswers(event.target.checked)
+                          setClearExistingAnswersOverride(event.target.checked)
                           if (event.target.checked)
                             setMarkExistingAnswersTentative(false)
                         }}
@@ -881,7 +895,7 @@ export default function Factors() {
                         onChange={(event) => {
                           setMarkExistingAnswersTentative(event.target.checked)
                           if (event.target.checked)
-                            setClearExistingAnswers(false)
+                            setClearExistingAnswersOverride(false)
                         }}
                       />
                     }
