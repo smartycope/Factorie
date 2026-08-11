@@ -326,15 +326,16 @@ export default function Explanation() {
           to get the decision you want, you probably can. Don't do that.
         </li>
         <li>
-          Factors work best when they describe unique concepts. For example, if
-          you're deciding what to eat, and as factors you put both "does it
-          taste good" and "is it flavorful", and weight them the same and give
-          the same answers, it's essentially going to bias the result as if you
-          weighted it double what you actually weighted it as (even if that's
-          more than 10). However, you can get very specific: if you have both
-          "does it have lots of flavor" and "does it have good texture", and you
-          (at least potentially) give different weights and values for those,
-          then those are both valid factors.
+          Factors work best when they describe unique concepts. They should be
+          mutually exclusive as much as possible. For example, if you're
+          deciding what to eat, and as factors you put both "does it taste good"
+          and "is it flavorful", and weight them the same and give the same
+          answers, it's essentially going to bias the result as if you weighted
+          it double what you actually weighted it as (even if that's more than
+          10). However, you can get very specific: if you have both "does it
+          have lots of flavor" and "does it have good texture", and you (at
+          least potentially) give different weights and values for those, then
+          those are both valid factors.
         </li>
         <li>
           This app is able to handle as many factors as you can think of. I've
