@@ -922,6 +922,55 @@ test("Decision averages Monte Carlo range samples", () => {
   expect(randomValues).toEqual([])
 })
 
+test("Monte Carlo shares maximally uncertain samples per factor but samples ordinary ranges independently", () => {
+  const decision = new Decision("Shared uncertainty")
+  decision.addFactor({
+    name: "Score",
+    optimal: 10,
+    weight: 1,
+    min: 0,
+    max: 10,
+  })
+  decision.addFactor({
+    name: "Cost",
+    optimal: 0,
+    weight: 1,
+    min: 0,
+    max: 100,
+  })
+  for (const option of [
+    "Unknown A",
+    "Unknown B",
+    "Max range",
+    "Range A",
+    "Range B",
+  ])
+    decision.addOption(option)
+  decision.setAnswer("Max range", "Score", [0, 10])
+  decision.setAnswer("Max range", "Cost", [0, 100])
+  decision.setAnswer("Range A", "Score", [2, 8])
+  decision.setAnswer("Range A", "Cost", [20, 80])
+  decision.setAnswer("Range B", "Score", [2, 8])
+  decision.setAnswer("Range B", "Cost", [20, 80])
+
+  const simulated = decision.uncertainCopy()
+  const randomValues = [0.25, 0.75, 0.1, 0.2, 0.9, 0.8]
+
+  expect(
+    simulated.answerValues(
+      Answer.rangeModes.MONTE_CARLO,
+      () => randomValues.shift(),
+    ),
+  ).toEqual([
+    [2.5, 75],
+    [2.5, 75],
+    [2.5, 75],
+    [2.6, 32],
+    [7.4, 68],
+  ])
+  expect(randomValues).toEqual([])
+})
+
 test("hidden options do not require non-finite simulation ranges", () => {
   const decision = new Decision("Simulation visibility")
   decision.addFactor({

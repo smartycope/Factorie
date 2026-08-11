@@ -37,7 +37,7 @@ const RANGE_MODE_OPTIONS = [
   {
     value: Answer.rangeModes.MONTE_CARLO,
     label: "Monte Carlo simulation",
-    description: `Average ${Decision.numSamples} random samples from each range.`,
+    description: `Average ${Decision.numSamples} random samples. Unanswered options share one sample per factor.`,
   },
   {
     value: Answer.rangeModes.BEST,

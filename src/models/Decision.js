@@ -390,7 +390,16 @@ export default class Decision {
   }
 
   copy() {
-    return Decision.deserialize(this.serialize({ includeLocalMetadata: true }))
+    const copy = Decision.deserialize(
+      this.serialize({ includeLocalMetadata: true }),
+    )
+    this.answers.forEach((row, optionIndex) =>
+      row.forEach((answer, factorIndex) => {
+        copy.answers[optionIndex][factorIndex]._maximallyUncertain =
+          answer._maximallyUncertain
+      }),
+    )
+    return copy
   }
 
   // Returns an array of factors that have non-finite ranges, given the currently answered answers.
@@ -413,7 +422,8 @@ export default class Decision {
   }
 
   // Return a copy of the current decision, but with any unanswered answers replaced with maximally
-  // uncertain answers (their mins and maxs equal their factors' mins and maxs)
+  // uncertain answers (their mins and maxs equal their factors' mins and maxs). These synthesized
+  // answers are marked so Monte Carlo can share one sampled value across the factor.
   // Because factors can have non-finite ranges, overrideFactorRanges can be used to override the ranges
   // of specific factors. Format looks like {factorName: [min, max]}
   uncertainCopy(overrideFactorRanges = {}) {
@@ -435,6 +445,7 @@ export default class Decision {
         if (ans.isAnswered()) return
         ans.min = min
         ans.max = max
+        ans._maximallyUncertain = true
       })
     })
 
@@ -482,14 +493,30 @@ export default class Decision {
    * Resolve every Answer to one numeric value for a calculation pass.
    *
    * Deterministic modes select a defined point such as Best, Worst, or Median.
-   * Monte Carlo asks each ranged Answer for an independent random point inside
-   * its bounds. The injectable random function makes simulations reproducible.
+   * Monte Carlo resolves maximally uncertain answers to one shared value per
+   * factor. Other ranged answers receive independent random points inside their
+   * bounds. The injectable random function makes simulations reproducible.
    *
    * @returns {number[][]} Values shaped [option][factor].
    */
   answerValues(rangeMode = Answer.rangeModes.MEDIAN, random = Math.random) {
+    const sharedFactorValues =
+      rangeMode === Answer.rangeModes.MONTE_CARLO ?
+        this.factors.map((_, factorIndex) => {
+          const maximallyUncertainAnswer = this.answers
+            .map((row) => row[factorIndex])
+            .find((answer) => answer.isMaximallyUncertain())
+          return maximallyUncertainAnswer?.valueForRange(rangeMode, random)
+        })
+      : []
+
     return this.answers.map((row) =>
-      row.map((answer) => answer.valueForRange(rangeMode, random)),
+      row.map((answer, factorIndex) =>
+        rangeMode === Answer.rangeModes.MONTE_CARLO &&
+        answer.isMaximallyUncertain() ?
+          sharedFactorValues[factorIndex]
+        : answer.valueForRange(rangeMode, random),
+      ),
     )
   }
 

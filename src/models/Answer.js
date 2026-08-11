@@ -44,6 +44,7 @@ export default class Answer {
     this._min = min
     this._max = max
     this.tentative = Boolean(tentative)
+    this._maximallyUncertain = false
     // They're either always both null or both defined
     if (nully(min) || nully(max)) {
       this._min = null
@@ -52,6 +53,7 @@ export default class Answer {
   }
 
   set min(min) {
+    this._maximallyUncertain = false
     this._min = min
     // If we're going from unanswered to answered
     if (this._max === null) this._max = min
@@ -62,6 +64,7 @@ export default class Answer {
   }
 
   set max(max) {
+    this._maximallyUncertain = false
     this._max = max
     if (nully(max)) this.clear()
   }
@@ -112,13 +115,17 @@ export default class Answer {
     factor = this.factor,
     option = this.option,
   } = {}) {
-    return new Answer(min, max, tentative, factor, option)
+    const copy = new Answer(min, max, tentative, factor, option)
+    copy._maximallyUncertain =
+      this._maximallyUncertain && min === this.min && max === this.max
+    return copy
   }
 
   clear() {
     this._min = null
     this._max = null
     this.tentative = false
+    this._maximallyUncertain = false
   }
 
   // Returns null if it can't parse it (but "" -> empty answer)
@@ -207,6 +214,17 @@ export default class Answer {
     return null
   }
 
+  isMaximallyUncertain() {
+    if (!this.isAnswered()) return false
+    if (this._maximallyUncertain) return true
+    return (
+      Number.isFinite(this.factor?.min) &&
+      Number.isFinite(this.factor?.max) &&
+      this.min === this.factor.min &&
+      this.max === this.factor.max
+    )
+  }
+
   valueAt(position) {
     if (!this.isAnswered()) return null
     return this.min + (this.max - this.min) * position
@@ -268,13 +286,19 @@ export default class Answer {
         return this.valueAt(1)
       case Answer.rangeModes.MEDIAN:
         return this.midpoint()
-      case Answer.rangeModes.MONTE_CARLO:{
-        const vals = this.factor.discreteValues()
-            .map(({ number }) => number )
-            .filter((answer) => answer.number >= this.min && answer.number <= this.max)
+      case Answer.rangeModes.MONTE_CARLO: {
+        const values = (this.factor?.discreteValues?.() ?? [])
+          .map(({ number }) => number)
+          .filter((number) => number >= this.min && number <= this.max)
 
-        if (vals.length > 0) return vals[Math.floor(random() * vals.length)]
-        else return this.isRanged() ? this.valueAt(random()) : this.min
+        if (values.length > 0) {
+          const index = Math.min(
+            Math.floor(random() * values.length),
+            values.length - 1,
+          )
+          return values[index]
+        }
+        return this.isRanged() ? this.valueAt(random()) : this.min
       }
       default:
         throw new Error(`Invalid range mode: ${mode}`)
