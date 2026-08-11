@@ -94,6 +94,22 @@ test("Factor detects and parses discrete units", () => {
     assert.equal(new Factor({ unit }).isDiscrete(), true)
 })
 
+test("Factor requires unique discrete unit values", () => {
+  expect(() =>
+    new Factor({ unit: "1: foo, 1: bar" }).discreteValues(),
+  ).toThrow("Discrete units must have unique numbers: 1: foo, 1: bar")
+
+  expect(
+    new Factor({
+      unit: "-1: Disagree, 0: Neutral, 1: Agree",
+    }).discreteValues(),
+  ).toEqual([
+    { number: -1, name: "Disagree" },
+    { number: 0, name: "Neutral" },
+    { number: 1, name: "Agree" },
+  ])
+})
+
 test("Factor leaves continuous and missing units non-discrete", () => {
   assert.equal(new Factor({ unit: "0-10 Scale" }).isDiscrete(), false)
   assert.equal(new Factor().isDiscrete(), false)

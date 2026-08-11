@@ -91,7 +91,7 @@ export default class Factor {
       name: groups.name.trim(),
     }))
     // Check for duplicate numbers
-    if (rtn.length && new Set(rtn.map(({ number }) => number)).length !== rtn.length)
+    if (rtn.length && new Set(rtn.map(({ number }) => number)).size !== rtn.length)
       throw new Error("Discrete units must have unique numbers: " + this.unit)
     return rtn
   }
