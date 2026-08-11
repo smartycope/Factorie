@@ -1,6 +1,6 @@
-// pattern = options("global") + group(int_or_float, name="number") + ow + ":" + group(at_least_one(any_char_except(",")), name="name")
 import { normalizeColor } from "./color.js"
 
+// pattern = options("global") + group(int_or_float, name="number") + ow + ":" + group(at_least_one(any_char_except(",")), name="name")
 const discreteRegex = /(?<number>(?:(?:(?:-|\+))?(?:\d*\.\d+|\d+\.\d*)(?:e(?:-|\+)\d+)?|(?:(?:-|\+))?\d+(?:e(?:-|\+)\d+)?))\s*:(?<name>(?:[^,])+)/g
 
 export default class Factor {
@@ -91,8 +91,8 @@ export default class Factor {
       name: groups.name.trim(),
     }))
     // Check for duplicate numbers
-    if (new Set(rtn.map(({ number }) => number)).length !== rtn.length)
-      throw new Error("Discrete units must have unique numbers")
+    if (rtn.length && new Set(rtn.map(({ number }) => number)).length !== rtn.length)
+      throw new Error("Discrete units must have unique numbers: " + this.unit)
     return rtn
   }
 }
