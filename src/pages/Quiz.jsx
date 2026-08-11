@@ -469,6 +469,12 @@ export default function Quiz() {
   const [minInputText, setMinInputText] = useState(null)
   const [maxInputText, setMaxInputText] = useState(null)
   const valueInputRef = useRef(null)
+  const searchInputRef = useRef(null)
+
+  useEffect(() => {
+    const frame = requestAnimationFrame(() => valueInputRef.current?.focus())
+    return () => cancelAnimationFrame(frame)
+  }, [])
 
   const visibleOptions = decision?.getVisibleOptions() ?? []
   const decisionOptionCount = visibleOptions.length
@@ -537,7 +543,10 @@ export default function Quiz() {
   const hasSliderScale = factorDefinition?.isFinite(factorAnswers) ?? false
 
   function focusValueInput() {
-    requestAnimationFrame(() => valueInputRef.current?.focus())
+    requestAnimationFrame(() => {
+      if (document.activeElement !== searchInputRef.current)
+        valueInputRef.current?.focus()
+    })
   }
 
   function clearInputText() {
@@ -1051,7 +1060,6 @@ export default function Quiz() {
                     key={`t-${optionIdx}-${factorIdx}`}
                     value={valueInputText ?? value.min ?? ""}
                     inputRef={valueInputRef}
-                    autoFocus
                     label={valueLabel}
                     shrink="true"
                     error={isRespInValid}
@@ -1094,7 +1102,6 @@ export default function Quiz() {
                       key={`t1-${optionIdx}-${factorIdx}`}
                       value={minInputText ?? value.min ?? ""}
                       inputRef={valueInputRef}
-                      autoFocus
                       label={minLabel}
                       shrink="true"
                       error={isRespInValid}
@@ -1170,6 +1177,7 @@ export default function Quiz() {
         <TextField
           label="Search by factor"
           size="small"
+          inputRef={searchInputRef}
           value={factorSearch}
           onChange={handleFactorSearchChange}
           slotProps={{

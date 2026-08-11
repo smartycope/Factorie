@@ -111,6 +111,17 @@ test("Quiz loads all persisted filters from query parameters", () => {
   expect(within(table).queryByText("Range factor")).toBeNull()
 })
 
+test("Quiz factor search keeps focus when it changes the current question", async () => {
+  const user = userEvent.setup()
+  renderQuiz()
+  const search = screen.getByRole("textbox", { name: "Search by factor" })
+
+  await user.type(search, "Tentative factor")
+
+  expect(document.activeElement).toBe(search)
+  expect(screen.getAllByText("Tentative factor").length).toBeGreaterThan(1)
+})
+
 test("Quiz displays discrete answers as labels in the answers table", () => {
   const decision = new Decision("Discrete answers")
   decision.addFactor({
