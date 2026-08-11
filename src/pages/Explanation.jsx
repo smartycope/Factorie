@@ -121,7 +121,7 @@ export default function Explanation() {
       <Typography variant="h5" gutterBottom id="how-it-works">
         How it works
       </Typography>
-      <Typography paragraph>
+      <Typography>
         When making a big decision, it's important to consider all the factors,
         however it's also important to be confident in the process by which you
         make the decision. This program is a tool to help you make decisions,
@@ -133,7 +133,7 @@ export default function Explanation() {
         understand how it works on a deeper level.
       </Typography>
 
-      <Typography paragraph>
+      <Typography>
         The algorithm is based on a fairly simple idea: you want to make the
         choice that is closest to the best option you have. Say you're trying to
         decide what to have for dinner, and you only care about 2 things: taste
@@ -142,14 +142,14 @@ export default function Explanation() {
         taste and cost.
       </Typography>
 
-      <Typography paragraph>
+      <Typography>
         Imagine a graph, where the x axis is taste and the y axis is cost. Each
         option is a point on the graph:
       </Typography>
 
       <img src={graph1} alt="Scatter plot example" />
 
-      <Typography paragraph>
+      <Typography>
         You sit down and think about it, and you give tacos a 8/10 in taste, and
         they cost $10. Spaghetti costs $6, and you give it an 4/10 in taste.
         <br />
@@ -165,13 +165,13 @@ export default function Explanation() {
 
       <img src={graph2} alt="Scatter plot example" />
 
-      <Typography paragraph>
+      <Typography>
         Now, the answer seems pretty clear. Just pick the option closest to the
         perfect meal, right?
       </Typography>
       <img src={graph3} alt="Scatter plot example" />
 
-      <Typography paragraph>
+      <Typography>
         Spaghetti is closer to being the perfect meal, so it's better! The cost
         outweighs the taste. <br />
         <br />
@@ -187,7 +187,7 @@ export default function Explanation() {
 
       <img src={graph4} alt="Scatter plot example" />
 
-      <Typography paragraph>
+      <Typography>
         And there you have it! The tacos are now closer to the perfect meal.
         This makes sense: if you care less about money, you're more likely to
         pick the meal that tastes better. <br />
@@ -212,7 +212,7 @@ export default function Explanation() {
       </Typography>
 
       <img src={graph5} alt="Scatter plot example" />
-      <Typography paragraph>
+      <Typography>
         Of course, this gets hard to visualize, but that math still works. It's
         exactly the same principal. You can add as many factors as you want, and
         the still calculate the distance between the options and the perfect
@@ -221,10 +221,10 @@ export default function Explanation() {
       <br />
       <hr />
       <br />
-      <Typography variant="h5" paragraph id="interpreting-a-single-option">
+      <Typography variant="h5" id="interpreting-a-single-option">
         Interpreting a single option
       </Typography>
-      <Typography paragraph>
+      <Typography>
         Now consider the situation where you only have one option, and you're
         trying to decide if it's good enough. What does "good enough" mean?{" "}
         <br />
@@ -240,7 +240,7 @@ export default function Explanation() {
         and try plotting it for starters:
       </Typography>
       <img src={graph6} alt="Scatter plot example" />
-      <Typography paragraph>
+      <Typography>
         Ya, you enjoy spending time with them, but they also don't love you that
         much. But what if that's the best you could expect? Marrying someone is
         a big decision! We need some way of deciding if an option is "good
@@ -251,7 +251,7 @@ export default function Explanation() {
         best possible option.
       </Typography>
       <img src={graph7} alt="Scatter plot example" />
-      <Typography paragraph>
+      <Typography>
         Yikes! They're not even 50% good! Maybe you shouldn't marry them... they
         don't seem that great after all. <br />
         <br />
@@ -261,7 +261,7 @@ export default function Explanation() {
         that great.
       </Typography>
       <img src={graph8} alt="Scatter plot example" />
-      <Typography paragraph>
+      <Typography>
         This threshold quantifies how "picky" you are. People tend to start off
         picky, and then get less picky over time. If you want a different
         algorithm for tuning this threshold, check out the first 2 chapters of
@@ -348,7 +348,7 @@ export default function Explanation() {
       <Typography variant="h5" gutterBottom id="the-math">
         The Math
       </Typography>
-      <Typography paragraph>
+      <Typography>
         The graphs above show the basic idea geometrically. This section writes
         out the same process more precisely. The subscripts identify which
         option and factor a value belongs to: <strong>i</strong> means an
@@ -358,7 +358,7 @@ export default function Explanation() {
       <Typography variant="h6" gutterBottom>
         1. Normalize every factor
       </Typography>
-      <Typography paragraph>
+      <Typography>
         Dollars, minutes, and 0–10 ratings cannot be compared directly. Each
         answer is first converted to a position on a common scale from 0 to 1:
       </Typography>
@@ -378,7 +378,7 @@ export default function Explanation() {
           lower bound and one is the upper bound.
         </li>
       </Box>
-      <Typography paragraph>
+      <Typography>
         The factor's optimal value is normalized in exactly the same way and is
         called <strong>oⱼ</strong>. A constant factor whose minimum and maximum
         are equal cannot distinguish between options, so it contributes no
@@ -389,7 +389,7 @@ export default function Explanation() {
       <Typography variant="h6" gutterBottom>
         2. Measure weighted distance from the optimum
       </Typography>
-      <Typography paragraph>
+      <Typography>
         For each factor, the algorithm subtracts the normalized optimum from the
         normalized answer, then scales that difference by the factor's weight.
         It combines those weighted differences using ordinary Euclidean
@@ -413,7 +413,7 @@ export default function Explanation() {
           optimal point. A smaller distance is better.
         </li>
       </Box>
-      <Typography paragraph>
+      <Typography>
         This is the mathematical version of squishing each axis by its weight.
         Multiplying every weight by the same amount scales all raw distances
         equally, so only the proportions between weights affect the final
@@ -423,19 +423,19 @@ export default function Explanation() {
       <Typography variant="h6" gutterBottom>
         3. Find the worst possible distance
       </Typography>
-      <Typography paragraph>
+      <Typography>
         To turn distance into an understandable 0–100% score, the algorithm
         finds the farthest feasible endpoint from the optimum on each normalized
         factor:
       </Typography>
       <Latex>{`\\[m_j=\\max(|o_j|,|1-o_j|)\\]`}</Latex>
-      <Typography paragraph>
+      <Typography>
         Here, <strong>mⱼ</strong> is factor j's greatest possible normalized
         deviation. Combining those worst deviations with the same weights gives
         the farthest possible overall distance:
       </Typography>
       <Latex>{`\\[D_{\\max}=\\sqrt{\\sum_{j=1}^{n}(w_jm_j)^2}\\]`}</Latex>
-      <Typography paragraph>
+      <Typography>
         <strong>Dₘₐₓ</strong> is the distance from the optimal point to the
         farthest feasible corner of the multidimensional space.
       </Typography>
@@ -443,7 +443,7 @@ export default function Explanation() {
       <Typography variant="h6" gutterBottom>
         4. Convert distance into goodness
       </Typography>
-      <Typography paragraph>
+      <Typography>
         Finally, each option's distance is compared with that worst possible
         distance:
       </Typography>
@@ -452,7 +452,7 @@ export default function Explanation() {
         \\qquad
         \\text{goodness}_i=1-\\text{badness}_i
         \\]`}</Latex>
-      <Typography paragraph>
+      <Typography>
         An option at the optimal point has 0% badness and 100% goodness. An
         option at the farthest feasible point has 100% badness and 0% goodness.
         Best and worst are simply the options with the smallest and largest
@@ -464,7 +464,7 @@ export default function Explanation() {
       <Typography variant="h6" gutterBottom>
         Uncertain answers
       </Typography>
-      <Typography paragraph>
+      <Typography>
         When an answer is a range, deterministic modes can use its best, worst,
         high, low, average, or middle value. Monte Carlo mode instead draws
         values uniformly from inside every range, performs the complete
