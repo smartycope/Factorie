@@ -907,7 +907,7 @@ function SingleLinePlot({ results }) {
         text: `${r.option} (${r.percentage.toFixed(1)}%)`,
         showarrow: false,
         font: {
-          color: r.color ? saturateColor(r.color) : theme.palette.text.primary,
+        //   color: r.color ? coloredPlotLabel(r.color) : theme.palette.text.primary,
           size: 15,
         },
         xanchor: "left",
@@ -955,7 +955,8 @@ function SingleLinePlot({ results }) {
           text: results.map((r) => r.option),
           marker: {
             size: 10,
-            color: results.map((r) => r.percentage),
+            color: results.map((r) => r.color ? r.color : theme.palette.text.primary),
+            line: { color: results.map((r) => r.percentage), width: 2 },
             colorscale: "Reds",
             cmin: 0,
             cmax: 100,

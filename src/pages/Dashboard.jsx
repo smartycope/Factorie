@@ -389,7 +389,7 @@ export default function Dashboard() {
       {(decisions.length || null) && (
         <>
           <Stack direction="row">
-            <Typography variant="h4" sx={{ mr: 2 }}>Deciding: </Typography>
+            <Typography sx={{ mr: 2, alignSelf: "center" }}>Currently deciding: </Typography>
             <TextField
               key={selectedIndex}
               defaultValue={decisions[selectedIndex]?.name || ""}
