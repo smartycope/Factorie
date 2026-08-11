@@ -34,7 +34,8 @@
         {
             "name": "Leftovers",
             "unit": "portions",
-            "optimal": 0,
+            "min": 0,
+            "optimal": "Infinity",
             "max": null
         }
     ]
