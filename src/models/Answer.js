@@ -268,8 +268,14 @@ export default class Answer {
         return this.valueAt(1)
       case Answer.rangeModes.MEDIAN:
         return this.midpoint()
-      case Answer.rangeModes.MONTE_CARLO:
-        return this.isRanged() ? this.valueAt(random()) : this.min
+      case Answer.rangeModes.MONTE_CARLO:{
+        const vals = this.factor.discreteValues()
+            .map(({ number }) => number )
+            .filter((answer) => answer.number >= this.min && answer.number <= this.max)
+
+        if (vals.length > 0) return vals[Math.floor(random() * vals.length)]
+        else return this.isRanged() ? this.valueAt(random()) : this.min
+      }
       default:
         throw new Error(`Invalid range mode: ${mode}`)
     }
