@@ -30,6 +30,10 @@ function elementwiseStd(values, mean = elementwiseMean(values)) {
   return Math.sqrt(variance)
 }
 
+function vectorMagnitude(values) {
+  return Math.sqrt(values.reduce((sum, value) => sum + value * value, 0))
+}
+
 export default class Decision {
   static numSamples = 100
 
@@ -514,11 +518,11 @@ export default class Decision {
   worstPossibleDistance() {
     const optNorm = this.optimalNormalized()
     const worst = optNorm.map((v) => (Math.round(v) === 0 ? 1 : 0))
-    const sumSq = worst.reduce(
-      (s, val, i) => s + Math.pow(val - optNorm[i], 2),
-      0,
+    const weightedWorstDelta = worst.map(
+      (value, index) =>
+        (value - optNorm[index]) * this.factors[index].weight,
     )
-    return Math.sqrt(sumSq)
+    return vectorMagnitude(weightedWorstDelta)
   }
 
   _calculate(answers) {
@@ -565,9 +569,8 @@ export default class Decision {
     )
 
     // The magnitudes of the weighted delta vectors between each option and the optimal
-    const weightedDeltaMagnitudes = weightedDeltaVectorsNormalized.map((row) =>
-      Math.sqrt(row.reduce((s, x) => s + x * x, 0)),
-    )
+    const weightedDeltaMagnitudes =
+      weightedDeltaVectorsNormalized.map(vectorMagnitude)
 
     const worstDist = this.worstPossibleDistance() || 1
     // The normalized weighted distances between each option and the optimal
