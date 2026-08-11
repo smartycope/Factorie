@@ -338,8 +338,14 @@ export default function Explanation() {
         </li>
         <li>
           This app is able to handle as many factors as you can think of. I've
-          tested it up to 200 so far. However it may not handle as many options
-          as well.
+          tested it up to 200 so far.
+        </li>
+        <li>
+          Don't be afraid to go back and tweak your factors while you're making
+          the decision. Frequently, as you're adding answers, you'll think of
+          new factors. When you get the initial results, you'll likely go "wait,
+          really? Do I really care about that that much?". That's a sign you
+          need to go fine tune your weights.
         </li>
       </Box>
       <br />
