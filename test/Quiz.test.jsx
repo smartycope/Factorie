@@ -111,6 +111,34 @@ test("Quiz loads all persisted filters from query parameters", () => {
   expect(within(table).queryByText("Range factor")).toBeNull()
 })
 
+test("Quiz displays discrete answers as labels in the answers table", () => {
+  const decision = new Decision("Discrete answers")
+  decision.addFactor({
+    name: "Priority",
+    unit: "1: Low, 2: High",
+    optimal: 2,
+    weight: 1,
+    min: 1,
+    max: 2,
+  })
+  decision.addOption("Certain")
+  decision.addOption("Unsure")
+  decision.setAnswer("Certain", "Priority", 2)
+  decision.setAnswer("Unsure", "Priority", new Answer(1, 2, true))
+  localStorage.setItem(
+    STORAGE_KEY,
+    JSON.stringify([JSON.parse(decision.serialize())]),
+  )
+
+  renderQuiz()
+
+  const table = screen.getByRole("table", { hidden: true })
+  expect(within(table).getByText("High")).toBeTruthy()
+  expect(within(table).getByText("Low - High?")).toBeTruthy()
+  expect(within(table).queryByText("2")).toBeNull()
+  expect(within(table).queryByText("1 - 2?")).toBeNull()
+})
+
 test("Results links invalid answers to an invalid-only Quiz view", async () => {
   const user = userEvent.setup()
   render(

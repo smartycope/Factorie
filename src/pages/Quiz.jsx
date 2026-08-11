@@ -47,8 +47,17 @@ const ANSWER_FILTER_VALUES = new Set(
 //   return Decision.deserialize(decision.serialize())
 // }
 
-function formatAnswer(cell) {
-  return cell?.toString() ?? ""
+function formatAnswer(cell, factor) {
+  if (!cell?.isAnswered()) return ""
+
+  const discreteValues = factor?.discreteValues?.() ?? []
+  const formatValue = (value) =>
+    discreteValues.find(({ number }) => number === value)?.name ?? value
+  const tentativeMarker = cell.isTentative() ? "?" : ""
+
+  if (cell.isRanged())
+    return `${formatValue(cell.min)} - ${formatValue(cell.max)}${tentativeMarker}`
+  return `${formatValue(cell.min)}${tentativeMarker}`
 }
 
 function copyAnswer(answer) {
@@ -281,7 +290,7 @@ function AnswersTable({
                   </TableCell>
                   {visibleFactorIndexes.map((c) => {
                     const cell = decision.answers[r]?.[c]
-                    const text = formatAnswer(cell)
+                    const text = formatAnswer(cell, decision.factors[c])
                     const isActive = r === optionIdx && c === factorIdx
                     const hasProblem = answerHasProblem(decision, r, c)
                     const tentative = cell?.isTentative()
@@ -396,7 +405,7 @@ function TransposedAnswersTable({
                     </TableCell>
                     {optionIndexes.map((r) => {
                       const cell = decision.answers[r]?.[c]
-                      const text = formatAnswer(cell)
+                      const text = formatAnswer(cell, decision.factors[c])
                       const isActive = r === optionIdx && c === factorIdx
                       const hasProblem = answerHasProblem(decision, r, c)
                       return (
