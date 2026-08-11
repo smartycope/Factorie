@@ -6,6 +6,8 @@ import { percentile } from "../utils/misc.js"
 
 // TODO: remove the threshold member (it doesn't do anything anymore)
 
+// Recursively average equally shaped scalars, vectors, or matrices. This lets
+// calculateAll() aggregate every numeric result returned by _calculate().
 function elementwiseMean(values) {
   if (!values.length) return null
   if (Array.isArray(values[0]))
@@ -15,6 +17,8 @@ function elementwiseMean(values) {
   return values.reduce((sum, value) => sum + value, 0) / values.length
 }
 
+// Population standard deviation for equally shaped calculation results. The
+// result describes variation among simulated outcomes, not standard error.
 function elementwiseStd(values, mean = elementwiseMean(values)) {
   if (!values.length) return null
   if (Array.isArray(values[0]))
@@ -30,6 +34,7 @@ function elementwiseStd(values, mean = elementwiseMean(values)) {
   return Math.sqrt(variance)
 }
 
+// Ordinary Euclidean length: sqrt(v_1^2 + ... + v_n^2).
 function vectorMagnitude(values) {
   return Math.sqrt(values.reduce((sum, value) => sum + value * value, 0))
 }
@@ -439,39 +444,78 @@ export default class Decision {
   }
 
   // ---- Calculation methods ----
+
+  // Deep-copy a JSON-compatible array. Retained for callers outside the current
+  // calculation pipeline; it intentionally does not preserve class instances.
   _arrayCopy(a) {
     return JSON.parse(JSON.stringify(a))
   }
 
-  // TODO: there's a reason this isn't used. "optimism" isn't really accurate, because valueAt() uses
-  // naive range interpolation, while what's "best" or "worst" depends on what the optimal for each
-  // factor is. That could be done, but isn't implemented yet, and is more complicated.
+  /**
+   * Resolve every answer by taking the same fractional position in its range.
+   *
+   * This is a legacy interpolation helper, not an objective best/worst helper:
+   * position 1 is simply the high endpoint, which may be undesirable for a
+   * factor whose optimum is low or in the middle of its range.
+   *
+   * @returns {number[][]} Values shaped [option][factor].
+   */
   weightedAnswers(optimism = 0.5) {
     return this.answers.map((row) =>
       row.map((answer) => answer.valueAt(optimism)),
     )
   }
 
+  /**
+   * Return half the width of each answer range.
+   *
+   * This is a range-size helper retained for existing callers. A range radius
+   * is not treated as a statistical standard deviation by Monte Carlo.
+   *
+   * @returns {number[][]} Range radii shaped [option][factor].
+   */
   stdAnswers() {
     return this.answers.map((row) =>
       row.map((answer) => answer.rangeRadius()),
     )
   }
 
+  /**
+   * Resolve every Answer to one numeric value for a calculation pass.
+   *
+   * Deterministic modes select a defined point such as Best, Worst, or Median.
+   * Monte Carlo asks each ranged Answer for an independent random point inside
+   * its bounds. The injectable random function makes simulations reproducible.
+   *
+   * @returns {number[][]} Values shaped [option][factor].
+   */
   answerValues(rangeMode = Answer.rangeModes.MEDIAN, random = Math.random) {
     return this.answers.map((row) =>
       row.map((answer) => answer.valueForRange(rangeMode, random)),
     )
   }
 
+  /** Return the low endpoint of every answer, shaped [option][factor]. */
   minAnswers() {
     return this.answers.map((row) => row.map((ans) => ans.min))
   }
 
+  /** Return the high endpoint of every answer, shaped [option][factor]. */
   maxAnswers() {
     return this.answers.map((row) => row.map((ans) => ans.max))
   }
 
+  /**
+   * Resolve the desired raw value for every factor.
+   *
+   * Finite optimals are returned unchanged. A -Infinity (Min) or Infinity
+   * (Max) sentinel becomes the lowest or highest submitted endpoint for that
+   * factor, respectively, because an infinite ideal cannot be plotted or used
+   * in finite distance arithmetic. Unfinished optimals remain null so normal
+   * Decision validation can reject them before calculation.
+   *
+   * @returns {(number|null)[]} One raw optimal per factor.
+   */
   optimals() {
     return this.factors.map((factor, factorIndex) => {
       if (Number.isFinite(factor.optimal)) return factor.optimal
@@ -492,6 +536,16 @@ export default class Decision {
     })
   }
 
+  /**
+   * Return each factor's effective lower normalization bound.
+   *
+   * Factor.practicalRange() prefers an explicit finite minimum. Otherwise it
+   * derives a finite bound from the factor's answers and finite optimal. This
+   * fallback makes an unbounded decision calculable but also makes its scale
+   * relative to the current option set.
+   *
+   * @returns {(number|null)[]} One effective minimum per factor.
+   */
   mins() {
     return this.factors.map(
       (factor, factorIndex) =>
@@ -499,6 +553,14 @@ export default class Decision {
     )
   }
 
+  /**
+   * Return each factor's effective upper normalization bound.
+   *
+   * This is the upper-bound counterpart to mins(): explicit finite bounds are
+   * stable, while calculated bounds can move when answer extremes change.
+   *
+   * @returns {(number|null)[]} One effective maximum per factor.
+   */
   maxs() {
     return this.factors.map(
       (factor, factorIndex) =>
@@ -506,6 +568,15 @@ export default class Decision {
     )
   }
 
+  /**
+   * Map every raw optimal onto its factor's dimensionless normalized axis.
+   *
+   * For factor j, o_j = (optimal_j - min_j) / (max_j - min_j). A
+   * zero-width factor is constant, so it is represented as 0 and contributes
+   * no distance rather than dividing by zero.
+   *
+   * @returns {number[]} One normalized optimal o_j per factor.
+   */
   optimalNormalized() {
     const mins = this.mins()
     const maxs = this.maxs()
@@ -515,6 +586,16 @@ export default class Decision {
     })
   }
 
+  /**
+   * Find the largest feasible normalized deviation on each factor axis.
+   *
+   * Once a factor is normalized, its feasible endpoints are 0 and 1. The
+   * farthest either can be from normalized optimal o_j is therefore
+   * max(|o_j|, |1 - o_j|). Constant factors have no feasible deviation and
+   * return 0. These values normalize both total and per-factor badness.
+   *
+   * @returns {number[]} Maximum normalized deviation m_j for each factor.
+   */
   worstPossibleDeltasNormalized() {
     const mins = this.mins()
     const maxs = this.maxs()
@@ -525,6 +606,16 @@ export default class Decision {
     )
   }
 
+  /**
+   * Return the greatest weighted Euclidean distance allowed by all factors.
+   *
+   * Because the feasible region is an axis-aligned box, its farthest point is
+   * obtained by independently taking the farthest endpoint on every axis:
+   * D_max = sqrt(sum_j((w_j * m_j)^2)). Dividing option distances by D_max
+   * maps feasible badness to [0, 1].
+   *
+   * @returns {number} Maximum weighted distance D_max.
+   */
   worstPossibleDistance() {
     const weightedWorstDelta = this.worstPossibleDeltasNormalized().map(
       (delta, index) => delta * this.factors[index].weight,
@@ -532,6 +623,24 @@ export default class Decision {
     return vectorMagnitude(weightedWorstDelta)
   }
 
+  /**
+   * Perform one deterministic pass of the core decision algorithm.
+   *
+   * Input answers a_ij are already resolved to one number for option i and
+   * factor j. This method then:
+   *   1. normalizes unlike factor units into x_ij on a common [0, 1] scale;
+   *   2. computes signed deltas x_ij - o_j from the normalized optimum;
+   *   3. scales each axis by its importance weight w_j;
+   *   4. takes Euclidean length d_i = sqrt(sum_j((w_j(x_ij-o_j))^2));
+   *   5. reports badness d_i / D_max and goodness 1 - badness; and
+   *   6. derives factor variability and contribution diagnostics.
+   *
+   * The method does not mutate answers and does not perform random sampling.
+   * calculateAll() is responsible for resolving ranges and aggregating passes.
+   *
+   * @param {number[][]} answers Values shaped [option][factor].
+   * @returns {object} Distances, scores, and factor-level diagnostics.
+   */
   _calculate(answers) {
     // answers: [numOptions][numFactors]
     const numOptions = answers.length
@@ -645,8 +754,26 @@ export default class Decision {
     }
   }
 
+  /**
+   * Resolve answer ranges, run the algorithm, and summarize its outcomes.
+   *
+   * Hidden options are removed from a copy so they cannot affect practical
+   * ranges, normalization, or ranking. Deterministic range modes run exactly
+   * one _calculate() pass. Monte Carlo runs numSamples independent passes and
+   * returns element-wise population means and standard deviations. Best/worst
+   * labels are chosen from the mean weighted distances, so Monte Carlo ranks by
+   * expected distance rather than by probability of winning.
+   *
+   * @param {object} options Range mode, sample count, explanation mode, and RNG.
+   * @returns {object} {mean, std, best, worst} calculation results.
+   */
   calculateAll(
-    options = { numSamples: Decision.numSamples, method: "extremes", minThresh: null, maxThresh: null },
+    options = {
+      numSamples: Decision.numSamples,
+      method: "extremes",
+      minThresh: null,
+      maxThresh: null,
+    },
   ) {
     if (this.options.some((option) => option.hidden)) {
       const visibleCopy = this.copy()
@@ -691,6 +818,20 @@ export default class Decision {
     return rtn
   }
 
+  /**
+   * Identify the nearest/farthest options and their strongest explanations.
+   *
+   * Ranking uses weighted_delta_magnitudes: minimum is best and maximum is
+   * worst. For explanations, each factor's normalized badness is multiplied by
+   * its weight; weighted goodness is weight * (1 - factor badness). "Because"
+   * selects strong goodness for the best option and strong badness for the
+   * worst, while "despite" does the reverse. Threshold mode can return several
+   * unusually strong factors; extremes mode returns one factor in each role.
+   *
+   * @param {object} calc A single or mean _calculate() result.
+   * @param {"extremes"|"threshold"} method Explanation selection strategy.
+   * @returns {object} Named best and worst options with factor explanations.
+   */
   bestWorst(calc, method = "extremes", min_thresh = null, max_thresh = null) {
     // calc is mean results
     const weighted = calc.weighted_delta_magnitudes
