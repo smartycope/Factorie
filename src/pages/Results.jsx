@@ -372,12 +372,26 @@ function GoodnessPlot({ decision, goodness, goodnessConf }) {
       color: option.color,
     }))
     rows.sort((a, b) => b.value - a.value)
+    const [rangeMin, rangeMax] = rows.reduce(
+      ([min, max], row) => {
+        const uncertainty = Number.isFinite(row.conf) ? Math.abs(row.conf) : 0
+        return [
+          Math.min(min, row.value - uncertainty),
+          Math.max(max, row.value + uncertainty),
+        ]
+      },
+      [0.5, 0.5],
+    )
+    const valueRange =
+      rangeMin === rangeMax ? [rangeMin - 0.01, rangeMax + 0.01]
+      : [rangeMin, rangeMax]
     return {
       data: [
         {
           type: "bar",
           x: rows.map((r) => r.option),
-          y: rows.map((r) => r.value),
+          y: rows.map((r) => r.value - 0.5),
+          base: 0.5,
           error_y: {
             type: "data",
             array: rows.map((r) => r.conf),
@@ -389,15 +403,15 @@ function GoodnessPlot({ decision, goodness, goodnessConf }) {
           marker: {
             color: rows.map((r) => r.color ?? theme.palette.primary.main),
           },
-          customdata: rows.map((r) => [r.option, r.conf]),
+          customdata: rows.map((r) => [r.option, r.value, r.conf]),
           hovertemplate:
-            "%{customdata[0]}<br>Goodness: %{y:.0%}<br>Uncertainty: ±%{customdata[1]:.0%}<extra></extra>",
+            "%{customdata[0]}<br>Goodness: %{customdata[1]:.0%}<br>Uncertainty: ±%{customdata[2]:.0%}<extra></extra>",
         },
       ],
       layout: {
         title: { text: "How good each option is" },
         yaxis: {
-          range: [0, 1],
+          range: valueRange,
           tickformat: ".0%",
         },
         margin: { t: 60, b: 100, l: 50, r: 20 },
