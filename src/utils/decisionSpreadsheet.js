@@ -147,24 +147,50 @@ function cellFill(color) {
   }
 }
 
-function freezeDecisionPane(workbookData) {
+function freezeWorksheetPanes(workbookData) {
   const files = unzipSync(new Uint8Array(workbookData))
-  const worksheetPath = "xl/worksheets/sheet1.xml"
-  const worksheetXml = strFromU8(files[worksheetPath])
-  const frozenSheetView =
-    '<sheetView workbookViewId="0">' +
-    '<pane xSplit="1" ySplit="5" topLeftCell="B6" activePane="bottomRight" state="frozen"/>' +
-    '<selection pane="topRight" activeCell="B1" sqref="B1"/>' +
-    '<selection pane="bottomLeft" activeCell="A6" sqref="A6"/>' +
-    '<selection pane="bottomRight" activeCell="B6" sqref="B6"/>' +
-    "</sheetView>"
-  const frozenWorksheetXml = worksheetXml.replace(
-    '<sheetView workbookViewId="0"/>',
-    frozenSheetView,
-  )
-  if (frozenWorksheetXml === worksheetXml)
-    throw new Error("Could not freeze the Decision worksheet pane.")
-  files[worksheetPath] = strToU8(frozenWorksheetXml)
+  const paneConfigs = [
+    {
+      name: "Decision",
+      path: "xl/worksheets/sheet1.xml",
+      xSplit: 1,
+      ySplit: 5,
+      topLeftCell: "B6",
+    },
+    {
+      name: "Factors",
+      path: "xl/worksheets/sheet2.xml",
+      xSplit: 1,
+      ySplit: 1,
+      topLeftCell: "B2",
+    },
+    {
+      name: "Options",
+      path: "xl/worksheets/sheet3.xml",
+      xSplit: 1,
+      ySplit: 1,
+      topLeftCell: "B2",
+    },
+  ]
+
+  for (const { name, path, xSplit, ySplit, topLeftCell } of paneConfigs) {
+    const worksheetXml = strFromU8(files[path])
+    const frozenSheetView =
+      '<sheetView workbookViewId="0">' +
+      `<pane xSplit="${xSplit}" ySplit="${ySplit}" topLeftCell="${topLeftCell}" activePane="bottomRight" state="frozen"/>` +
+      '<selection pane="topRight" activeCell="B1" sqref="B1"/>' +
+      `<selection pane="bottomLeft" activeCell="A${ySplit + 1}" sqref="A${ySplit + 1}"/>` +
+      `<selection pane="bottomRight" activeCell="${topLeftCell}" sqref="${topLeftCell}"/>` +
+      "</sheetView>"
+    const frozenWorksheetXml = worksheetXml.replace(
+      '<sheetView workbookViewId="0"/>',
+      frozenSheetView,
+    )
+    if (frozenWorksheetXml === worksheetXml)
+      throw new Error(`Could not freeze the ${name} worksheet pane.`)
+    files[path] = strToU8(frozenWorksheetXml)
+  }
+
   return zipSync(files, { level: 6 }).buffer
 }
 
@@ -535,7 +561,7 @@ export function createDecisionSpreadsheet(decision) {
       }
   })
   XLSX.utils.book_append_sheet(workbook, optionSheet, "Options")
-  return freezeDecisionPane(
+  return freezeWorksheetPanes(
     XLSX.write(workbook, { bookType: "xlsx", type: "array" }),
   )
 }

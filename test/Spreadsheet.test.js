@@ -7,7 +7,7 @@ import {
   parseDecisionSpreadsheet,
 } from "../src/utils/decisionSpreadsheet.js"
 
-test("factor and option colors round-trip as spreadsheet cell fills", () => {
+test("factor and option colors and frozen worksheet panes are exported", () => {
   const decision = new Decision("Colors")
   decision.addFactor({
     name: "Quality",
@@ -25,8 +25,15 @@ test("factor and option colors round-trip as spreadsheet cell fills", () => {
   const imported = parseDecisionSpreadsheet(exported)
   const workbook = XLSX.read(exported, { type: "array", cellStyles: true })
   const decisionSheet = workbook.Sheets.Decision
-  const worksheetXml = strFromU8(
-    unzipSync(new Uint8Array(exported))["xl/worksheets/sheet1.xml"],
+  const worksheetFiles = unzipSync(new Uint8Array(exported))
+  const decisionWorksheetXml = strFromU8(
+    worksheetFiles["xl/worksheets/sheet1.xml"],
+  )
+  const factorWorksheetXml = strFromU8(
+    worksheetFiles["xl/worksheets/sheet2.xml"],
+  )
+  const optionWorksheetXml = strFromU8(
+    worksheetFiles["xl/worksheets/sheet3.xml"],
   )
 
   expect(imported.factors[0].color).toBe("#DDEEFF")
@@ -34,9 +41,13 @@ test("factor and option colors round-trip as spreadsheet cell fills", () => {
   expect(imported.getAnswer("Choice", "Quality").min).toBe(8)
   expect(decisionSheet.A6.s.fgColor.rgb).toBe("DDEEFF")
   expect(decisionSheet.B5.s.fgColor.rgb).toBe("FDE2E2")
-  expect(worksheetXml).toContain(
+  expect(decisionWorksheetXml).toContain(
     '<pane xSplit="1" ySplit="5" topLeftCell="B6" activePane="bottomRight" state="frozen"/>',
   )
+  for (const worksheetXml of [factorWorksheetXml, optionWorksheetXml])
+    expect(worksheetXml).toContain(
+      '<pane xSplit="1" ySplit="1" topLeftCell="B2" activePane="bottomRight" state="frozen"/>',
+    )
 })
 
 function importDiscreteAnswer(value) {
