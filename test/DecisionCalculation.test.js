@@ -78,6 +78,26 @@ function createMaximallyUncertainExampleDecision() {
   return decision.uncertainCopy(FULL_RANGES)
 }
 
+function createBestWorstDecision() {
+  const decision = new Decision("Best and worst explanations")
+  for (const name of ["A", "B", "C"])
+    decision.addFactor({ name, optimal: 1, weight: 1, min: 0, max: 1 })
+
+  // Put the farthest option first so selection cannot pass by always using
+  // the first option as Best and the last option as Worst.
+  decision.addOption("Farthest")
+  decision.addOption("Closest")
+  for (const [option, values] of [
+    ["Farthest", [0.2, 0.3, 0.8]],
+    ["Closest", [1, 0.9, 0.1]],
+  ])
+    values.forEach((value, factorIndex) =>
+      decision.setAnswer(option, factorIndex, value),
+    )
+
+  return decision
+}
+
 function calculateRangeMode(decision, rangeMode) {
   return decision._calculate(decision.answerValues(rangeMode))
 }
@@ -238,4 +258,103 @@ describe("Decision._calculate", () => {
 
     expect(answers).toEqual(originalAnswers)
   })
+})
+
+describe("Decision best/worst calculation", () => {
+  test.each(["extremes", "threshold"])(
+    "%s ranks options by their weighted distance from the optimum",
+    (method) => {
+      const decision = createBestWorstDecision()
+      const calculation = decision.calculateAll({
+        rangeMode: Answer.rangeModes.MEDIAN,
+        method,
+        minThresh: 0.25,
+        maxThresh: 0.75,
+      })
+
+      expect(calculation.best.is).toBe("Closest")
+      expect(calculation.worst.is).toBe("Farthest")
+    },
+  )
+
+  test("extremes returns the strongest because and despite factor", () => {
+    const decision = createBestWorstDecision()
+    const calculation = decision.calculateAll({
+      rangeMode: Answer.rangeModes.MEDIAN,
+      method: "extremes",
+      minThresh: 0.25,
+      maxThresh: 0.75,
+    })
+
+    expect(calculation.best).toEqual({
+      is: "Closest",
+      because: ["A"],
+      despite: ["C"],
+    })
+    expect(calculation.worst).toEqual({
+      is: "Farthest",
+      because: ["A"],
+      despite: ["C"],
+    })
+  })
+
+  test("threshold returns every explanation above the threshold", () => {
+    const decision = createBestWorstDecision()
+    const calculation = decision.calculateAll({
+      rangeMode: Answer.rangeModes.MEDIAN,
+      method: "threshold",
+      minThresh: 0.25,
+      maxThresh: 0.75,
+    })
+
+    expect(calculation.best).toEqual({
+      is: "Closest",
+      because: ["A", "B"],
+      despite: ["C"],
+    })
+    expect(calculation.worst).toEqual({
+      is: "Farthest",
+      because: ["A"],
+      despite: ["C"],
+    })
+  })
+
+  test("threshold falls back to the strongest factor when none qualify", () => {
+    const decision = createBestWorstDecision()
+    const extremes = decision.calculateAll({
+      rangeMode: Answer.rangeModes.MEDIAN,
+      method: "extremes",
+    })
+    const threshold = decision.calculateAll({
+      rangeMode: Answer.rangeModes.MEDIAN,
+      method: "threshold",
+      maxThresh: 2,
+    })
+
+    expect(threshold.best).toEqual(extremes.best)
+    expect(threshold.worst).toEqual(extremes.worst)
+  })
+
+  test.each(["extremes", "threshold"])(
+    "%s handles ties consistently at maximum uncertainty",
+    (method) => {
+      const decision = createMaximallyUncertainExampleDecision()
+      const firstOption = decision.options[0].name
+
+      for (const rangeMode of [
+        Answer.rangeModes.BEST,
+        Answer.rangeModes.WORST,
+        Answer.rangeModes.AVERAGE,
+      ]) {
+        const calculation = decision.calculateAll({ rangeMode, method })
+
+        expect(calculation.best.is).toBe(firstOption)
+        expect(calculation.worst.is).toBe(firstOption)
+        expect(calculation.best.because.length).toBeGreaterThan(0)
+        expect(calculation.best.despite.length).toBeGreaterThan(0)
+        expect(calculation.worst.because.length).toBeGreaterThan(0)
+        expect(calculation.worst.despite.length).toBeGreaterThan(0)
+      }
+    },
+  )
 })
