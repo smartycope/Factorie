@@ -431,6 +431,21 @@ function GoodnessPlot({ decision, goodness, goodnessConf }) {
           range: valueRange,
           tickformat: ".0%",
         },
+        shapes: [
+          {
+            type: "line",
+            xref: "paper",
+            x0: 0,
+            x1: 1,
+            yref: "y",
+            y0: 0.5,
+            y1: 0.5,
+            line: {
+              color: theme.palette.text.primary,
+              width: 2,
+            },
+          },
+        ],
         margin: { t: 60, b: 100, l: 50, r: 20 },
       },
     }
