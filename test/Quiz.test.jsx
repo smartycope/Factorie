@@ -338,3 +338,93 @@ test("factor comparison graph searches factors and compares every option", async
     )
   })
 })
+
+test("Results graph menu persists hidden graphs without hiding the summary", async () => {
+  const decision = new Decision("Graph visibility")
+  decision.addFactor({
+    name: "Quality",
+    optimal: 10,
+    weight: 1,
+    min: 0,
+    max: 10,
+  })
+  decision.addOption("Choice")
+  decision.setAnswer("Choice", "Quality", 8)
+  localStorage.setItem(
+    STORAGE_KEY,
+    JSON.stringify([JSON.parse(decision.serialize())]),
+  )
+  const user = userEvent.setup()
+
+  const renderResults = () =>
+    render(
+      <MemoryRouter
+        initialEntries={["/results"]}
+        future={{ v7_startTransition: true, v7_relativeSplatPath: true }}>
+        <ThemeProvider theme={createTheme()}>
+          <DecisionsProvider>
+            <Results />
+          </DecisionsProvider>
+        </ThemeProvider>
+      </MemoryRouter>,
+    )
+
+  const view = renderResults()
+
+  expect(
+    screen.getByRole("region", { name: "Results summary" }),
+  ).toBeTruthy()
+  expect(screen.getByRole("combobox", { name: "Factor" })).toBeTruthy()
+
+  const initialGraphButton = screen.getByRole("button", {
+    name: /Graphs \(\d+\/\d+\)/,
+  })
+  const [, initialVisibleCount, totalGraphCount] =
+    initialGraphButton.textContent.match(/Graphs \((\d+)\/(\d+)\)/)
+  expect(initialVisibleCount).toBe(totalGraphCount)
+  const hiddenVisibleCount = Number(initialVisibleCount) - 1
+
+  await user.click(initialGraphButton)
+  const graphItem = screen.getByRole("menuitem", {
+    name: /Options by factor/,
+  })
+  expect(
+    within(graphItem).getByText("Compare all options on one searchable factor."),
+  ).toBeTruthy()
+  await user.click(graphItem)
+  await user.keyboard("{Escape}")
+
+  expect(screen.queryByRole("combobox", { name: "Factor" })).toBeNull()
+  expect(
+    screen.getByRole("region", { name: "Results summary" }),
+  ).toBeTruthy()
+  expect(
+    screen.getByRole("button", {
+      name: `Graphs (${hiddenVisibleCount}/${totalGraphCount})`,
+    }),
+  ).toBeTruthy()
+  expect(
+    JSON.parse(localStorage.getItem("factorie.results.hiddenGraphs")),
+  ).toContain("options-by-factor")
+
+  view.unmount()
+  renderResults()
+
+  expect(screen.queryByRole("combobox", { name: "Factor" })).toBeNull()
+  expect(
+    screen.getByRole("button", {
+      name: `Graphs (${hiddenVisibleCount}/${totalGraphCount})`,
+    }),
+  ).toBeTruthy()
+
+  await user.click(
+    screen.getByRole("button", {
+      name: `Graphs (${hiddenVisibleCount}/${totalGraphCount})`,
+    }),
+  )
+  await user.click(
+    screen.getByRole("menuitem", { name: /Options by factor/ }),
+  )
+  await user.keyboard("{Escape}")
+  expect(screen.getByRole("combobox", { name: "Factor" })).toBeTruthy()
+})

@@ -19,14 +19,76 @@ import * as PCAImport from "pca-js"
 import texts from "../assets/texts.json"
 import HelpOverlay from "../components/HelpOverlay"
 import Link from "@mui/material/Link"
+import Menu from "@mui/material/Menu"
 import MenuItem from "@mui/material/MenuItem"
 import ListItemText from "@mui/material/ListItemText"
+import FilterListIcon from "@mui/icons-material/FilterList"
 import { Link as RouterLink } from "react-router-dom"
 import { Tooltip } from "@mui/material"
 import Answer from "../models/Answer.js"
 import Decision from "../models/Decision.js"
 
 const PCA = PCAImport.default ?? PCAImport
+
+const RESULT_GRAPHS = [
+  {
+    value: "overall-scores",
+    label: "Overall scores",
+    description: "Compare each option's total goodness and uncertainty.",
+  },
+  {
+    value: "factor-usefulness",
+    label: "Factor usefulness",
+    description: "See which factors vary enough to influence the decision.",
+  },
+  {
+    value: "option-factor-heatmap",
+    label: "Option-factor heatmap",
+    description: "Compare every option across the most useful factors.",
+  },
+  {
+    value: "deciding-factors",
+    label: "Deciding factors",
+    description: "See which factors pull a selected option away from optimal.",
+  },
+  {
+    value: "options-by-factor",
+    label: "Options by factor",
+    description: "Compare all options on one searchable factor.",
+  },
+  {
+    value: "relative-distance",
+    label: "Relative distance",
+    description: "Place options from theoretical best to theoretical worst.",
+  },
+//   {
+//     value: "option-map",
+//     label: "2D option map",
+//     description: "Project the multidimensional options into two dimensions.",
+//   },
+  {
+    value: "radar-comparison",
+    label: "Radar comparison",
+    description: "Compare selected options across every factor.",
+  },
+]
+
+const GRAPH_VISIBILITY_STORAGE_KEY = "factorie.results.hiddenGraphs"
+
+function loadVisibleGraphs() {
+  const graphValues = RESULT_GRAPHS.map(({ value }) => value)
+  try {
+    const storedHiddenGraphs = JSON.parse(
+      localStorage.getItem(GRAPH_VISIBILITY_STORAGE_KEY),
+    )
+    if (!Array.isArray(storedHiddenGraphs)) return graphValues
+    const hiddenGraphs = new Set(storedHiddenGraphs)
+    return graphValues.filter((value) => !hiddenGraphs.has(value))
+  } catch (error) {
+    console.error("Failed to load Results graph visibility", error)
+    return graphValues
+  }
+}
 
 const persistedValues = {
   useSimulatedValues: false,
@@ -1352,7 +1414,7 @@ function Summary({ results, best, worst }) {
   }
 
   return (
-    <Box>
+    <Box component="section" aria-label="Results summary">
       <Box sx={{ mt: 1, whiteSpace: "pre-line" }}>
         The best option is
         <Tooltip
@@ -1393,6 +1455,8 @@ export default function Results() {
   const { decision } = useDecisions()
 
   const [includedRadar, setIncludedRadar] = useState([])
+  const [graphMenuAnchorEl, setGraphMenuAnchorEl] = useState(null)
+  const [visibleGraphs, setVisibleGraphs] = useState(loadVisibleGraphs)
   const [useSimulatedValues, _setUseSimulatedValues] = useState(
     persistedValues.useSimulatedValues,
   )
@@ -1420,6 +1484,28 @@ export default function Results() {
     _setRangeMode(to)
   }
   const [simulationRun, setSimulationRun] = useState(0)
+  const graphIsVisible = (graph) => visibleGraphs.includes(graph)
+  const toggleGraph = (graph) =>
+    setVisibleGraphs((current) =>
+      current.includes(graph) ?
+        current.filter((value) => value !== graph)
+      : [...current, graph],
+    )
+
+  useEffect(() => {
+    try {
+      const hiddenGraphs = RESULT_GRAPHS.map(({ value }) => value).filter(
+        (value) => !visibleGraphs.includes(value),
+      )
+      localStorage.setItem(
+        GRAPH_VISIBILITY_STORAGE_KEY,
+        JSON.stringify(hiddenGraphs),
+      )
+    } catch (error) {
+      console.error("Failed to save Results graph visibility", error)
+    }
+  }, [visibleGraphs])
+
   const visibleDecision = useMemo(() => {
     if (!decision) return null
     const copy = decision.copy()
@@ -1705,76 +1791,141 @@ export default function Results() {
   return (
     <Box sx={{ flex: 1, p: 3, minWidth: 0 }}>
       <Stack spacing={3}>
-        <Typography variant="h5">Results</Typography>
+        <Box
+          sx={{
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "space-between",
+            gap: 2,
+          }}>
+          <Typography variant="h5">Results</Typography>
+          <Button
+            variant={
+              visibleGraphs.length === RESULT_GRAPHS.length ?
+                "outlined"
+              : "contained"
+            }
+            size="small"
+            startIcon={<FilterListIcon />}
+            onClick={(event) => setGraphMenuAnchorEl(event.currentTarget)}
+            aria-haspopup="true"
+            aria-expanded={Boolean(graphMenuAnchorEl)}>
+            Graphs ({visibleGraphs.length}/{RESULT_GRAPHS.length})
+          </Button>
+          <Menu
+            anchorEl={graphMenuAnchorEl}
+            open={Boolean(graphMenuAnchorEl)}
+            onClose={() => setGraphMenuAnchorEl(null)}
+            slotProps={{ paper: { sx: { maxWidth: 440 } } }}>
+            {RESULT_GRAPHS.map(({ value, label, description }) => (
+              <MenuItem
+                key={value}
+                onClick={() => toggleGraph(value)}
+                sx={{ alignItems: "flex-start" }}>
+                <Checkbox
+                  size="small"
+                  checked={visibleGraphs.includes(value)}
+                  tabIndex={-1}
+                  disableRipple
+                  sx={{ mt: 0.25 }}
+                />
+                <ListItemText primary={label} secondary={description} />
+              </MenuItem>
+            ))}
+            <MenuItem
+              disabled={visibleGraphs.length === RESULT_GRAPHS.length}
+              onClick={() =>
+                setVisibleGraphs(RESULT_GRAPHS.map(({ value }) => value))
+              }>
+              Show all graphs
+            </MenuItem>
+          </Menu>
+        </Box>
         {simulationControls}
 
         <Summary results={results} best={best} worst={worst} />
 
-        <Divider />
+        {visibleGraphs.length > 0 && <Divider />}
 
-        <GoodnessPlot
-          decision={calculationDecision}
-          goodness={goodness}
-          goodnessConf={goodnessConf}
-        />
+        {graphIsVisible("overall-scores") && (
+          <GoodnessPlot
+            decision={calculationDecision}
+            goodness={goodness}
+            goodnessConf={goodnessConf}
+          />
+        )}
 
-        <EntropyPlot
-          decision={calculationDecision}
-          factorNames={factorNames}
-          entropy={calc.mean.entropy}
-          usefulness={calc.mean.usefulness}
-          weights={weights}
-        />
+        {graphIsVisible("factor-usefulness") && (
+          <EntropyPlot
+            decision={calculationDecision}
+            factorNames={factorNames}
+            entropy={calc.mean.entropy}
+            usefulness={calc.mean.usefulness}
+            weights={weights}
+          />
+        )}
 
-        <HeatmapPlot
-          normalizedAnswers={normalizedAnswers}
-          factorNames={factorNames}
-          weights={weights}
-          decision={calculationDecision}
-          answers={answers}
-          calc={calc}
-        />
+        {graphIsVisible("option-factor-heatmap") && (
+          <HeatmapPlot
+            normalizedAnswers={normalizedAnswers}
+            factorNames={factorNames}
+            weights={weights}
+            decision={calculationDecision}
+            answers={answers}
+            calc={calc}
+          />
+        )}
 
-        <FactorContributionPlot
-          key={`${calculationDecision.name}:${best?.is}:${calculationDecision.options.map((option) => option.name).join("|")}`}
-          decision={calculationDecision}
-          best={best}
-          contributions={objectiveContributions}
-          answers={answers}
-        />
+        {graphIsVisible("deciding-factors") && (
+          <FactorContributionPlot
+            key={`${calculationDecision.name}:${best?.is}:${calculationDecision.options.map((option) => option.name).join("|")}`}
+            decision={calculationDecision}
+            best={best}
+            contributions={objectiveContributions}
+            answers={answers}
+          />
+        )}
 
-        <FactorComparisonPlot
-          key={`${calculationDecision.name}:${calculationDecision.factors.map((factor) => factor.name).join("|")}`}
-          decision={calculationDecision}
-          factorBadness={factorBadness}
-          answers={answers}
-        />
+        {graphIsVisible("options-by-factor") && (
+          <FactorComparisonPlot
+            key={`${calculationDecision.name}:${calculationDecision.factors.map((factor) => factor.name).join("|")}`}
+            decision={calculationDecision}
+            factorBadness={factorBadness}
+            answers={answers}
+          />
+        )}
 
-        <SingleLinePlot results={results} />
+        {graphIsVisible("relative-distance") && (
+          <SingleLinePlot results={results} />
+        )}
 
-        <PcaPlot
-          normalizedAnswers={normalizedAnswers}
-          optimalNormalized={optimalNormalized}
-          worstPossibleOptionNormalized={worstPossibleOptionNormalized}
-          labels={labels}
-        />
+        {graphIsVisible("option-map") && (
+          <PcaPlot
+            normalizedAnswers={normalizedAnswers}
+            optimalNormalized={optimalNormalized}
+            worstPossibleOptionNormalized={worstPossibleOptionNormalized}
+            labels={labels}
+          />
+        )}
 
-        <RadarPlot
-          normalizedAnswers={normalizedAnswers}
-          optimalNormalized={optimalNormalized}
-          worstPossibleOptionNormalized={worstPossibleOptionNormalized}
-          factorNames={factorNames}
-          labels={labels}
-          best={best}
-          includedRadar={includedRadar}
-          setIncludedRadar={setIncludedRadar}
-          factorColors={calculationDecision.factors.map(
-            (factor) => factor.color,
-          )}
-          optionColors={calculationDecision.options.map(
-            (option) => option.color,
-          )}
-        />
+        {graphIsVisible("radar-comparison") && (
+          <RadarPlot
+            normalizedAnswers={normalizedAnswers}
+            optimalNormalized={optimalNormalized}
+            worstPossibleOptionNormalized={worstPossibleOptionNormalized}
+            factorNames={factorNames}
+            labels={labels}
+            best={best}
+            includedRadar={includedRadar}
+            setIncludedRadar={setIncludedRadar}
+            factorColors={calculationDecision.factors.map(
+              (factor) => factor.color,
+            )}
+            optionColors={calculationDecision.options.map(
+              (option) => option.color,
+            )}
+          />
+        )}
       </Stack>
     </Box>
   )
