@@ -91,6 +91,16 @@ test.each([
   expect(imported.getAnswer("Choice", "Size").serialize()).toEqual(expected)
 })
 
+test("spreadsheet import lists valid discrete options for invalid answers", () => {
+  expect(() => importDiscreteAnswer("unknown")).toThrowError(
+    expect.objectContaining({
+      message: expect.stringContaining(
+        'Valid options: "label", "other label".',
+      ),
+    }),
+  )
+})
+
 test("spreadsheet export uses labels for discrete answers", () => {
   const decision = new Decision("Discrete export")
   decision.addFactor({
@@ -156,7 +166,7 @@ test("spreadsheet import reports every invalid answer cell together", () => {
   expect(() => parseDecisionSpreadsheet(data)).toThrowError(
     expect.objectContaining({
       message: expect.stringMatching(
-        /Could not parse answers:[\s\S]*B6 for "Too high" \/ "Score"[\s\S]*C6 for "Not a number" \/ "Score"/,
+        /Could not parse answers:[\s\S]*B6 for "Too high" \/ "Score"[\s\S]*Valid range: 0 to 10\.[\s\S]*C6 for "Not a number" \/ "Score"[\s\S]*Valid range: 0 to 10\./,
       ),
     }),
   )

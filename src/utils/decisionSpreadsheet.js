@@ -391,6 +391,18 @@ function parseAnswers(sheet, decision, factorNames, optionNames) {
   optionNames.forEach((optionName) => decision.addOption(optionName))
   const errors = []
 
+  function validAnswerDescription(factor) {
+    const discreteValues = factor.discreteValues()
+    if (discreteValues.length)
+      return `Valid options: ${discreteValues
+        .map(({ name }) => `"${name}"`)
+        .join(", ")}.`
+
+    if (factor.min == null && factor.max == null)
+      return "Valid range: any finite number."
+    return `Valid range: ${factor.min ?? "−∞"} to ${factor.max ?? "∞"}.`
+  }
+
   factorNames.forEach((factorName, factorIndex) => {
     optionNames.forEach((optionName, optionIndex) => {
       const address = XLSX.utils.encode_cell({ r: factorIndex + 5, c: optionIndex + 1 })
@@ -399,7 +411,7 @@ function parseAnswers(sheet, decision, factorNames, optionNames) {
         decision.setAnswer(optionIndex, factorIndex, value == null ? "" : value)
       } catch (error) {
         errors.push(
-          `${address} for "${optionName}" / "${factorName}": ${error.message}.`,
+          `${address} for "${optionName}" / "${factorName}": ${error.message}. ${validAnswerDescription(decision.factors[factorIndex])}`,
         )
       }
     })
