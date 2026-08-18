@@ -10,7 +10,8 @@ import Decision from "../src/models/Decision.js"
 import Quiz from "../src/pages/Quiz.jsx"
 import Results from "../src/pages/Results.jsx"
 
-vi.mock("react-plotly.js", () => ({ default: () => null }))
+const plotMock = vi.hoisted(() => vi.fn(() => null))
+vi.mock("react-plotly.js", () => ({ default: plotMock }))
 
 const STORAGE_KEY = "factorie.decisions"
 
@@ -52,6 +53,7 @@ function renderQuiz(initialEntries = ["/quiz"]) {
 }
 
 beforeEach(() => {
+  plotMock.mockClear()
   localStorage.clear()
   localStorage.setItem(
     STORAGE_KEY,
@@ -243,4 +245,15 @@ test("Factor contributions option selector shows option notes", async () => {
   expect(
     within(option).getByText("Best for a limited budget and").textContent,
   ).toBe("Best for a limited budget and ")
+
+  const contributionPlot = plotMock.mock.calls.find(
+    ([props]) => props.layout?.title?.text === "Deciding Factors for Choice",
+  )?.[0]
+  expect(contributionPlot.data[0].customdata).toEqual([["Cost", 5, 10]])
+  expect(contributionPlot.data[0].hovertemplate).toContain(
+    "Answer: %{customdata[1]:.1f} / %{customdata[2]:.0f}",
+  )
+  expect(contributionPlot.data[1].hovertemplate).toContain(
+    "Answer: %{customdata[1]:.1f} / %{customdata[2]:.0f}",
+  )
 })

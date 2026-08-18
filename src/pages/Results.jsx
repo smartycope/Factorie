@@ -763,7 +763,7 @@ function HeatmapPlot({
 }
 
 // "Deciding factors for {option}" plot
-function FactorContributionPlot({ decision, best, contributions }) {
+function FactorContributionPlot({ decision, best, contributions, answers }) {
   const theme = useTheme()
   const optionNames = decision.options.map((option) => option.name)
   const bestOptionIndex = Math.max(
@@ -778,6 +778,7 @@ function FactorContributionPlot({ decision, best, contributions }) {
   )
 
   const selectedOption = optionNames[selectedOptionIndex] ?? optionNames[0]
+  const maxs = decision.maxs()
   const visibleCount = Math.min(
     maximumFactorCount,
     factorCount === "" ? maximumFactorCount : (
@@ -790,6 +791,8 @@ function FactorContributionPlot({ decision, best, contributions }) {
       contribution: contributions[selectedOptionIndex]?.[factorIndex] ?? 0,
       color: factor.color,
       weight: factor.weight,
+      answer: answers[selectedOptionIndex]?.[factorIndex],
+      max: maxs[factorIndex],
     }))
     .sort((a, b) => b.contribution - a.contribution)
   const visibleRows = rows.slice(0, visibleCount)
@@ -801,8 +804,13 @@ function FactorContributionPlot({ decision, best, contributions }) {
         x: visibleRows.map(({ factor }) => factor),
         y: visibleRows.map(({ contribution }) => contribution),
         width: visibleRows.map(({ weight }) => weight),
-        customdata: visibleRows.map(({ factor }) => factor),
-        hovertemplate: "%{customdata}: %{y:.0%} bad<extra></extra>",
+        customdata: visibleRows.map(({ factor, answer, max }) => [
+          factor,
+          answer,
+          max,
+        ]),
+        hovertemplate:
+          "%{customdata[0]}: %{y:.0%} bad<br>Answer: %{customdata[1]:.1f} / %{customdata[2]:.0f}<extra></extra>",
         marker: {
           color: theme.palette.error.main,
           line: {
@@ -817,8 +825,13 @@ function FactorContributionPlot({ decision, best, contributions }) {
         x: visibleRows.map(({ factor }) => factor),
         y: visibleRows.map(({ contribution }) => 1 - contribution),
         width: visibleRows.map(({ weight }) => weight),
-        customdata: visibleRows.map(({ factor }) => factor),
-        hovertemplate: "%{customdata}: %{y:.0%} good<extra></extra>",
+        customdata: visibleRows.map(({ factor, answer, max }) => [
+          factor,
+          answer,
+          max,
+        ]),
+        hovertemplate:
+          "%{customdata[0]}: %{y:.0%} good<br>Answer: %{customdata[1]:.1f} / %{customdata[2]:.0f}<extra></extra>",
         marker: {
           color: theme.palette.success.main,
           line: {
@@ -1604,6 +1617,7 @@ export default function Results() {
           decision={calculationDecision}
           best={best}
           contributions={objectiveContributions}
+          answers={answers}
         />
 
         <SingleLinePlot results={results} />
