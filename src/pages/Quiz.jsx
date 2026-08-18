@@ -42,6 +42,23 @@ const ANSWER_FILTER_VALUES = new Set(
   ANSWER_FILTERS.map(({ value }) => value),
 )
 
+const persistedValues = {
+  decision: null,
+  selectedCell: [0, 0],
+  focusedOption: ALL_OPTIONS,
+  answerFilters: [],
+  factorSearch: "",
+}
+
+function answerFiltersFromSearchParams(searchParams) {
+  return searchParams
+    .getAll("answer")
+    .filter(
+      (filter, index, filters) =>
+        ANSWER_FILTER_VALUES.has(filter) && filters.indexOf(filter) === index,
+    )
+}
+
 // TODO: negative values don't work well with this right now
 // function cloneDecision(decision) {
 //   return Decision.deserialize(decision.serialize())
@@ -448,20 +465,32 @@ function TransposedAnswersTable({
 export default function Quiz() {
   const { decision, modifyCurrentDecision: updateDecision } = useDecisions()
   const [searchParams, setSearchParams] = useSearchParams()
+  const hasPersistedState =
+    decision != null && persistedValues.decision === decision
+  const hasQueryState = searchParams.size > 0
 
   // UI state (unconditional hooks)
   const [precise, setPrecise] = useState(false)
   const [unsure, setUnsure] = useState(null)
-  const focusedOption = searchParams.get("option") ?? ALL_OPTIONS
-  const answerFilters = searchParams
-    .getAll("answer")
-    .filter(
-      (filter, index, filters) =>
-        ANSWER_FILTER_VALUES.has(filter) && filters.indexOf(filter) === index,
-    )
+  const [focusedOption, _setFocusedOption] = useState(() =>
+    hasQueryState ? searchParams.get("option") ?? ALL_OPTIONS
+    : hasPersistedState ? persistedValues.focusedOption
+    : ALL_OPTIONS,
+  )
+  const [answerFilters, _setAnswerFilters] = useState(() =>
+    hasQueryState ? answerFiltersFromSearchParams(searchParams)
+    : hasPersistedState ? persistedValues.answerFilters
+    : [],
+  )
   const [answerFilterAnchorEl, setAnswerFilterAnchorEl] = useState(null)
-  const factorSearch = searchParams.get("factor") ?? ""
-  const [selectedCell, setSelectedCell] = useState([0, 0])
+  const [factorSearch, _setFactorSearch] = useState(() =>
+    hasQueryState ? searchParams.get("factor") ?? ""
+    : hasPersistedState ? persistedValues.factorSearch
+    : "",
+  )
+  const [selectedCell, _setSelectedCell] = useState(() =>
+    !hasQueryState && hasPersistedState ? persistedValues.selectedCell : [0, 0],
+  )
   const [history, setHistory] = useState([])
   // The value of the response given by the user
   const [resp, setResp] = useState(null)
@@ -470,6 +499,35 @@ export default function Quiz() {
   const [maxInputText, setMaxInputText] = useState(null)
   const valueInputRef = useRef(null)
   const searchInputRef = useRef(null)
+
+  function setFocusedOption(next) {
+    persistedValues.focusedOption = next
+    _setFocusedOption(next)
+  }
+
+  function setAnswerFilters(next) {
+    persistedValues.answerFilters = next
+    _setAnswerFilters(next)
+  }
+
+  function setFactorSearch(next) {
+    persistedValues.factorSearch = next
+    _setFactorSearch(next)
+  }
+
+  function setSelectedCell(next) {
+    persistedValues.selectedCell = next
+    _setSelectedCell(next)
+  }
+
+  useEffect(() => {
+    if (!decision || persistedValues.decision === decision) return
+    persistedValues.decision = decision
+    persistedValues.selectedCell = selectedCell
+    persistedValues.focusedOption = focusedOption
+    persistedValues.answerFilters = answerFilters
+    persistedValues.factorSearch = factorSearch
+  }, [answerFilters, decision, factorSearch, focusedOption, selectedCell])
 
   useEffect(() => {
     const frame = requestAnimationFrame(() => valueInputRef.current?.focus())
@@ -820,6 +878,7 @@ export default function Quiz() {
   }
 
   function changeAnswerFilters(nextAnswerFilters) {
+    setAnswerFilters(nextAnswerFilters)
     const nextSearchParams = new URLSearchParams(searchParams)
     nextSearchParams.delete("answer")
     for (const filter of nextAnswerFilters)
@@ -842,6 +901,7 @@ export default function Quiz() {
   }
 
   function changeFactorSearch(nextFactorSearch, dontFocus = false) {
+    setFactorSearch(nextFactorSearch)
     const nextSearchParams = new URLSearchParams(searchParams)
     if (nextFactorSearch) nextSearchParams.set("factor", nextFactorSearch)
     else nextSearchParams.delete("factor")
@@ -856,6 +916,7 @@ export default function Quiz() {
 
   function handleFocusedOptionChange(event) {
     const nextFocusedOption = event.target.value
+    setFocusedOption(nextFocusedOption)
     const nextSearchParams = new URLSearchParams(searchParams)
     if (nextFocusedOption) nextSearchParams.set("option", nextFocusedOption)
     else nextSearchParams.delete("option")

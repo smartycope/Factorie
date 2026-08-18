@@ -1,4 +1,4 @@
-import React, { useCallback, useEffect, useMemo, useState } from "react"
+import React, { useCallback, useEffect, useMemo, useRef, useState } from "react"
 import {
   closestCenter,
   DndContext,
@@ -62,6 +62,12 @@ const DEFAULTS = {
   min: null,
   max: null,
   color: null,
+}
+
+const persistedValues = {
+  decision: null,
+  selectedIndex: null,
+  editFactorIndex: null,
 }
 
 function factorNameText(value) {
@@ -401,21 +407,53 @@ export default function Factors() {
     reorderFactors,
   } = useDecisions()
   const decision = selectedIndex != null ? decisions[selectedIndex] : null
+  const initialDecisionRef = useRef(decision)
+  const trackedDecisionRef = useRef(decision)
+  const hasPersistedState =
+    decision != null &&
+    persistedValues.decision === decision &&
+    persistedValues.selectedIndex === selectedIndex
+  const persistedFactorIndex =
+    hasPersistedState &&
+    decision.factors[persistedValues.editFactorIndex] != null ?
+      persistedValues.editFactorIndex
+    : null
+  const persistedFactor = decision?.factors[persistedFactorIndex] ?? null
   const [addError, setAddError] = useState("")
 
   // Add form state
-  const [addName, setAddName] = useState(DEFAULTS.name)
-  const [addUnit, setAddUnit] = useState(DEFAULTS.unit)
-  const [addOptimal, setAddOptimal] = useState(DEFAULTS.optimal)
-  const [addWeight, setAddWeight] = useState(DEFAULTS.weight)
-  const [addMinUnbounded, setAddMinUnbounded] = useState(DEFAULTS.minUnbounded)
-  const [addMaxUnbounded, setAddMaxUnbounded] = useState(DEFAULTS.maxUnbounded)
-  const [addMin, setAddMin] = useState(DEFAULTS.min)
-  const [addMax, setAddMax] = useState(DEFAULTS.max)
-  const [addColor, setAddColor] = useState(DEFAULTS.color)
+  const [addName, setAddName] = useState(
+    persistedFactor ? factorNameText(persistedFactor.name) : DEFAULTS.name,
+  )
+  const [addUnit, setAddUnit] = useState(
+    persistedFactor?.unit ?? DEFAULTS.unit,
+  )
+  const [addOptimal, setAddOptimal] = useState(
+    persistedFactor?.optimal ?? DEFAULTS.optimal,
+  )
+  const [addWeight, setAddWeight] = useState(
+    Number.isFinite(persistedFactor?.weight) ?
+      persistedFactor.weight
+    : DEFAULTS.weight,
+  )
+  const [addMinUnbounded, setAddMinUnbounded] = useState(
+    persistedFactor ? persistedFactor.min == null : DEFAULTS.minUnbounded,
+  )
+  const [addMaxUnbounded, setAddMaxUnbounded] = useState(
+    persistedFactor ? persistedFactor.max == null : DEFAULTS.maxUnbounded,
+  )
+  const [addMin, setAddMin] = useState(
+    persistedFactor?.min ?? DEFAULTS.min,
+  )
+  const [addMax, setAddMax] = useState(
+    persistedFactor?.max ?? DEFAULTS.max,
+  )
+  const [addColor, setAddColor] = useState(
+    persistedFactor?.color ?? DEFAULTS.color,
+  )
 
   // Edit state tracks which factor (by index) is being modified. We reuse the add form fields while editing.
-  const [editFactorIndex, setEditFactorIndex] = useState(null)
+  const [editFactorIndex, _setEditFactorIndex] = useState(persistedFactorIndex)
   const [clearExistingAnswersOverride, setClearExistingAnswersOverride] =
     useState(null)
   const [markExistingAnswersTentative, setMarkExistingAnswersTentative] =
@@ -470,6 +508,11 @@ export default function Factors() {
   const clearExistingAnswers =
     clearExistingAnswersOverride ?? factorScaleChanged
 
+  function setEditFactorIndex(next) {
+    persistedValues.editFactorIndex = next
+    _setEditFactorIndex(next)
+  }
+
   const resetFormFields = useCallback(() => {
     setAddName(DEFAULTS.name)
     setAddUnit(DEFAULTS.unit)
@@ -485,8 +528,16 @@ export default function Factors() {
   }, [])
 
   useEffect(() => {
+    if (
+      persistedValues.decision === initialDecisionRef.current &&
+      persistedValues.selectedIndex === selectedIndex
+    )
+      return
+
     // when decision changes, reset forms (scheduled to avoid sync setState in effect)
     const t = setTimeout(() => {
+      persistedValues.decision = initialDecisionRef.current
+      persistedValues.selectedIndex = selectedIndex
       resetFormFields()
 
       setEditFactorIndex(null)
@@ -494,6 +545,12 @@ export default function Factors() {
     }, 0)
     return () => clearTimeout(t)
   }, [selectedIndex, resetFormFields])
+
+  useEffect(() => {
+    if (persistedValues.decision !== trackedDecisionRef.current) return
+    persistedValues.decision = decision
+    trackedDecisionRef.current = decision
+  }, [decision])
 
   function beginEditingFactor(index) {
     const factor = decision?.factors[index]

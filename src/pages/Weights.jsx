@@ -83,6 +83,16 @@ const WEIGHT_ARRANGEMENTS = [
   },
 ]
 
+const persistedValues = {
+  decision: null,
+  selectedIndex: null,
+  handles: {},
+  sortGenerator: null,
+  pendingPair: null,
+  quizFinished: false,
+  sortStarted: false,
+}
+
 function handlesForDecision(decision, handles = {}) {
   if (!decision) return {}
   return decision.factors.reduce((validHandles, factor) => {
@@ -238,9 +248,15 @@ function* modifiedTimSortCoroutine(arr) {
 export default function Weights() {
   const { decisions, setDecisions, selectedIndex } = useDecisions()
   const decision = selectedIndex != null ? decisions[selectedIndex] : null
+  const hasPersistedState =
+    decision != null &&
+    persistedValues.decision === decision &&
+    persistedValues.selectedIndex === selectedIndex
 
   // positions state must be top-level (hooks cannot be conditional)
-  const [handles, setHandles] = useState({})
+  const [handles, _setHandles] = useState(() =>
+    hasPersistedState ? persistedValues.handles : {},
+  )
   const [allowReordering, setAllowReordering] = useState(false)
   const [precise, setPrecise] = useState(false)
   const [arrangeMenuAnchorEl, setArrangeMenuAnchorEl] = useState(null)
@@ -248,10 +264,46 @@ export default function Weights() {
   const [plotFactorLimit, setPlotFactorLimit] = useState(20)
 
   // Quiz hooks and handlers (kept at top-level so hooks order is stable)
-  const sortGenRef = useRef(null)
-  const [pendingPair, setPendingPair] = useState(null)
-  const [quizFinished, setQuizFinished] = useState(false)
-  const [sortStarted, setSortStarted] = useState(false)
+  const sortGenRef = useRef(
+    hasPersistedState ? persistedValues.sortGenerator : null,
+  )
+  const [pendingPair, _setPendingPair] = useState(() =>
+    hasPersistedState ? persistedValues.pendingPair : null,
+  )
+  const [quizFinished, _setQuizFinished] = useState(() =>
+    hasPersistedState ? persistedValues.quizFinished : false,
+  )
+  const [sortStarted, _setSortStarted] = useState(() =>
+    hasPersistedState ? persistedValues.sortStarted : false,
+  )
+
+  function setHandles(update) {
+    _setHandles((previous) => {
+      const next = typeof update === "function" ? update(previous) : update
+      persistedValues.handles = next
+      return next
+    })
+  }
+
+  function setPendingPair(next) {
+    persistedValues.pendingPair = next
+    _setPendingPair(next)
+  }
+
+  function setQuizFinished(next) {
+    persistedValues.quizFinished = next
+    _setQuizFinished(next)
+  }
+
+  function setSortStarted(next) {
+    persistedValues.sortStarted = next
+    _setSortStarted(next)
+  }
+
+  function setSortGenerator(next) {
+    persistedValues.sortGenerator = next
+    sortGenRef.current = next
+  }
 
   // Sync positions from the selected decision only when the decision changes.
   // We intentionally do not include `positions` in the deps to avoid clobbering
@@ -259,22 +311,27 @@ export default function Weights() {
 
   useEffect(() => {
     if (!decision) return
+    if (
+      persistedValues.decision === decision &&
+      persistedValues.selectedIndex === selectedIndex
+    )
+      return
+
     const t = setTimeout(() => {
+      persistedValues.decision = decision
+      persistedValues.selectedIndex = selectedIndex
       setHandles(
         decision.factors.reduce((acc, factor) => {
           acc[factor.name] = factor.weight ?? 0
           return acc
         }, {}),
       )
-      sortGenRef.current = null
+      setSortGenerator(null)
       setPendingPair(null)
       setQuizFinished(false)
       setSortStarted(false)
     }, 0)
-    return () => {
-      clearTimeout(t)
-      sortGenRef.current = null
-    }
+    return () => clearTimeout(t)
   }, [decision, selectedIndex])
 
   const factorHandles = handlesForDecision(decision, handles)
@@ -295,7 +352,7 @@ export default function Weights() {
     const g = modifiedTimSortCoroutine(
       decision.factors.map((factor) => factor.name),
     )
-    sortGenRef.current = g
+    setSortGenerator(g)
     const first = g.next()
     if (first.done) applySortedWeightsToPositions(first.value)
     else setPendingPair(first.value)
