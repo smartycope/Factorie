@@ -91,6 +91,47 @@ test.each([
   expect(imported.getAnswer("Choice", "Size").serialize()).toEqual(expected)
 })
 
+test("spreadsheet export uses labels for discrete answers", () => {
+  const decision = new Decision("Discrete export")
+  decision.addFactor({
+    name: "Size",
+    unit: "1: label, 2: other label",
+    optimal: 2,
+    weight: 0.5,
+    min: 1,
+    max: 2,
+  })
+  decision.addOption("Exact")
+  decision.addOption("Range")
+  decision.setAnswer("Exact", "Size", 1)
+  decision.setAnswer("Range", "Size", [1, 2, true])
+
+  const exported = createDecisionSpreadsheet(decision)
+  const workbook = XLSX.read(exported, { type: "array" })
+  const imported = parseDecisionSpreadsheet(exported)
+
+  expect(workbook.Sheets.Decision.B6.v).toBe("label")
+  expect(workbook.Sheets.Decision.C6.v).toBe("label - other label?")
+  expect(imported.getAnswer("Exact", "Size").min).toBe(1)
+  expect(imported.getAnswer("Range", "Size").max).toBe(2)
+})
+
+test("spreadsheet export formats weights as percentages with one decimal", () => {
+  const decision = new Decision("Weight format")
+  decision.addFactor({ name: "Quality", weight: 0.1234 })
+  decision.addOption("Choice")
+
+  const workbook = XLSX.read(createDecisionSpreadsheet(decision), {
+    type: "array",
+    cellNF: true,
+  })
+  const weightCell = workbook.Sheets.Factors.D2
+
+  expect(weightCell.v).toBe(0.1234)
+  expect(weightCell.z).toBe("0.0%")
+  expect(XLSX.utils.format_cell(weightCell)).toBe("12.3%")
+})
+
 test("spreadsheet import reports every invalid answer cell together", () => {
   const decision = new Decision("Invalid answers")
   decision.addFactor({

@@ -136,6 +136,13 @@ function serializeOptimal(optimal) {
   return optimal ?? ""
 }
 
+function serializeAnswer(answer) {
+  if (!answer.isAnswered()) return ""
+  const [min, max, tentative] = answer.serialize()
+  const value = answer.isRanged() ? `${min} - ${max}` : String(min)
+  return value + (tentative ? "?" : "")
+}
+
 function spreadsheetColor(color) {
   return color ? `FF${color.slice(1)}` : null
 }
@@ -454,7 +461,7 @@ export function createDecisionSpreadsheet(decision) {
     ...decision.factors.map((factor, factorIndex) => [
       factor.name,
       ...decision.options.map((_, optionIndex) =>
-        decision.answers[optionIndex][factorIndex].toString(),
+        serializeAnswer(decision.answers[optionIndex][factorIndex]),
       ),
     ]),
   ]
@@ -519,6 +526,13 @@ export function createDecisionSpreadsheet(decision) {
       factorSheet[XLSX.utils.encode_cell({ r: index + 1, c: 0 })].s = {
         fill: cellFill(factor.color),
       }
+    const weightCell = factorSheet[
+      XLSX.utils.encode_cell({ r: index + 1, c: 3 })
+    ]
+    if (weightCell) {
+      weightCell.z = "0.0%"
+      weightCell.s = { ...weightCell.s, numFmt: "0.0%" }
+    }
   })
   XLSX.utils.book_append_sheet(workbook, factorSheet, "Factors")
   const optionSheet = XLSX.utils.aoa_to_sheet([
