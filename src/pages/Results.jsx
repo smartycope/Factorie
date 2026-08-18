@@ -800,27 +800,6 @@ function FactorContributionPlot({ decision, best, contributions, answers }) {
     data: [
       {
         type: "bar",
-        name: "Bad",
-        x: visibleRows.map(({ factor }) => factor),
-        y: visibleRows.map(({ contribution }) => contribution),
-        width: visibleRows.map(({ weight }) => weight),
-        customdata: visibleRows.map(({ factor, answer, max }) => [
-          factor,
-          answer,
-          max,
-        ]),
-        hovertemplate:
-          "%{customdata[0]}: %{y:.0%} bad<br>Answer: %{customdata[1]:.1f} / %{customdata[2]:.0f}<extra></extra>",
-        marker: {
-          color: theme.palette.error.main,
-          line: {
-            color: theme.palette.background.paper,
-            width: 2,
-          },
-        },
-      },
-      {
-        type: "bar",
         name: "Good",
         x: visibleRows.map(({ factor }) => factor),
         y: visibleRows.map(({ contribution }) => 1 - contribution),
@@ -840,9 +819,31 @@ function FactorContributionPlot({ decision, best, contributions, answers }) {
           },
         },
       },
+      {
+        type: "bar",
+        name: "Bad",
+        x: visibleRows.map(({ factor }) => factor),
+        y: visibleRows.map(({ contribution }) => contribution),
+        width: visibleRows.map(({ weight }) => weight),
+        customdata: visibleRows.map(({ factor, answer, max }) => [
+          factor,
+          answer,
+          max,
+        ]),
+        hovertemplate:
+          "%{customdata[0]}: %{y:.0%} bad<br>Answer: %{customdata[1]:.1f} / %{customdata[2]:.0f}<extra></extra>",
+        marker: {
+          color: theme.palette.error.main,
+          line: {
+            color: theme.palette.background.paper,
+            width: 2,
+          },
+        },
+      },
     ],
     layout: {
       barmode: "stack",
+      legend: { traceorder: "reversed" },
       title: {
         text: `Deciding Factors for ${selectedOption}`,
       },
@@ -899,6 +900,125 @@ function FactorContributionPlot({ decision, best, contributions, answers }) {
             sx={{ width: 130 }}
           />
         </Box>
+        <Plot
+          data={plot.data}
+          layout={plot.layout}
+          style={{ width: "100%", height: 450 }}
+          useResizeHandler
+          config={{ displayModeBar: false }}
+        />
+      </Paper>
+    </HelpOverlay>
+  )
+}
+
+function FactorComparisonPlot({ decision, factorBadness, answers }) {
+  const theme = useTheme()
+  const [selectedFactorIndex, setSelectedFactorIndex] = useState(0)
+  const factorOptions = decision.factors.map((factor, factorIndex) => ({
+    factor,
+    factorIndex,
+  }))
+  const selectedFactorOption =
+    factorOptions[selectedFactorIndex] ?? factorOptions[0]
+  const selectedFactor = selectedFactorOption.factor
+  const maxs = decision.maxs()
+  const rows = decision.options
+    .map((option, optionIndex) => {
+      const badness = Math.min(
+        1,
+        Math.max(
+          0,
+          factorBadness[optionIndex]?.[selectedFactorOption.factorIndex] ?? 0,
+        ),
+      )
+      return {
+        option: option.name,
+        color: option.color,
+        badness,
+        goodness: 1 - badness,
+        answer: answers[optionIndex]?.[selectedFactorOption.factorIndex],
+        max: maxs[selectedFactorOption.factorIndex],
+      }
+    })
+    .sort((a, b) => b.goodness - a.goodness)
+  const customdata = rows.map(({ option, answer, max }) => [
+    option,
+    selectedFactor.name,
+    answer,
+    max,
+  ])
+  const plot = {
+    data: [
+      {
+        type: "bar",
+        name: "Good",
+        x: rows.map(({ option }) => option),
+        y: rows.map(({ goodness }) => goodness),
+        customdata,
+        hovertemplate:
+          "%{customdata[0]}<br>%{customdata[1]}: %{y:.0%} good<br>Answer: %{customdata[2]:.1f} / %{customdata[3]:.0f}<extra></extra>",
+        marker: {
+          color: theme.palette.success.main,
+          line: { color: theme.palette.background.paper, width: 2 },
+        },
+      },
+      {
+        type: "bar",
+        name: "Bad",
+        x: rows.map(({ option }) => option),
+        y: rows.map(({ badness }) => badness),
+        customdata,
+        hovertemplate:
+          "%{customdata[0]}<br>%{customdata[1]}: %{y:.0%} bad<br>Answer: %{customdata[2]:.1f} / %{customdata[3]:.0f}<extra></extra>",
+        marker: {
+          color: theme.palette.error.main,
+          line: { color: theme.palette.background.paper, width: 2 },
+        },
+      },
+    ],
+    layout: {
+      barmode: "stack",
+      legend: { traceorder: "reversed" },
+      title: { text: `How Good Each Option Is for ${selectedFactor.name}` },
+      xaxis: {
+        tickmode: "array",
+        tickvals: rows.map(({ option }) => option),
+        ticktext: rows.map(({ option, color }) =>
+          coloredPlotLabel(option, color),
+        ),
+        tickangle: "auto",
+        automargin: true,
+      },
+      yaxis: {
+        range: [0, 1.08],
+        tickformat: ".0%",
+        title: { text: "Factor goodness" },
+        rangemode: "nonnegative",
+      },
+      margin: { t: 60, b: 60, l: 60, r: 20 },
+    },
+  }
+
+  return (
+    <HelpOverlay helpText={texts.results.factor_comparison}>
+      <Paper sx={{ p: 2 }}>
+        <Autocomplete
+          disableClearable
+          options={factorOptions}
+          value={selectedFactorOption}
+          getOptionLabel={({ factor }) => factor.name}
+          isOptionEqualToValue={(option, value) =>
+            option.factorIndex === value.factorIndex
+          }
+          onChange={(_event, option) =>
+            setSelectedFactorIndex(option.factorIndex)
+          }
+          renderInput={(params) => (
+            <TextField {...params} label="Factor" size="small" />
+          )}
+          sx={{ maxWidth: 420 }}
+        />
         <Plot
           data={plot.data}
           layout={plot.layout}
@@ -1373,6 +1493,7 @@ export default function Results() {
     optimalNormalized,
     worstPossibleOptionNormalized,
     objectiveContributions,
+    factorBadness,
     normalizedAnswers,
     goodness,
     goodnessConf,
@@ -1388,6 +1509,7 @@ export default function Results() {
         optimalNormalized: [],
         worstPossibleOptionNormalized: [],
         objectiveContributions: [],
+        factorBadness: [],
         normalizedAnswers: [],
         goodness: [],
         goodnessConf: [],
@@ -1415,6 +1537,7 @@ export default function Results() {
       optimalNormalized: optimal,
       worstPossibleOptionNormalized: worstOpt,
       objectiveContributions: calc.mean.objective_contributions || [],
+      factorBadness: calc.mean.factor_badness || [],
       normalizedAnswers: calc.mean.normalized_answers || [],
       goodness: calc.mean.goodness || [],
       goodnessConf: calc.std.goodness || [],
@@ -1617,6 +1740,13 @@ export default function Results() {
           decision={calculationDecision}
           best={best}
           contributions={objectiveContributions}
+          answers={answers}
+        />
+
+        <FactorComparisonPlot
+          key={`${calculationDecision.name}:${calculationDecision.factors.map((factor) => factor.name).join("|")}`}
+          decision={calculationDecision}
+          factorBadness={factorBadness}
           answers={answers}
         />
 

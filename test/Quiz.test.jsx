@@ -1,4 +1,4 @@
-import { cleanup, render, screen, within } from "@testing-library/react"
+import { cleanup, render, screen, waitFor, within } from "@testing-library/react"
 import userEvent from "@testing-library/user-event"
 import { afterEach, beforeEach, expect, test, vi } from "vitest"
 import { ThemeProvider, createTheme } from "@mui/material/styles"
@@ -249,11 +249,92 @@ test("Factor contributions option selector shows option notes", async () => {
   const contributionPlot = plotMock.mock.calls.find(
     ([props]) => props.layout?.title?.text === "Deciding Factors for Choice",
   )?.[0]
+  expect(contributionPlot.layout.legend.traceorder).toBe("reversed")
   expect(contributionPlot.data[0].customdata).toEqual([["Cost", 5, 10]])
+  expect(contributionPlot.data[0].name).toBe("Good")
+  expect(contributionPlot.data[1].name).toBe("Bad")
+  expect(contributionPlot.data[0].hovertemplate).toContain(
+    "%{y:.0%} good",
+  )
+  expect(contributionPlot.data[1].hovertemplate).toContain(
+    "%{y:.0%} bad",
+  )
   expect(contributionPlot.data[0].hovertemplate).toContain(
     "Answer: %{customdata[1]:.1f} / %{customdata[2]:.0f}",
   )
   expect(contributionPlot.data[1].hovertemplate).toContain(
     "Answer: %{customdata[1]:.1f} / %{customdata[2]:.0f}",
   )
+})
+
+test("factor comparison graph searches factors and compares every option", async () => {
+  const decision = new Decision("Factor comparison")
+  decision.addFactor({
+    name: "Cost",
+    optimal: 0,
+    weight: 0.5,
+    min: 0,
+    max: 10,
+  })
+  decision.addFactor({
+    name: "Quality",
+    optimal: 10,
+    weight: 0.5,
+    min: 0,
+    max: 10,
+  })
+  decision.addOption("Budget")
+  decision.addOption("Premium")
+  decision.setAnswer("Budget", "Cost", 2)
+  decision.setAnswer("Budget", "Quality", 4)
+  decision.setAnswer("Premium", "Cost", 8)
+  decision.setAnswer("Premium", "Quality", 9)
+  localStorage.setItem(
+    STORAGE_KEY,
+    JSON.stringify([JSON.parse(decision.serialize())]),
+  )
+  const user = userEvent.setup()
+
+  render(
+    <MemoryRouter
+      initialEntries={["/results"]}
+      future={{ v7_startTransition: true, v7_relativeSplatPath: true }}>
+      <ThemeProvider theme={createTheme()}>
+        <DecisionsProvider>
+          <Results />
+        </DecisionsProvider>
+      </ThemeProvider>
+    </MemoryRouter>,
+  )
+
+  const factorInput = screen.getByRole("combobox", { name: "Factor" })
+  await user.clear(factorInput)
+  await user.type(factorInput, "Qual")
+  await user.click(screen.getByRole("option", { name: "Quality" }))
+
+  await waitFor(() => {
+    const comparisonPlot = plotMock.mock.calls.find(
+      ([props]) =>
+        props.layout?.title?.text === "How Good Each Option Is for Quality",
+    )?.[0]
+    expect(comparisonPlot).toBeTruthy()
+    expect(comparisonPlot.data[0].x).toEqual(["Premium", "Budget"])
+    expect(comparisonPlot.data[0].name).toBe("Good")
+    expect(comparisonPlot.data[1].name).toBe("Bad")
+    expect(comparisonPlot.data[0].y[0]).toBeCloseTo(0.9)
+    expect(comparisonPlot.data[0].y[1]).toBeCloseTo(0.4)
+    expect(comparisonPlot.data[1].y[0]).toBeCloseTo(0.1)
+    expect(comparisonPlot.data[1].y[1]).toBeCloseTo(0.6)
+    expect(comparisonPlot.data[0].customdata).toEqual([
+      ["Premium", "Quality", 9, 10],
+      ["Budget", "Quality", 4, 10],
+    ])
+    expect(comparisonPlot.layout.legend.traceorder).toBe("reversed")
+    expect(comparisonPlot.data[0].hovertemplate).toContain(
+      "%{y:.0%} good<br>Answer: %{customdata[2]:.1f} / %{customdata[3]:.0f}",
+    )
+    expect(comparisonPlot.data[1].hovertemplate).toContain(
+      "%{y:.0%} bad<br>Answer: %{customdata[2]:.1f} / %{customdata[3]:.0f}",
+    )
+  })
 })
