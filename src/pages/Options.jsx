@@ -296,6 +296,27 @@ function OptionsEditor({
         </Button>
       </Box>
 
+      <TextField
+        label={
+          selectedOption ? `Notes for ${selectedOption.name}` : "Option notes"
+        }
+        value={selectedOption?.notes ?? ""}
+        onChange={(event) =>
+          setOptionNote(selectedOptionIndex, event.target.value)
+        }
+        disabled={!selectedOption}
+        placeholder="Add details, reminders, links, or anything else about this option."
+        helperText={
+          selectedOption ?
+            "Notes are saved automatically."
+          : "Select an option below to add notes."
+        }
+        multiline
+        minRows={2}
+        fullWidth
+        // sx={{ mt: 0 }}
+      />
+
       <Paper variant="outlined" sx={{ mt: 1, overflow: "hidden" }}>
         {decision.options.length === 0 ?
           <Typography color="text.secondary" sx={{ px: 2, py: 4 }}>
@@ -332,27 +353,6 @@ function OptionsEditor({
           </DndContext>
         }
       </Paper>
-
-      <TextField
-        label={
-          selectedOption ? `Notes for ${selectedOption.name}` : "Option notes"
-        }
-        value={selectedOption?.notes ?? ""}
-        onChange={(event) =>
-          setOptionNote(selectedOptionIndex, event.target.value)
-        }
-        disabled={!selectedOption}
-        placeholder="Add details, reminders, links, or anything else about this option."
-        helperText={
-          selectedOption ?
-            "Notes are saved automatically."
-          : "Select an option above to add notes."
-        }
-        multiline
-        minRows={5}
-        fullWidth
-        sx={{ mt: 3 }}
-      />
     </>
   )
 }
