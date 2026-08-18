@@ -11,6 +11,7 @@ export default function MultiHandledSlider({
   showValues = true,
   digits = 1,
   centerLabels = false,
+  boldLabels = [],
   onChange,
 }) {
   const sliderRef = useRef(null)
@@ -20,6 +21,7 @@ export default function MultiHandledSlider({
   const [selectedLabel, setSelectedLabel] = useState(null)
   // Same for this.
   const blockingBounds = useRef({ min: 0, max: 1 })
+  const boldLabelSet = new Set(boldLabels)
 
   const startDrag = (label) => () => {
     document.addEventListener("mousemove", onDrag)
@@ -87,7 +89,7 @@ export default function MultiHandledSlider({
       `${label}` +
       (showValues ? ` - ${(handles[label] * 100).toFixed(Math.max(0, -digits))}%` : "")
     )
-    if (selected) return <b>{rtn}</b>
+    if (selected || boldLabelSet.has(label)) return <b>{rtn}</b>
     else return rtn
   }
 

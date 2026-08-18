@@ -8,6 +8,9 @@ import Decision from "../models/Decision"
 import Paper from "@mui/material/Paper"
 import Menu from "@mui/material/Menu"
 import MenuItem from "@mui/material/MenuItem"
+import IconButton from "@mui/material/IconButton"
+import InputAdornment from "@mui/material/InputAdornment"
+import CloseIcon from "@mui/icons-material/Close"
 import MultiHandledSlider from "../components/MultiHandledSlider"
 import { Checkbox, FormControlLabel, TextField } from "@mui/material"
 import { reorderWeightsForSortedResult } from "../utils/weights.js"
@@ -259,6 +262,7 @@ export default function Weights() {
   )
   const [allowReordering, setAllowReordering] = useState(false)
   const [precise, setPrecise] = useState(false)
+  const [factorSearch, setFactorSearch] = useState("")
   const [arrangeMenuAnchorEl, setArrangeMenuAnchorEl] = useState(null)
   const [showRadar, setShowRadar] = useState(true)
   const [plotFactorLimit, setPlotFactorLimit] = useState(20)
@@ -425,6 +429,13 @@ export default function Weights() {
   }
 
   const labels = Object.keys(factorHandles)
+  const normalizedFactorSearch = factorSearch.trim().toLowerCase()
+  const boldLabels =
+    normalizedFactorSearch ?
+      labels.filter((label) =>
+        label.toLowerCase().includes(normalizedFactorSearch),
+      )
+    : []
   const positions = labels.map((label) => factorHandles[label])
 
   const unsaved =
@@ -619,9 +630,33 @@ export default function Weights() {
                 </MenuItem>
               ))}
             </Menu>
+            <TextField
+              label="Search factors"
+              value={factorSearch}
+              onChange={(event) => setFactorSearch(event.target.value)}
+              size="small"
+              slotProps={{
+                input: {
+                  endAdornment:
+                    factorSearch ?
+                      <InputAdornment position="end">
+                        <IconButton
+                          size="small"
+                          aria-label="Clear factor search"
+                          onClick={() => setFactorSearch("")}
+                          edge="end">
+                          <CloseIcon fontSize="small" />
+                        </IconButton>
+                      </InputAdornment>
+                    : null,
+                },
+              }}
+              sx={{ ml: "auto", width: 260 }}
+            />
           </Box>
           <MultiHandledSlider
             handles={factorHandles}
+            boldLabels={boldLabels}
             overlap={allowReordering ? "free" : "block"}
             gradient={["#0024630f", "#002463"]}
             step={precise ? 0 : 0.01}

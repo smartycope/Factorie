@@ -69,6 +69,30 @@ test("fine tune weights keeps unsaved weights and sorting progress across naviga
   expect(screen.getByRole("button", { name: "Start Over" })).toBeTruthy()
 })
 
+test("fine tune weights search bolds matching slider labels", async () => {
+  const decision = new Decision("Weight search")
+  decision.addFactor({ name: "Purchase price", weight: 0.2 })
+  decision.addFactor({ name: "Travel time", weight: 0.8 })
+  saveDecision(decision)
+  const user = userEvent.setup()
+  renderPage(Weights, "/weights")
+
+  await waitFor(() =>
+    expect(screen.getByText("Purchase price - 20%")).toBeTruthy(),
+  )
+  await user.type(
+    screen.getByRole("textbox", { name: "Search factors" }),
+    "PRICE",
+  )
+
+  expect(screen.getByText("Purchase price - 20%").tagName).toBe("B")
+  expect(screen.getByText("Travel time - 80%").tagName).not.toBe("B")
+
+  await user.click(screen.getByRole("button", { name: "Clear factor search" }))
+  expect(screen.getByRole("textbox", { name: "Search factors" }).value).toBe("")
+  expect(screen.getByText("Purchase price - 20%").tagName).not.toBe("B")
+})
+
 test("Quiz keeps its current answer, option, filters, and search across navigation", async () => {
   const decision = new Decision("Quiz state")
   decision.addFactor({
