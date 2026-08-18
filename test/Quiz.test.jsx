@@ -111,6 +111,36 @@ test("Quiz loads all persisted filters from query parameters", () => {
   expect(within(table).queryByText("Range factor")).toBeNull()
 })
 
+test("Quiz shows option notes in headers and the focus selector", async () => {
+  const decision = new Decision("Option notes")
+  decision.addFactor({
+    name: "Cost",
+    optimal: 0,
+    weight: 1,
+    min: 0,
+    max: 10,
+  })
+  decision.addOption("Choice")
+  decision.options[0].notes = "The lower-risk fallback with extra context."
+  decision.setAnswer("Choice", "Cost", 5)
+  localStorage.setItem(
+    STORAGE_KEY,
+    JSON.stringify([JSON.parse(decision.serialize())]),
+  )
+  const user = userEvent.setup()
+  renderQuiz()
+
+  const optionHeader = screen.getByRole("columnheader", { name: "Choice" })
+  await user.hover(within(optionHeader).getByText("Choice"))
+  expect((await screen.findByRole("tooltip")).textContent).toContain(
+    "The lower-risk fallback with extra context.",
+  )
+
+  await user.click(screen.getByRole("combobox", { name: "Focus option" }))
+  const option = screen.getByRole("option", { name: /Choice/ })
+  expect(within(option).getByText("The lower-risk fallback with e")).toBeTruthy()
+})
+
 test("Quiz factor search keeps focus when it changes the current question", async () => {
   const user = userEvent.setup()
   renderQuiz()
@@ -176,4 +206,41 @@ test("Results links invalid answers to an invalid-only Quiz view", async () => {
   expect(within(table).getByText("Invalid factor")).toBeTruthy()
   expect(within(table).queryByText("Unanswered factor")).toBeNull()
   expect(within(table).queryByText("Range factor")).toBeNull()
+})
+
+test("Factor contributions option selector shows option notes", async () => {
+  const decision = new Decision("Contribution notes")
+  decision.addFactor({
+    name: "Cost",
+    optimal: 0,
+    weight: 1,
+    min: 0,
+    max: 10,
+  })
+  decision.addOption("Choice")
+  decision.options[0].notes = "Best for a limited budget and timeline."
+  decision.setAnswer("Choice", "Cost", 5)
+  localStorage.setItem(
+    STORAGE_KEY,
+    JSON.stringify([JSON.parse(decision.serialize())]),
+  )
+  const user = userEvent.setup()
+
+  render(
+    <MemoryRouter
+      initialEntries={["/results"]}
+      future={{ v7_startTransition: true, v7_relativeSplatPath: true }}>
+      <ThemeProvider theme={createTheme()}>
+        <DecisionsProvider>
+          <Results />
+        </DecisionsProvider>
+      </ThemeProvider>
+    </MemoryRouter>,
+  )
+
+  await user.click(screen.getByRole("combobox", { name: "Option" }))
+  const option = screen.getByRole("option", { name: /Choice/ })
+  expect(
+    within(option).getByText("Best for a limited budget and").textContent,
+  ).toBe("Best for a limited budget and ")
 })

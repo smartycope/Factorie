@@ -22,6 +22,8 @@ import InputLabel from "@mui/material/InputLabel"
 import MenuItem from "@mui/material/MenuItem"
 import Menu from "@mui/material/Menu"
 import Select from "@mui/material/Select"
+import ListItemText from "@mui/material/ListItemText"
+import Tooltip from "@mui/material/Tooltip"
 import IconButton from "@mui/material/IconButton"
 import InputAdornment from "@mui/material/InputAdornment"
 import CloseIcon from "@mui/icons-material/Close"
@@ -245,6 +247,14 @@ function answerCellSx(isActive, hasProblem, tentative) {
   }
 }
 
+function OptionHeader({ option }) {
+  return (
+    <Tooltip title={option.notes || ""} describeChild>
+      <span>{option.name}</span>
+    </Tooltip>
+  )
+}
+
 function AnswersTable({
   decision,
   optionIdx,
@@ -296,14 +306,14 @@ function AnswersTable({
           </TableHead>
           <TableBody>
             {visibleOptionIndexes.map((r) => {
-              const opt = decision.options[r].name
+              const option = decision.options[r]
               return (
                 <TableRow key={r}>
                   <TableCell
                     sx={{
                       backgroundColor: decision.options[r].color ?? undefined,
                     }}>
-                    {opt}
+                    <OptionHeader option={option} />
                   </TableCell>
                   {visibleFactorIndexes.map((c) => {
                     const cell = decision.answers[r]?.[c]
@@ -401,7 +411,7 @@ function TransposedAnswersTable({
                       whiteSpace: "nowrap",
                       backgroundColor: decision.options[r].color ?? undefined,
                     }}>
-                    {decision.options[r].name}
+                    <OptionHeader option={decision.options[r]} />
                   </TableCell>
                 ))}
               </TableRow>
@@ -1015,7 +1025,10 @@ export default function Quiz() {
             <MenuItem value={ALL_OPTIONS}>All</MenuItem>
             {visibleOptions.map((option) => (
               <MenuItem key={option.name} value={option.name}>
-                {option.name}
+                <ListItemText
+                  primary={option.name}
+                  secondary={option.notes ? option.notes.slice(0, 30) : null}
+                />
               </MenuItem>
             ))}
           </Select>

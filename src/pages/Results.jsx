@@ -20,6 +20,7 @@ import texts from "../assets/texts.json"
 import HelpOverlay from "../components/HelpOverlay"
 import Link from "@mui/material/Link"
 import MenuItem from "@mui/material/MenuItem"
+import ListItemText from "@mui/material/ListItemText"
 import { Link as RouterLink } from "react-router-dom"
 import { Tooltip } from "@mui/material"
 import Answer from "../models/Answer.js"
@@ -864,9 +865,12 @@ function FactorContributionPlot({ decision, best, contributions }) {
               setSelectedOptionIndex(Number(event.target.value))
             }
             sx={{ minWidth: 200 }}>
-            {optionNames.map((option, optionIndex) => (
+            {decision.options.map((option, optionIndex) => (
               <MenuItem key={optionIndex} value={optionIndex}>
-                {option}
+                <ListItemText
+                  primary={option.name}
+                  secondary={option.notes ? option.notes.slice(0, 30) : null}
+                />
               </MenuItem>
             ))}
           </TextField>
