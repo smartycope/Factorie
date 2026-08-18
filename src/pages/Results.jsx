@@ -533,7 +533,7 @@ function EntropyPlot({ decision, factorNames, entropy, usefulness, weights }) {
     <HelpOverlay helpText={texts.results.entropy}>
       <Paper sx={{ p: 2 }}>
         <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
-          <Typography>Show the top:</Typography>
+          <Typography>Show the top most useful:</Typography>
           <TextField
             type="number"
             size="small"
